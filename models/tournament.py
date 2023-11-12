@@ -4,13 +4,13 @@ from datetime import datetime
 
 print(datetime.now())
 class Tournament(BaseModel):
-    id: Optional[Annotated[int, Field(ge=1)]] | None = None
+    id: Optional[Annotated[int, Field(ge=0)]] | None = None
     title: Optional[Annotated[str, StringConstraints(min_length=1, max_length=100)]] | None = None
     format: Optional[Annotated[str, StringConstraints(pattern="^(knockout|league)$")]] | None = None
     prize_type: Optional[Annotated[str, StringConstraints(min_length=1, max_length=45)]] | None = None
     start_date: Optional[datetime] | None = None
     end_date: Optional[datetime] | None = None
-    parent_tournament_id: Optional[Annotated[int, Field(ge=1)]] | None = None
+    parent_tournament_id: Optional[Annotated[int, Field(ge=0)]] | None = None
     participants_per_match: Optional[Annotated[int, Field(ge=2)]] | None = None
 
     @classmethod
