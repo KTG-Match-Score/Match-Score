@@ -1,47 +1,46 @@
-from fastapi import APIRouter, Depends, HTTPException, Header, status
+from fastapi import APIRouter, Depends, HTTPException, Header, status, Body, Form, Request
 from fastapi.security import OAuth2PasswordRequestForm
 from models.user import User
 import services.users_services as users_services
-from typing import Annotated
+from typing import Annotated, Optional
 import common.auth as auth
 import common.responses as responses
+from fastapi.templating import Jinja2Templates
+from fastapi.responses import RedirectResponse
 
 
 users_router = APIRouter(prefix='/users')
 
+templates = Jinja2Templates(directory="templates/users")
+
 
 
 @users_router.post('/', response_model = auth.Token, status_code= status.HTTP_201_CREATED, responses={400: {"detail": "string"}})
-async def register_user(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]):
+async def register_user(
+    form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
+    fullname: str = Form(...)
+    ):
     '''
-    parameters: Oauth2 form data - username, password
-    act: - check whether username does not exist already, 
-         - check whether password conforms to requirements: min. 8 symbols, 1 lowercase latin letter,
-           1 upper case latin letter, 1 special character from [=+#?!@$%^&*-]
-    output: upon unique username and conforming password - register user and log in (provide access and refresh token)
-    possible responses (excl. pydantic validation error): 201 Created, 400 Bad Request - 
-                        when either username not unique("The username provided does not exist")
-                        or password non_conforming ("Password must be at leat 8 characters long, contain 
-                        upper- and lower-case latin letters, digits and at least one of the special characters #?!@$%^&*-=+")
+    
     '''
-    registration = users_services.register(form_data.username, form_data.password)
+    registration = users_services.register(form_data.username, form_data.password, fullname)
     if isinstance(registration, AssertionError):
-        raise HTTPException(status_code=responses.BadRequest().status_code, detail= f"{registration}")
+         return RedirectResponse("/", status_code=303)
     if not registration:
-        raise HTTPException(status_code=responses.BadRequest().status_code, detail= "Username already exists") 
-    username, password = registration
-    user = auth.authenticate_user(username, password)
+         return RedirectResponse("/", status_code=303)  
+    email, password = registration
+    user = auth.authenticate_user(email, password)
+    tokens = auth.token_response(user)
+    response = RedirectResponse(url="/users/dashboard", status_code=303)
+    response.set_cookie(key="access_token", value=tokens["access_token"], httponly=True)
+    response.set_cookie(key="refresh_token", value=tokens["refresh_token"], httponly=True)
     return auth.token_response(user)
      
 
 @users_router.post("/token", response_model=auth.Token, responses={401: {"detail": "string"}})
 async def login_for_access_token(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]):
     '''
-    parameters: Oauth2 form data - username, password
-    act: - check whether username & password match to a registered user
-    output: if matching user return JWT access token and JWT refresh token
-    possible responses (excl. pydantic validation error): 200 OK, 
-                        401 Unauthorized ("Incorrect username or password") - when no matching user
+    
     '''
     user = auth.authenticate_user(form_data.username, form_data.password)
     return auth.token_response(user)
@@ -84,6 +83,9 @@ async def get_user(token: Annotated[str, Depends(auth.oauth2_scheme)], to_change
         raise HTTPException(status_code=responses.BadRequest().status_code, detail= "The username provided does not exist")
     return users_services.set_admin(update_user.id)
     
+@users_router.get("/registrationform")
+async def show_registrationform(request: Request):
+    return templates.TemplateResponse("registrationform.html", context={"request":request})       
         
 
 
