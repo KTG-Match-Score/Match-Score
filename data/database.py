@@ -1,12 +1,12 @@
 from mariadb import connect
 from mariadb.connections import Connection
-
+import os
 
 def _get_connection() -> Connection:
     return connect(
-        user='Kaloyan_Trifon',
-        password='msKT123=',
-        host='192.168.192.206',
+        user='root',
+        password=os.environ.get("MARIADB_ROOT_PWD"),
+        host='localhost',
         port=3306,
         database="MatchScoreTest",
     )
