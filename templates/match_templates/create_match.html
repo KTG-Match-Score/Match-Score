@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create match</title>
+    <style>
+        body {
+            background-color: #888888;
+            color: #ffffff;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 800px;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+            background-color: rgba(0, 0, 0, 0.8);
+            animation: fade-in 1s ease-in-out;
+            
+        }
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        li {
+            margin-bottom: 20px;
+            border-bottom: 1px solid #555555;
+            padding-bottom: 10px;
+        }
+        h2 {
+            text-align: center;
+        }
+        h3 {
+            margin-bottom: 5px;
+        }
+        p {
+            margin: 5px 0;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        label {
+            margin-bottom: 5px;
+        }
+        select,
+        
+        input,
+        textarea {
+            margin-bottom: 10px;
+            padding: 8px;
+            border: 1px solid #555555;
+            border-radius: 4px;
+            background-color: rgb(185, 185, 185);
+            color: #ffffff;
+        }
+        button {
+            padding: 10px;
+            border: none;
+            border-radius: 4px;
+            background-color: #4CAF50;
+            color: #ffffff;
+            cursor: pointer;
+        }
+        @keyframes fade-in {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <form action="/matches/create" method="POST">
+        <div>
+            <p>Played on:
+            <label for="year" >Year:</label>    
+            <select type="number" name="year" id="year" required>
+                <option value=2023>2023</option>
+                <option value=2024>2024</option>
+                <option value=2025>2025</option>
+                <option value=2026>2026</option>
+                <option value=2027>2027</option>
+                <option value=2028>2028</option>
+                <option value=2029>2029</option>
+                <option value=2030>2030</option>
+            </select>
+            <label for="month">Month:</label>
+            <select type="number" name="month" id="month" required>
+                <option value=1>JAN</option>
+                <option value=2>FEB</option>
+                <option value=3>MAR</option>
+                <option value=4>APR</option>
+                <option value=5>MAY</option>
+                <option value=6>JUN</option>
+                <option value=7>JUL</option>
+                <option value=8>AUG</option>
+                <option value=9>SEP</option>
+                <option value=10>OCT</option>
+                <option value=11>NOV</option>
+                <option value=12>DEC</option>
+            </select>
+            <label for="day">Day:</label>
+            <select type="number" name="day" id="day" required>
+                <option value=1>1</option>
+                <option value=2>2</option>
+                <option value=3>3</option>
+                <option value=4>4</option>
+                <option value=5>5</option>
+                <option value=6>6</option>
+                <option value=7>7</option>
+                <option value=8>8</option>
+                <option value=9>9</option>
+                <option value=10>10</option>
+                <option value=11>11</option>
+                <option value=12>12</option>
+                <option value=13>13</option>
+                <option value=14>14</option>
+                <option value=15>15</option>
+                <option value=16>16</option>
+                <option value=17>17</option>
+                <option value=18>18</option>
+                <option value=19>19</option>
+                <option value=20>20</option>
+                <option value=21>21</option>
+                <option value=22>22</option>
+                <option value=23>23</option>
+                <option value=24>24</option>
+                <option value=25>25</option>
+                <option value=26>26</option>
+                <option value=27>27</option>
+                <option value=28>28</option>
+                <option value=29>29</option>
+                <option value=30>30</option>
+                <option value=31>31</option>
+            </select>
+            <label for="hour">Hour:</label>
+            <select type="number" name="hour" id="hour" required>
+                <option value=7>07</option>
+                <option value=8>08</option>
+                <option value=9>09</option>
+                <option value=10>10</option>
+                <option value=11>11</option>
+                <option value=12>12</option>
+                <option value=13>13</option>
+                <option value=14>14</option>
+                <option value=15>15</option>
+                <option value=16>16</option>
+                <option value=17>17</option>
+                <option value=18>18</option>
+                <option value=19>19</option>
+                <option value=20>20</option>
+                <option value=21>21</option>
+                <option value=22>22</option>
+                <option value=23>23</option>
+                <option value=0>00</option>
+                <option value=1>01</option>
+                <option value=2>02</option>
+                <option value=3>03</option>
+                <option value=4>04</option>
+                <option value=5>05</option>
+                <option value=6>06</option>
+            </select>   
+            <label for="minute">Minute</label>
+            <select type="number" name="minute" id="minute" required>
+                <option value=0>00</option>
+                <option value=5>05</option>
+                <option value=10>10</option>
+                <option value=15>15</option>
+                <option value=20>20</option>
+                <option value=25>25</option>
+                <option value=30>30</option>
+                <option value=35>35</option>
+                <option value=40>40</option>
+                <option value=45>45</option>
+                <option value=50>50</option>
+                <option value=55>55</option>
+            </select>
+            </p>
+        </div>
+        
+        <button type="submit">Create New Match</button> 
+        
+        <div>
+            <textarea name="participants" id="participants" cols="60" rows="10" 
+            placeholder='
+            Participants: separate by comma ","
+            example:
+            player 1, player 2...
+                or
+            team 1, team 2...' ></textarea>
+        </div>
+        <div>
+            <input type="text" id="sport" name="sport" placeholder="*Select sport" size="60" required>
+        </div>
+        <div>
+            <input type="text" id="format" name="format" placeholder=
+            "*Match format: [ff] first finisher [tl] time-limited [sl] score-limited" size="60" required>
+        </div>    
+        <div>
+            <input type="text" id="location" name="location" placeholder="*Location" size="47" required>
+            <label for="is_individuals" hidden>Individuals:</label>
+            <select name="is_individuals" id="is_individuals" >
+                <option value="false">Individuals</option>
+                <option value="true">Team</option>
+            </select>
+            
+        </div>
+        <div>
+            <input type="text" id="tournament" name="tournament" placeholder=
+            "Tournament name" size="60">
+        </div>
+    </form>
+</body>
+</html>
