@@ -29,7 +29,7 @@ class Token(BaseModel):
     refresh_token: str
 
 class TokenData(BaseModel):
-    username: str | None = None
+    email: str | None = None
 
 def check_password(password: str):
     password_pattern = "^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[=+#?!@$%^&*-]).{8,}$"
@@ -49,24 +49,30 @@ def get_time():
     return datetime.utcnow()    
 
 
-def find_user (username:str):
-    user_db = read_query("select id_user, username, password, is_admin from users where username=?",(username,))
+def find_user (email:str):
+    user_db = read_query("select * from users where email=?",(email,))
     if len(user_db) == 0:
         return
-    id_db, username_db, password_db, is_admin_db = user_db[0]
-    user = User(id = id_db, username = username_db, password = password_db, is_admin = is_admin_db)
+    id_db, email_db, password_db, fullname_db, role_db, player_id_db, picture_db = user_db[0]
+    user = User(id = id_db, 
+                fullname = fullname_db, 
+                email=email_db, 
+                password = password_db, 
+                role=role_db, 
+                player_id=player_id_db,
+                picture=picture_db)
     return user
 
 
-def authenticate_user(username: str, password: str):
-    user = find_user(username)
+def authenticate_user(email: str, password: str):
+    user = find_user(email)
     if not user:
         return 
     if not verify_password(password, user.password):
         return 
     return user
 
-def create_access_token(data: dict, expires_delta: timedelta | None = None):
+def create_token(data: dict, expires_delta: timedelta | None = None):
     to_encode = data.copy()
     if expires_delta:
         expire = get_time() + expires_delta
@@ -76,15 +82,6 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None):
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
-def create_refresh_token(data: dict, expires_delta: timedelta | None = None):
-    to_encode = data.copy()
-    if expires_delta:
-        expire = get_time() + expires_delta
-    else:
-        expire = get_time() + timedelta(minutes=REFRESH_TOKEN_EXPIRE_MINUTES)
-    to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-    return encoded_jwt
 
 def token_response(user: User|None = None):
     if not user:
@@ -94,12 +91,12 @@ def token_response(user: User|None = None):
             headers={"WWW-Authenticate": "Bearer"},
         )
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = create_access_token(
-        data={"sub": user.username, "is_admin": user.is_admin}, expires_delta=access_token_expires
+    access_token = create_token(
+        data={"sub": user.email, "name": user.fullname, "role": user.role}, expires_delta=access_token_expires
     )
     refresh_token_expires = timedelta(minutes=REFRESH_TOKEN_EXPIRE_MINUTES)
     modified_access_token = get_password_hash(access_token)
-    refresh_token = create_refresh_token(data={"sub": user.username, "access_token": modified_access_token}, expires_delta=refresh_token_expires
+    refresh_token = create_token(data={"sub": user.email, "access_token": modified_access_token}, expires_delta=refresh_token_expires
     )
     return {"access_token": access_token, "token_type": "bearer", "refresh_token": refresh_token}
 
@@ -111,14 +108,14 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
     )
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        username: str = payload.get("sub")
+        email: str = payload.get("sub")
         access_token = payload.get("access_token")
-        if username is None or access_token is not None:
+        if email is None or access_token is not None:
             raise credentials_exception
-        token_data = TokenData(username=username)
+        token_data = TokenData(email=email)
     except JWTError:
         raise credentials_exception
-    user = find_user(username=token_data.username)
+    user = find_user(email=token_data.email)
     if user is None:
         raise credentials_exception
     return user
@@ -131,29 +128,18 @@ async def refresh_access_token(access_token: str, refresh_token: str):
     )
     try:
         payload = jwt.decode(refresh_token, SECRET_KEY, algorithms=[ALGORITHM])
-        payload_access_token = jwt.decode(access_token, SECRET_KEY, algorithms=[ALGORITHM])
         modified_access_token = payload.get("access_token") 
-        try:
-            verified_access_token = verify_password(access_token, modified_access_token) 
-        except:
-            raise credentials_exception
+        verified_access_token = verify_password(access_token, modified_access_token) 
         if not verified_access_token:
             raise credentials_exception
-        username: str = payload_access_token.get("sub")
-        if username is None:
+        email: str = payload.get("sub")
+        if email is None:
             raise credentials_exception
-        token_data = TokenData(username=username)
-    except JWTError:
+        token_data = TokenData(email=email)
+    except:
         raise credentials_exception
-    user = find_user(username=token_data.username)
+    user = find_user(email=token_data.email)
     if user is None:
         raise credentials_exception
     return user
-
-# #Seems that the below is not needed
-
-# async def check_is_admin(user: Annotated[User, Depends(get_current_user)]):
-#     if user.is_admin == 0:
-#         raise HTTPException(status_code=responses.BadRequest().status_code, detail="Not admin")
-#     return user
 

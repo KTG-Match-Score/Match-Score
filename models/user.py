@@ -1,17 +1,18 @@
-from pydantic import BaseModel, constr, conint
-from pydantic.functional_validators import BeforeValidator
-from typing import Optional, Annotated, Literal
-from datetime import date, datetime
+from pydantic import BaseModel, constr, conint, EmailStr
+from typing import Optional, Literal
+
 
 
 
 
 class User(BaseModel):
     id: Optional[int] = None
-    username: constr(min_length=4, max_length=60)
+    fullname: constr(min_length=4, max_length=100)
+    email: EmailStr
     password: str 
-    created_on: Optional[datetime] = None
-    is_admin: Optional[conint(strict=True, ge=0, le=1)] = None
+    role: Literal["admin", "player", "director"] 
+    player_id: Optional[int] = None
+    picture: bytes
 
 class UserInDB(BaseModel):
     hashed_password:str
