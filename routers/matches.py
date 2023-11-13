@@ -18,7 +18,11 @@ templates = Jinja2Templates(directory="templates/match_templates")
 
 # view match details
 @matches_router.get('/view', response_model=Match, tags=['Matches'])
-def view_match(tournament_title: Annotated[str, Query] = None):
+def view_match(search_tournaments: Annotated[str, Form(...)] = None,
+               search_matches: Annotated[str, Form(...)] = None,
+               search_by_date: Annotated[datetime, Form(...)] = None,
+               search_by_location: Annotated[str, Form(...)] = None
+               ):
     pass
 
 
