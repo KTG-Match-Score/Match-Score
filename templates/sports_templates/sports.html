@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tournaments</title>
+    <title>Sports</title>
     <style>
         body {
             background-color: #888888;
@@ -40,15 +40,9 @@
 </head>
 <body>
     <div class="container">
-        <h2>Tournaments:</h2>
+        <h2>Sports:</h2>
 
-        <ul>
-            {% for tournament in tournaments %}
-                <li>
-                    <h3>{{ tournament.title }}</h3>
-                </li>
-            {% endfor %}
-        </ul>
+        <h2>{% for sport in sports %}{{ sport.name|capitalize }}{% if not loop.last %} {% endif %}{% endfor %}</h2>
     </div>
 
 </body>

@@ -5,8 +5,8 @@ from models.tournament import Tournament
 def get_tournaments(sport_name: str = None, tournament_name: str = None):
     query = ""
     params = []
-    # sport_name = "tennis"
-    # tournament_name = "wimbledon"
+    # sport_name = "football"
+    # tournament_name = "wimb"
 
     if sport_name and tournament_name:
         query = ''' With sports as (SELECT * FROM sports WHERE name like ?),
@@ -33,8 +33,11 @@ def get_tournaments(sport_name: str = None, tournament_name: str = None):
                     ORDER BY tournaments.title ASC'''
         params.append(f"%{tournament_name}%")
 
+    else:
+        query = '''SELECT * FROM tournaments'''
+
     tournaments = [Tournament.from_query_result(*row) for row in read_query(query, tuple(params))]
-    
+
     return tournaments
 
 

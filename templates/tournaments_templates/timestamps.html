@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tournaments</title>
+    <title>Timestamp Display</title>
     <style>
         body {
             background-color: #888888;
@@ -40,16 +40,15 @@
 </head>
 <body>
     <div class="container">
-        <h2>Tournaments:</h2>
-
-        <ul>
-            {% for tournament in tournaments %}
-                <li>
-                    <h3>{{ tournament.title }}</h3>
-                </li>
+        <div class="Fc">
+            {% for timestamp_data in timestamps_data %}
+                <a data-testid="{{ loop.index }}__match-calendar-link{% if loop.index == 2 %}-active{% endif %}" class="yc Uc Mc" href="/timestamps?start_timestamp={{ timestamp_data.start_timestamp }}&end_timestamp={{ timestamp_data.end_timestamp }}">
+                    <span>{{ timestamp_data.day }}</span>
+                    <!-- <span class="Kc">{{ timestamp_data.start_timestamp.strftime('%d %b') }}</span> -->
+                </a>
             {% endfor %}
-        </ul>
+        </div>
     </div>
-
 </body>
+</html>
 </html>

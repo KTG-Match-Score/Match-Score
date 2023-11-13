@@ -2,7 +2,6 @@ from pydantic import BaseModel, Field, StringConstraints
 from typing import Optional, Annotated
 from datetime import datetime
 
-print(datetime.now())
 class Tournament(BaseModel):
     id: Optional[Annotated[int, Field(ge=0)]] | None = None
     title: Optional[Annotated[str, StringConstraints(min_length=1, max_length=100)]] | None = None
