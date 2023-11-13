@@ -4,11 +4,11 @@ from mariadb.connections import Connection
 
 def _get_connection() -> Connection:
     return connect(
-        user='Kaloyan_Trifon',
-        password='msKT123=',
-        host='192.168.192.206',
+        user='root',
+        password='7878',
+        host='localhost',
         port=3306,
-        database="MatchScoreTest",
+        database="matchscoretest",
     )
 
 
