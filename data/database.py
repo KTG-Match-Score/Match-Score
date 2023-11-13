@@ -8,7 +8,7 @@ def _get_connection() -> Connection:
         password=os.environ.get("MARIADB_ROOT_PWD"),
         host='localhost',
         port=3306,
-        database="MatchScoreTest",
+        database="matchscoretest",
     )
 
 
