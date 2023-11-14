@@ -8,6 +8,15 @@
 </head>
 <body>
     <h1 style="text-align: center;">MatchScore Registration Form</h1>
+{% if improper_email%}
+<h3 style="text-align: left;">Please input a proper e-mail!</h3>
+{%endif%}
+{% if improper_fullname%}
+<h3 style="text-align: left;">Full name should be at least 4 symbols and not more than 100 symbols!</h3>
+{%endif%}
+{% if email_exists%}
+<h3 style="text-align: left;">The provided email is already registered! Please, provide another e-mail!</h3>
+{%endif%}
 <div id="register-section">
     <h2>Register</h2>
     <form action="/users" method="post">
@@ -27,9 +36,8 @@
         <small>One number, one uppercase and one lowercase letter, one of the special symbols #?!@$%^&*-+=, and at least 8 symbols.</small>
         <br><br>
         <button type="submit">Register</button>
+        <br><br>
     </form>
 </div>
-
-
 </body>
 </html>
