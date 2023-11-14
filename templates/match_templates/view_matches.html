@@ -60,7 +60,7 @@
             {% for match in matches %}
                 {% if match.is_individuals == false %}    
                     <li>
-                        <h3>{{ match.id }}</h3>
+                        <h3>ID: {{ match.id }}</h3>
                         <p>Played on: {{ match.played_on.strftime("%Y-%m-%d %H:%M:%S") }}</p>
                         <p>Individuals: {{ match.is_individuals }}</p>
                         <p>Participants: {{ match.participants[0][0] }} - {{ match.participants[1][0] }}</p>
@@ -69,7 +69,7 @@
                     </li>
                 {% else %}
                     <li>
-                        <h3>{{ match.id }}</h3>
+                        <h3>ID: {{ match.id }}</h3>
                         <p>Played on: {{ match.played_on.strftime("%Y-%m-%d %H:%M:%S") }}</p>
                         <p>Individuals: {{ match.is_individuals }}</p>
                         <p>Participants: {{ match.participants }}</p>

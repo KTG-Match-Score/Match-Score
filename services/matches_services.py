@@ -4,24 +4,31 @@ from data.database import read_query, insert_query, update_query
 from models.match import Match
 
 
-def view_matches(search_by_date : datetime, search_by_location: str, tournament_id: int):
+def view_matches(by_date : str, by_location: str, tournament_id: int):
     query = ''
-    params = [tournament_id]
-
-    if search_by_date and search_by_location:
-        query = ''
-        params.append()
-    elif search_by_date:
-        query = ''
-        params.append()    
-    elif search_by_location:
-        query = ''
-        params.append()
+    if by_date and by_location:
+        query = "SELECT * FROM matches WHERE date(played_on) LIKE "
+        query += f"'%{by_date}%' AND location LIKE '%{by_location}%'"
+        if tournament_id != '':
+            query += f" AND tournament_id LIKE '%{tournament_id}%'"
+    elif by_date:
+        query = "SELECT * FROM matches WHERE date(played_on) LIKE "
+        query += f"'%{by_date}%'"
+        if tournament_id != '':
+            query += f" AND tournament_id LIKE '%{tournament_id}%'"   
+    elif by_location:
+        query = "SELECT * FROM matches WHERE location LIKE "
+        query += f"'%{by_location}%'"
+        if tournament_id != '':
+            query += f" AND tournament_id LIKE '%{tournament_id}%'"
     else:
-        query = 'SELECT * FROM matches WHERE tournament_id = ?'
+        if tournament_id != '':
+            query = f"SELECT * FROM matches WHERE tournament_id LIKE '%{tournament_id}%'"
+        else:
+            query = "SELECT * FROM matches WHERE tournament_id LIKE '%%'"
 
-    matches = [Match.from_query(*row) for row in read_query(query, tuple(params))]
-    
+    matches = [Match.from_query(*row) for row in read_query(query)]
+
     for m in matches:
         m.participants = get_match_participants(m)
     
