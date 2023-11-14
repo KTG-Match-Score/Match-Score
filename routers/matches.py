@@ -17,16 +17,16 @@ matches_router = APIRouter(prefix='/matches')
 templates = Jinja2Templates(directory="templates/match_templates")
 
 # view match details
-@matches_router.get('/', response_model=Match, tags=['Matches'])
+@matches_router.get('/', response_model=list[Match], tags=['Matches'])
 def view_matches(
                 request: Request,
-                search_by_date: Annotated[datetime, Query] = None,
-                search_by_location: Annotated[str, Query] = None,
-                tournament_id: Annotated[int, Query] = 0
+                by_date: Annotated[str, Query] = None,
+                by_location: Annotated[str, Query] = None,
+                tournament_id: Annotated[str, Query] = ''
                ):
-    matches = ms.view_matches(search_by_date, search_by_location, tournament_id)
+    matches = ms.view_matches(by_date, by_location, tournament_id)
 
-    return templates.TemplateResponse("view_match.html", {"request":request, "matches": matches})
+    return templates.TemplateResponse("view_matches.html", {"request":request, "matches": matches})
 
 
 @matches_router.get('/create')
