@@ -1,7 +1,6 @@
 from pydantic import BaseModel, Field, StringConstraints
 from typing import Optional, Annotated, Union
 from datetime import datetime
-from models.match import MatchFormat
 
 class Sport(BaseModel):
     id: Optional[Annotated[int, Field(ge=0)]] | None = None

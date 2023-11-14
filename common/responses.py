@@ -32,15 +32,6 @@ class InternalServerError(Response):
         super().__init__(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-class Locked(Response):
-    def __init__(self, content=''):
-        super().__init__(status_code=status.HTTP_406_NOT_ACCEPTABLE, content=content)
-
-
-class BestReplyExists(Response):
-    def __init__(self, content=''):
-        super().__init__(status_code=status.HTTP_406_NOT_ACCEPTABLE, content=content)
-
 class CONFLICT(Response):
     def __init__(self, content= ''):
         super().__init__(content=content, status_code=status.HTTP_409_CONFLICT)
