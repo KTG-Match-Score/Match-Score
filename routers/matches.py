@@ -17,13 +17,16 @@ matches_router = APIRouter(prefix='/matches')
 templates = Jinja2Templates(directory="templates/match_templates")
 
 # view match details
-@matches_router.get('/view', response_model=Match, tags=['Matches'])
-def view_match(search_tournaments: Annotated[str, Form(...)] = None,
-               search_matches: Annotated[str, Form(...)] = None,
-               search_by_date: Annotated[datetime, Form(...)] = None,
-               search_by_location: Annotated[str, Form(...)] = None
+@matches_router.get('/', response_model=Match, tags=['Matches'])
+def view_matches(
+                request: Request,
+                search_by_date: Annotated[datetime, Query] = None,
+                search_by_location: Annotated[str, Query] = None,
+                tournament_id: Annotated[int, Query] = 0
                ):
-    pass
+    matches = ms.view_matches(search_by_date, search_by_location, tournament_id)
+
+    return templates.TemplateResponse("view_match.html", {"request":request, "matches": matches})
 
 
 @matches_router.get('/create')
@@ -31,15 +34,29 @@ async def create_redirect(request: Request):
     return templates.TemplateResponse("create_match.html", {"request": request})
 
 
+@matches_router.get('/match/{id}')
+async def view_match_by_id(id: int, request: Request):
+
+    match = ms.view_single_match(id)
+
+    if not match:
+        return templates.TemplateResponse("return_not_found.html", {
+                                "request": request,
+                                "content": "Not Found"
+                                },
+                            status_code=status.HTTP_404_NOT_FOUND)
+
+    return templates.TemplateResponse("view_match.html", {"request": request, "match": match})
+
+
 @matches_router.post('/create', tags=['Matches'])
 async def create_match(
                 request: Request,
                 format: Annotated[str, Form(...)], 
                 is_individuals: Annotated[bool, Form(...)], 
-                location: Annotated[str, Form(...)], 
-                sport: str | None = None,
+                location: Annotated[str, Form(...)],
                 participants: list = [],
-                tournament: Annotated[int | str, Form(...)] = 0, 
+                tournament: Annotated[int, Form(...)] = 0, 
                 year: int = Form(),
                 month: int = Form(),
                 day: int = Form(),
@@ -54,7 +71,7 @@ async def create_match(
     if played_on_date < datetime.now():
         return templates.TemplateResponse(
                             "return_create_match_bad_request.html", {
-                                "request":request,
+                                "request": request,
                                 "content": "You can't create an event in the past"
                                 },
                             status_code=status.HTTP_400_BAD_REQUEST
@@ -63,7 +80,7 @@ async def create_match(
                       played_on=played_on_date, 
                       is_individuals=is_individuals, 
                       location=location,
-                      tournament_id=tournament))
+                      tournament_id=tournament), participants[0].split(', '))
     
     return templates.TemplateResponse("create_match.html", {"request": request, "new_match": new_match})
 

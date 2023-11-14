@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>View match</title>
+    <title>Not Found</title>
     <style>
         body {
             background-color: #888888;
@@ -15,6 +15,7 @@
             align-items: center;
             justify-content: center;
             min-height: 100vh;
+            break-after: always;
         }
         .container {
             max-width: 800px;
@@ -53,32 +54,7 @@
     </style>
 </head>
 <body>
-    <div class="container">
-        <h2>Matches:</h2>
-
-        <ul>
-            {% for match in matches %}
-                {% if match.is_individuals == false %}    
-                    <li>
-                        <h3>{{ match.id }}</h3>
-                        <p>Played on: {{ match.played_on.strftime("%Y-%m-%d %H:%M:%S") }}</p>
-                        <p>Individuals: {{ match.is_individuals }}</p>
-                        <p>Participants: {{ match.participants[0][0] }} - {{ match.participants[1][0] }}</p>
-                        <p>Format: {{ match.format }}</p>
-                        <p>Finished: {{ match.finished }}</p>
-                    </li>
-                {% else %}
-                    <li>
-                        <h3>{{ match.id }}</h3>
-                        <p>Played on: {{ match.played_on.strftime("%Y-%m-%d %H:%M:%S") }}</p>
-                        <p>Individuals: {{ match.is_individuals }}</p>
-                        <p>Participants: {{ match.participants }}</p>
-                        <p>Format: {{ match.format }}</p>
-                        <p>Finished: {{ match.finished }}</p>
-                    </li>
-                {% endif %}
-            {% endfor %}
-        </ul>
-    </div>
+    <p>{{ content }}</p><br>
+    
 </body>
 </html>
