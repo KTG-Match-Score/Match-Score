@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MatchScore Account Validation</title>
+</head>
+<body>
+    <h1 style="text-align: center;">MatchScore Account Validation</h1>
+    <div>
+                <form action="/users/validation" method="post">
+                    <h3>We sent a validation code to your email. Please input it in the box below to validate your account</h3>
+                <label for="validation_code">Validation Code:</label>
+                <input type="text" id="validation_code" name="validation_code" required>
+                <br><br>
+                <button type="submit">Validate</button>
+                <br><br>
+            </form>
+            <form action="/users/validationcode" method="get">
+                <button type="submit">Regenerate Code</button>
+                <br><br>
+            </form>
+    </div>
+</body>

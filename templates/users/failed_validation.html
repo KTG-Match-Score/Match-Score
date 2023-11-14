@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MatchScore Revalidation</title>
+</head>
+<body>
+    <h1 style="text-align: center;">MatchScore Account Validation</h1>
+<div>
+            <form action="/users/validation" method="post">
+                <h3>We could not match your validation code. Please try again or regenerate code and check your e-mail for a new validation code</h3>
+            <label for="revalidation_code">Validation Code:</label>
+            <input type="text" id="revalidation_code" name="revalidation_code" required>
+            <br><br>
+            <button type="submit">Validate</button>
+            <br><br>
+        </form>
+        <form action="/users/validationcode" method="get">
+            <button type="submit">Regenerate Code</button>
+            <br><br>
+        </form>
+</div>
+
+</body>
+</html>

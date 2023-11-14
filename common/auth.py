@@ -5,11 +5,12 @@ from fastapi.security import OAuth2PasswordBearer
 import re
 import common.responses as responses
 from passlib.context import CryptContext
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr, constr
 from data.database import read_query
 from datetime import datetime, timedelta
 from jose import JWTError, jwt
 import os
+import random
 
 
 SECRET_KEY = os.environ.get("FORUM_SECRET_KEY")
@@ -31,6 +32,12 @@ class Token(BaseModel):
 class TokenData(BaseModel):
     email: str | None = None
 
+class ProperEmail(BaseModel):
+    email: EmailStr
+
+class ProperFullName(BaseModel):
+    fullname: constr(min_length=4, max_length=100)
+
 def check_password(password: str):
     password_pattern = "^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[=+#?!@$%^&*-]).{8,}$"
     assert re.match(password_pattern, password), 'Password must be at leat 8 characters long, contain upper- and lower-case latin letters, digits and at least one of the special characters #?!@$%^&*-=+'
@@ -46,14 +53,17 @@ def get_password_hash(password):
     return pwd_context.hash(password)
 
 def get_time():
-    return datetime.utcnow()    
+    return datetime.utcnow()  
+
+def generate_six_digit_code():
+    return f"{random.randint(0, 999999):06d}"  
 
 
 def find_user (email:str):
     user_db = read_query("select * from users where email=?",(email,))
     if len(user_db) == 0:
         return
-    id_db, email_db, password_db, fullname_db, role_db, player_id_db, picture_db = user_db[0]
+    id_db, email_db, password_db, fullname_db, role_db, player_id_db, picture_db, *args = user_db[0]
     user = User(id = id_db, 
                 fullname = fullname_db, 
                 email=email_db, 
