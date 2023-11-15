@@ -24,39 +24,27 @@
             background-color: rgba(0, 0, 0, 0.8);
             animation: fade-in 1s ease-in-out;
         }
-        ul {
-            list-style-type: none;
-            padding: 0;
-        }
-        li {
-            margin-bottom: 20px;
-            border-bottom: 1px solid #555555;
-            padding-bottom: 10px;
-        }
-        h2 {text-align: center;}
-        h3 {margin-bottom: 5px;}
-        @keyframes fade-in {from {opacity: 0;} to {opacity: 1;}}
-        .Fc {
+        .timestamp-container {
             display: flex;
             flex-wrap: wrap;
             justify-content: space-around;
         }
-
         .small-box {
             display: flex;
             align-items: center;
             justify-content: center;
             width: 40px;
             height: 40px;
-            background-color: #555555;
             color: #ffffff;
             border-radius: 8px;
             margin: 5px;
             text-decoration: none;
+            cursor: pointer;
+            transition: background-color 0.3s;
         }
 
         .small-box:hover {
-            background-color: #777777;
+            background-color: None;
         }
 
         .expanded-box {
@@ -70,31 +58,41 @@
 
         .show-more-button {
             cursor: pointer;
-            background-color: #555555;
+            background-color: #47095a;
             color: #ffffff;
             border: none;
             border-radius: 8px;
             padding: 5px 10px;
             margin-top: 10px;
+            transition: background-color 0.3s;
         }
 
         .show-more-button:hover {
-            background-color: #777777;
+            background-color: #45a049;
+        }
+
+        @keyframes fade-in {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="Fc">
+        <div class="timestamp-container">
             {% for timestamp_data in timestamps_data[:5] %}
-                <a data-testid="{{ loop.index }}__match-calendar-link{% if loop.index == 2 %}-active{% endif %}" class="small-box" href="/timestamps?start_timestamp={{ timestamp_data.start_timestamp }}&end_timestamp={{ timestamp_data.end_timestamp }}">
+                <a class="small-box" href="/timestamps?start_timestamp={{ timestamp_data.start_timestamp }}&end_timestamp={{ timestamp_data.end_timestamp }}">
                     <span>{{ timestamp_data.day }}</span>
                 </a>
             {% endfor %}
 
             <div class="expanded-box" id="expandedBox">
                 {% for timestamp_data in timestamps_data[5:] %}
-                    <a data-testid="{{ loop.index + 5 }}__match-calendar-link" class="small-box" href="/timestamps?start_timestamp={{ timestamp_data.start_timestamp }}&end_timestamp={{ timestamp_data.end_timestamp }}">
+                    <a class="small-box" href="/timestamps?start_timestamp={{ timestamp_data.start_timestamp }}&end_timestamp={{ timestamp_data.end_timestamp }}">
                         <span>{{ timestamp_data.day }}</span>
                     </a>
                 {% endfor %}
@@ -103,11 +101,14 @@
             <button class="show-more-button" onclick="toggleVisibility('expandedBox')">Show More</button>
         </div>
     </div>
-
     <script>
-        function toggleVisibility(elementId) {
-            var element = document.getElementById(elementId);
-            element.style.display = (element.style.display === 'none' || element.style.display === '') ? 'flex' : 'none';
+        function toggleVisibility(id) {
+            var element = document.getElementById(id);
+            if (element.style.display === "none") {
+                element.style.display = "flex";
+            } else {
+                element.style.display = "none";
+            }
         }
     </script>
 </body>
