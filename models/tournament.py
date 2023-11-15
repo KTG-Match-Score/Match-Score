@@ -24,3 +24,20 @@ class Tournament(BaseModel):
             parent_tournament_id=parent_tournament_id, 
             participant_per_match=participant_per_match
             )
+    
+class MatchesInTournament(BaseModel):
+    id: int 
+    played_on: datetime
+    location: str
+    finished: str
+    participant: str
+    
+    @classmethod
+    def from_query(cls, id, played_on, location, finished, participant):
+        return cls(
+            id=id,
+            played_on=played_on,
+            location=location,
+            finished=finished,
+            participant=participant
+        )

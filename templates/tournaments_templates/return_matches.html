@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tournaments</title>
+    <style>
+        body {
+            background-color: #f0f0f0;
+            color: #333;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 800px;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+            background-color: #fff;
+            animation: fade-in 1s ease-in-out;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #333;
+            color: #fff;
+        }
+        h2 {text-align: center; margin-bottom: 20px;}
+        @keyframes fade-in {from {opacity: 0;} to {opacity: 1;}}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Matches:</h2>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Played On</th>
+                    <th>Location</th>
+                    <th>Finished</th>
+                    <th>Match</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for match in matches %}
+                    <tr>
+                        <td>{{ match.played_on.strftime('%H:%M') }}</td>
+                        <td>{{ match.location }}</td>
+                        <td>{{ match.finished }}</td>
+                        <td>{{ match.participant }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</body>
+</html>
