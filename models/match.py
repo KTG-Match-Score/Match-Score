@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, StringConstraints
 from typing import Optional, Annotated
 from datetime import date, datetime, time
 
@@ -10,17 +10,17 @@ class Match(BaseModel):
     is_individuals: bool = True
     location: str
     tournament_id: Optional[int | None] = None
-    finished: bool = False
+    finished: Annotated[str, StringConstraints(pattern="^(finished|not finished)$")] = 'not finished'
     participants: list = []
 
     @classmethod
-    def from_query(cls, id, format, played_on, is_individuals, location, tournament, finished):
+    def from_query(cls, id, format, played_on, is_individuals, location, tournament_id, finished):
         return cls(
             id=id,
             format=format,
             played_on=played_on,
             is_individuals=is_individuals,
             location=location,
-            tournament=tournament,
+            tournament_id=tournament_id,
             finished=finished
         )

@@ -10,44 +10,57 @@ def view_matches(by_date : str, by_location: str, tournament_id: int):
         query = "SELECT * FROM matches WHERE date(played_on) LIKE "
         query += f"'%{by_date}%' AND location LIKE '%{by_location}%'"
         if tournament_id != '':
-            query += f" AND tournament_id LIKE '%{tournament_id}%'"
+            query += f" AND tournament_id = {tournament_id}"
     elif by_date:
         query = "SELECT * FROM matches WHERE date(played_on) LIKE "
         query += f"'%{by_date}%'"
         if tournament_id != '':
-            query += f" AND tournament_id LIKE '%{tournament_id}%'"   
+            query += f" AND tournament_id = {tournament_id}"   
     elif by_location:
         query = "SELECT * FROM matches WHERE location LIKE "
         query += f"'%{by_location}%'"
         if tournament_id != '':
-            query += f" AND tournament_id LIKE '%{tournament_id}%'"
+            query += f" AND tournament_id = {tournament_id}"
     else:
-        if tournament_id != '':
-            query = f"SELECT * FROM matches WHERE tournament_id LIKE '%{tournament_id}%'"
+        if tournament_id != 0:
+            query = f"SELECT * FROM matches WHERE tournament_id = {tournament_id}"
         else:
-            query = "SELECT * FROM matches WHERE tournament_id LIKE '%%'"
+            query = "SELECT * FROM matches"
 
     matches = [Match.from_query(*row) for row in read_query(query)]
 
     for m in matches:
-        m.participants = get_match_participants(m)
-    
+        if not m.is_individuals:
+            m.participants = [club for club in read_query(
+                f'''SELECT name, country_code FROM sports_clubs s
+                JOIN matches_has_sports_clubs m 
+                ON m.sports_clubs_id=s.id WHERE m.matches_id = {m.id};''')]
+        else:
+            m.participants = next(iter(*read_query(
+            f'''SELECT COUNT(*) FROM matches_has_players WHERE matches_id = {m.id};''')),
+            'No participants added yet')
+
     return matches
 
-def get_match_participants(match: Match):
-    if not match.is_individuals:
-            return [club for club in read_query('''
-                                SELECT name, country_code FROM sports_clubs s
-                                JOIN matches_has_sports_clubs m 
-                                ON m.sports_clubs_id=s.id WHERE m.matches_id = ?;''', 
-                                (match.id, ))]
-    return next(iter(*read_query('''SELECT COUNT(*) FROM matches_has_players WHERE matches_id = ?;''',
-                       (match.id,))), 'No participants added yet')
-
-
 def view_single_match(id: int):
-    
-    return
+    match: Match = next((Match.from_query(*row) 
+                        for row in read_query(f'SELECT * FROM matches WHERE id = {id}'))
+                        , None)
+    if not match: return
+
+    if not match.is_individuals:
+        match.participants = [club for club in read_query(
+            f'''SELECT name, country_code FROM sports_clubs s
+            JOIN matches_has_sports_clubs m 
+            ON m.sports_clubs_id=s.id WHERE m.matches_id = {match.id}''')]
+    else:
+        match.participants = [p for p in read_query(
+            f'''SELECT p.id, p.full_name, p.sports_club_id, p.country_code 
+            FROM players p
+            JOIN matches_has_players mp ON p.id = mp.players_id
+            AND mp.matches_id = {match.id}''')]
+
+    return match
 
 
 def create_new_match(match: Match,
@@ -69,15 +82,14 @@ def create_new_match(match: Match,
 
 def add_participants(match: Match, participants: list): 
     if match.is_individuals:
-        query = '''INSERT INTO matches_has_players(matches_id, players_id, result, place) 
-                              VALUES''' 
+        query = '''INSERT INTO matches_has_players
+                            (matches_id, players_id, result, place) VALUES''' 
         for player in participants:
             query += f'({match.id}, {player[0]}, NULL, 0),'
         query = query[:-1]
     else:
         query = '''INSERT INTO matches_has_sports_clubs
-                              (matches_id, sports_clubs_id, result, place, is_home)
-                              VALUES'''
+                            (matches_id, sports_clubs_id, result, place, is_home) VALUES'''
         home_team_id = participants[0][0]
         guest_team_id = participants[1][0]
         query += f'({match.id}, {home_team_id}, NULL, 0, 1),\
@@ -90,6 +102,10 @@ def add_participants(match: Match, participants: list):
 
 
 def edit_match_details(match: Match):
+    pass
+
+
+def remove_old_participants(participants: list, match_id: int):
     pass
 
 def add_match_result(match: Match):
