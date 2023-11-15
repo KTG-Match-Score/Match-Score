@@ -54,26 +54,29 @@
 </head>
 <body>
     <div class="container">
-        <!-- <h2>Matches:</h2> -->
+        <!-- <h2>Match:</h2> -->
 
         <ul>
-            {% for match in matches %}
-                {% if match.is_individuals == false %}    
-                    <li>
-                        <a style="color: aqua;"
-                        href="/matches/match/{{match.id}}">{{ match.participants[0][0] }} - {{ match.participants[1][0] }}</a>
-                        <h4>{{ match.played_on.strftime("%Y-%m-%d  %H:%M") }}</h4>
-                        <p>{{ match.finished }}</p>
-                    </li>
-                    {% else %}
-                    <li>
-                        <h4>{{ match.played_on.strftime("%Y-%m-%d  %H:%M") }}</h4>
-                        <p>Participants: {{ match.participants }}</p>
-                        <p>{{ match.finished }}</p>
-                        <a style="color: aqua;" href="/matches/match/{{match.id}}">Match details</a>
-                    </li>
-                {% endif %}
-            {% endfor %}
+        {% if match.is_individuals == false %}    
+            <li>
+                <h3>{{ match.participants[0][0] }} - {{ match.participants[1][0] }}</h3>
+                <h4>{{ match.played_on.strftime("%Y-%m-%d  %H:%M") }}</h4>
+                <h3>{{ match.location }}</h3>
+                <p>{{ match.finished }}</p>
+            </li>
+        {% else %}
+            <li>
+                <h4>{{ match.played_on.strftime("%Y-%m-%d  %H:%M") }}</h4>
+                <h3>{{ match.location }}</h3>
+                <h3>Participants list: </h3>
+                {% for player in match.participants %}
+                <li>
+                    {{ player[1] }}, {{ player[-1] }}
+                </li>
+                {% endfor %}
+                <h4>{{ match.finished }}</h4>
+            </li>
+        {% endif %}
         </ul>
     </div>
 </body>
