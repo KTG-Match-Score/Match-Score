@@ -11,9 +11,10 @@ class Tournament(BaseModel):
     end_date: Optional[datetime] | None = None
     parent_tournament_id: Optional[Annotated[int, Field(ge=0)]] | None = None
     participants_per_match: Optional[Annotated[int, Field(ge=2)]] | None = None
+    is_individuals: bool | None = None
 
     @classmethod
-    def from_query_result(cls, id, title, format, prize_type, start_date, end_date, parent_tournament_id, participant_per_match):
+    def from_query_result(cls, id, title, format, prize_type, start_date, end_date, parent_tournament_id, participant_per_match, is_individuals):
         return cls(
             id=id, 
             title=title, 
@@ -22,22 +23,33 @@ class Tournament(BaseModel):
             start_date=start_date, 
             end_date=end_date, 
             parent_tournament_id=parent_tournament_id, 
-            participant_per_match=participant_per_match
+            participant_per_match=participant_per_match,
+            is_individuals=is_individuals
             )
     
 class MatchesInTournament(BaseModel):
-    id: int 
-    played_on: datetime
-    location: str
-    finished: str
-    participant: str
-    
+    tournament_id: int #
+    tournament_title: str #
+    match_id: int #
+    format: str #
+    played_on: datetime #
+    location: str #
+    is_individuals: int #
+    finished: str #
+    participant: str #
+    result: str | None #
+
     @classmethod
-    def from_query(cls, id, played_on, location, finished, participant):
+    def from_query(cls, tournament_id, tournament_title, match_id, format, played_on, location, is_individuals, finished, participant, result):
         return cls(
-            id=id,
+            tournament_id=tournament_id,
+            tournament_title=tournament_title,
+            match_id=match_id,
+            format=format,
             played_on=played_on,
             location=location,
+            is_individuals=is_individuals,
             finished=finished,
-            participant=participant
+            participant=participant,
+            result=result
         )

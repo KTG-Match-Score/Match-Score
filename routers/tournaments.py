@@ -19,13 +19,9 @@ async def view_tournaments(request: Request,
     
     return templates.TemplateResponse("return_tournaments.html", {"request": request, "tournaments": tournaments})
 
-@tournaments_router.get("/{title}", status_code=status.HTTP_200_OK, response_model=list[MatchesInTournament])
-async def view_tournament_by_day(request: Request,
-                                 title: Annotated[str , Path(min_length=1, max_length=100)],
-                                 day: date):
-    if day:
-        matches = tournaments_services.get_matches_from_tournament_by_day(title, day)
-    else:
-        matches = tournaments_services.get_matches_from_tournament_by_day(title)
+@tournaments_router.get("/{date}", status_code=status.HTTP_200_OK, response_model=list[MatchesInTournament])
+async def view_tournaments_by_date(request: Request,
+                                   date: date):
+    tournaments_matches = tournaments_services.get_tournaments_by_date(date)
 
-    return templates.TemplateResponse("return_matches.html", {"request": request, "matches": matches})
+    return templates.TemplateResponse("return_tournaments_by_date.html", {"request": request, "tournaments_matches": tournaments_matches})
