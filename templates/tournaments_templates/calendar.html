@@ -118,7 +118,7 @@
 
                 var smallBox = document.createElement("a");
                 smallBox.classList.add("small-box");
-                smallBox.href = "/tournaments/" + formattedDate;
+                smallBox.href = "/timestamps?selected_timestamp=" + formattedDate;
                 smallBox.textContent = dayName + " " + day.getDate() + " " + getMonthName(day);
 
                 daysContainer.appendChild(smallBox);
