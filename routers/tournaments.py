@@ -24,4 +24,6 @@ async def view_tournaments_by_date(request: Request,
                                    date: date):
     tournaments_matches = tournaments_services.get_tournaments_by_date(date)
 
+    if tournaments_matches == {}:
+        return templates.TemplateResponse("return_no_tournaments_by_date.html", {"request": request})
     return templates.TemplateResponse("return_tournaments_by_date.html", {"request": request, "tournaments_matches": tournaments_matches})
