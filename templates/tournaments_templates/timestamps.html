@@ -23,7 +23,7 @@
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
             background-color: rgba(0, 0, 0, 0.8);
             animation: fade-in 1s ease-in-out;
-            position: relative; /* Make container relative for absolute positioning */
+            position: relative;
         }
         .timestamp-container {
             display: flex;
@@ -59,10 +59,10 @@
 
         .calendar-trigger {
             position: absolute;
-            top: 5px; /* Adjust the top position as needed */
-            right: 5px; /* Adjust the right position as needed */
+            top: 5px; 
+            right: 5px;
             cursor: pointer;
-            z-index: 1; /* Ensure the button is above other elements */
+            z-index: 1;
         }
 
         @keyframes fade-in {
@@ -79,7 +79,6 @@
 <body>
     <div class="container">
         <div class="timestamp-container" id="timestampContainer">
-            <!-- Dates will be dynamically generated here -->
         </div>
         <div class="calendar-trigger" id="match-calendar-dp-trigger">
             <img alt="calendar" loading="lazy" width="18" height="18" decoding="async" data-nimg="1" src="https://www.livescore.com/ls-web-assets/svgs/common/calendar-62a86ad26c51fe49ea1c6abb202a15b4.svg" style="color: transparent;">
@@ -92,21 +91,17 @@
                 enableTime: false,
                 dateFormat: "Y-m-d",
                 onClose: function (selectedDates, dateStr, instance) {
-                    // Generate small-box elements based on selected date
                     generateDates(dateStr);
                 }
             });
 
-            // Initial generation of small-box elements based on today's date
             generateDates(new Date());
         });
 
-        // Function to generate the dates
         function generateDates(selectedDate) {
             var currentDate = new Date(selectedDate);
             var daysContainer = document.getElementById("timestampContainer");
 
-            // Clear existing small-box elements
             daysContainer.innerHTML = "";
 
             for (var i = -2; i <= 2; i++) {
@@ -125,7 +120,6 @@
             }
         }
 
-        // Function to format the date
         function formatDate(date) {
             var day = date.getDate();
             var month = date.getMonth() + 1;
@@ -134,13 +128,11 @@
             return year + "-" + (month < 10 ? "0" : "") + month + "-" + (day < 10 ? "0" : "") + day;
         }
 
-        // Function to get the day name
         function getDayName(date) {
             var dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
             return dayNames[date.getDay()];
         }
 
-        // Function to get the month name
         function getMonthName(date) {
             var monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
             return monthNames[date.getMonth()];
