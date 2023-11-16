@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bad Request</title>
+    <title>View match results</title>
     <style>
         body {
             background-color: #888888;
@@ -15,7 +15,6 @@
             align-items: center;
             justify-content: center;
             min-height: 100vh;
-            break-after: always;
         }
         .container {
             max-width: 800px;
@@ -54,9 +53,31 @@
     </style>
 </head>
 <body>
-    <p>{{ content }}</p><br>
-    
-    <!-- <a href="/matches/create" class="back-button">Back</a> -->
-    
+    <div class="container">
+        <ul>
+        {% if match.is_individuals == false %}    
+            <li>
+                <h4>{{ match.tournament_name }}</h4>
+                <h3>{{ match.participants[0][0] }} - {{ match.participants[1][0] }}</h3>
+                <h4>{{ match.played_on.strftime("%Y-%m-%d  %H:%M") }}</h4>
+                <h3>{{ match.location }}</h3>
+                <p>{{ match.finished }}</p>
+            </li>
+        {% else %}
+            <li>
+                <h4>{{ match.tournament_name }}</h4>
+                <h4>{{ match.played_on.strftime("%Y-%m-%d  %H:%M") }}</h4>
+                <h3>{{ match.location }}</h3>
+                <h3>Participants list: </h3>
+                {% for player in match.participants %}
+                <li>
+                    {{ player[1] }}, {{ player[-1] }}
+                </li>
+                {% endfor %}
+                <h4>{{ match.finished }}</h4>
+            </li>
+        {% endif %}
+        </ul>
+    </div>
 </body>
 </html>

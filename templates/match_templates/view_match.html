@@ -54,11 +54,10 @@
 </head>
 <body>
     <div class="container">
-        <!-- <h2>Match:</h2> -->
-
         <ul>
         {% if match.is_individuals == false %}    
             <li>
+                <h4>{{ match.tournament_name }}</h4>
                 <h3>{{ match.participants[0][0] }} - {{ match.participants[1][0] }}</h3>
                 <h4>{{ match.played_on.strftime("%Y-%m-%d  %H:%M") }}</h4>
                 <h3>{{ match.location }}</h3>
@@ -66,6 +65,7 @@
             </li>
         {% else %}
             <li>
+                <h4>{{ match.tournament_name }}</h4>
                 <h4>{{ match.played_on.strftime("%Y-%m-%d  %H:%M") }}</h4>
                 <h3>{{ match.location }}</h3>
                 <h3>Participants list: </h3>
