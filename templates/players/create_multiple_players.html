@@ -22,19 +22,20 @@
 </head>
 <body>
     
-    <h1 style="text-align: center;"> MatchScore Add Players to Tournament</h1>
+    <h1 style="text-align: center;"> MatchScore Add Players</h1>
     <br><br><br>
     <div class="container">
         <form id="searchForm" method="post" action="/players/creation">
             <input type="text" name="player_name" id="player_name_input" {{ 'disabled' if player_names|length >= max_players }}>
             <input type="hidden" name="player_sport" id="sport_input" value="{{ player_sport }}">
-            <input type="hidden" name="max_players" id="max_players_input" value="{{ max_players }}">
-            <input type="hidden" name="tournament_id" id="tournament_id_input" value="{{ tournament_id }}">
-            <input type="hidden" name="manual" id="manual" value="0">
+            <input type="hidden" name="max_players" id="max_players_input" value="{{ max_players if max_players is not none else '' }}">
+            <input type="hidden" name="tournament_id" id="tournament_id_input" value="{{ tournament_id if tournament_id is not none else ''}}">
+            <input type="hidden" name="sports_club_id" id="sports_club_id_input" value="{{ sports_club_id if sports_club_id is not none else '' }}">
+            <input type="hidden" name="manual" id="manual" value=0>
             <input type="hidden" name="added_players" id="search_results_input" >
             <div class="buttons-container">
                 <button type="submit" class="button" onclick="prepareSearchResultsForSubmission('/players/creation', 0);">Search Player</button>
-                <button type="submit" class="button" onclick="prepareSearchResultsForSubmission('/players', 1);">Create Manually</button>
+                <button type="submit" class="button" onclick="prepareSearchResultsForSubmission('/players/createsingletemplate', 1);">Create Manually</button>
                 <button type="submit" class="button" onclick="prepareSearchResultsForSubmission('/players', 0);">Create Automatically</button>
                 </div>
             </form>

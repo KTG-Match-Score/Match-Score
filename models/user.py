@@ -13,7 +13,3 @@ class User(BaseModel):
     role: Literal["admin", "player", "director", "club_manager"] 
     player_id: Optional[int] = None
     picture: bytes
-
-class UserInDB(BaseModel):
-    hashed_password:str
-    
