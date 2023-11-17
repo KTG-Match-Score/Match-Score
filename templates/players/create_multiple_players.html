@@ -37,6 +37,7 @@
                 <button type="submit" class="button" onclick="prepareSearchResultsForSubmission('/players/creation', 0);">Search Player</button>
                 <button type="submit" class="button" onclick="prepareSearchResultsForSubmission('/players/createsingletemplate', 1);">Create Manually</button>
                 <button type="submit" class="button" onclick="prepareSearchResultsForSubmission('/players', 0);">Create Automatically</button>
+                <button type="button" class="button" id="createTournamentBtn">Create Tournament</button>
                 </div>
             </form>
             <div id="search_results" style="display:none;">
@@ -95,6 +96,51 @@
                 alert("Player with this name was already added");
             }
         });
+
+        document.getElementById("createTournamentBtn").addEventListener("click", submitTournamentData);
+
+        function submitTournamentData() {
+            var addedPlayers = document.getElementById("added_players_list").getElementsByTagName("li").length;
+            var maxPlayers = parseInt(document.getElementById("max_players_input").value, 10);
+            var warningMessageDiv = document.getElementById("warningMessage");
+            
+            if (addedPlayers !== maxPlayers) {
+                warningMessageDiv.style.display = 'block';
+                warningMessageDiv.textContent = "Not sufficient number of players added";
+                return;
+            }
+        
+            var addedPlayersData = [];
+            var playerElements = document.getElementById("added_players_list").getElementsByTagName("li");
+            for (var i = 0; i < playerElements.length; i++) {
+                addedPlayersData.push(playerElements[i].childNodes[0].textContent.trim());
+            }
+        
+            var form = document.createElement("form");
+            form.setAttribute("method", "post");
+            form.setAttribute("action", "/post/players/tournament");
+        
+            var playersField = document.createElement("input");
+            playersField.setAttribute("type", "hidden");
+            playersField.setAttribute("name", "players");
+            playersField.setAttribute("value", JSON.stringify(addedPlayersData));
+            form.appendChild(playersField);
+        
+            var tournamentIdField = document.createElement("input");
+            tournamentIdField.setAttribute("type", "hidden");
+            tournamentIdField.setAttribute("name", "tournament_id");
+            tournamentIdField.setAttribute("value", document.getElementById("tournament_id_input").value);
+            form.appendChild(tournamentIdField);
+
+            var playerSportField = document.createElement("input");
+            playerSportField.setAttribute("type", "hidden");
+            playerSportField.setAttribute("name", "player_sport");
+            playerSportField.setAttribute("value", document.getElementById("sport_input").value);
+            form.appendChild(playerSportField);
+        
+            document.body.appendChild(form);
+            form.submit();
+        }
         
         function checkAndSetButtonStates() {
             var maxPlayers = parseInt(document.getElementById("max_players_input").value, 10);

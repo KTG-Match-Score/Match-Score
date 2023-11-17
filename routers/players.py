@@ -22,7 +22,7 @@ templates = Jinja2Templates(directory="templates/players")
 async def create_player(
     request: Request,
     added_players: Optional[str] = Form(None),
-    max_players: Optional[int] = Form(None),
+    max_players: Optional[int] = Form(1000000),
     tournament_id: Optional[int] = Form(None),
     player_name: str = Form(...),
     player_sport: str = Form(...),
@@ -95,7 +95,7 @@ async def create_player(
 async def show_player(
     request: Request,
     added_players: Optional[str] = Form(None),
-    max_players: Optional[int] = Form(None),
+    max_players: Optional[int] = Form(1000000),
     tournament_id: Optional[int] = Form(None),
     player_name: str = Form(...),
     player_sport: str = Form(...),
@@ -113,7 +113,7 @@ async def show_player(
             user = auth.refresh_access_token(access_token, refresh_token)
             tokens = auth.token_response(user)
         except:
-            RedirectResponse(url='/', status_code=303)
+            return RedirectResponse(url='/', status_code=303)
     players = await players_services.find_player(player_name, player_sport)
     if added_players:
         added_players_lst = json.loads(added_players)
@@ -177,7 +177,7 @@ async def show_invalid_credntials(request: Request, param: Optional[str] = Query
             user = auth.refresh_access_token(access_token, refresh_token)
             tokens = auth.token_response(user)
         except:
-            RedirectResponse(url='/', status_code=303)
+            return RedirectResponse(url='/', status_code=303)
     if param:
         response =  templates.TemplateResponse("invalid_credentials.html", context={
             "request": request, f"{param}": True})
@@ -197,7 +197,7 @@ async def show_invalid_credntials(request: Request, param: Optional[str] = Query
 @players_router.post('/createmultipletemplate')
 async def get_create_multiple_players(
     request: Request,
-    max_players: Optional[int] = Form(None),
+    max_players: Optional[int] = Form(1000000),
     tournament_id: Optional[int] = Form(None),
     player_sport: Optional[str] = Form(None),
     sports_club_id: Optional[int] = Form(None)
@@ -212,7 +212,7 @@ async def get_create_multiple_players(
             user = auth.refresh_access_token(access_token, refresh_token)
             tokens = auth.token_response(user)
         except:
-            RedirectResponse(url='/', status_code=303)
+            return RedirectResponse(url='/', status_code=303)
     if user.role == "player":
         return RedirectResponse(url="/players/invalidcredentials?param=create_players", status_code=303)  
     if user.role =="director":
@@ -246,7 +246,7 @@ async def get_create_multiple_players(
 async def get_create_single_player_template(
     request: Request,
     player_name: Optional[str]= Form(None),
-    max_players: Optional[int] = Form(None),
+    max_players: Optional[int] = Form(1000000),
     tournament_id: Optional[int] = Form(None),
     player_sport: Optional[str] = Form(None),
     sports_club_id: Optional[int] = Form(None)
@@ -261,7 +261,7 @@ async def get_create_single_player_template(
             user = auth.refresh_access_token(access_token, refresh_token)
             tokens = auth.token_response(user)
         except:
-            RedirectResponse(url='/', status_code=303)
+            return RedirectResponse(url='/', status_code=303)
     if user.role == "player":
         return RedirectResponse(url="/players/invalidcredentials?param=create_players", status_code=303)  
     if user.role =="director":
@@ -295,5 +295,52 @@ async def get_create_single_player_template(
 async def get_test_template(request: Request):
     return templates.TemplateResponse("test_create_template.html", context={
             "request": request})
+
+@players_router.post('/tournament')
+async def add_players_to_tornament(
+    request: Request,
+    players: str = Form(...),
+    tournament_id: int = Form(...),
+    player_sport: str = Form(...)
+):
+    access_token = request.cookies.get("access_token")
+    refresh_token = request.cookies.get("refresh_token")
+    tokens = {"access_token": access_token, "refresh_token": refresh_token}
+    try:
+        user = await auth.get_current_user(access_token)
+    except:
+        try:
+            user = auth.refresh_access_token(access_token, refresh_token)
+            tokens = auth.token_response(user)
+        except:
+            return RedirectResponse(url='/', status_code=303)
+    tournament = await players_services.check_tournament_exists(tournament_id)
+    if not players or not tournament: #THIS PART NEEDS TO BE UPDATED TO GO TOWARDS CREATE TOURNAMENT!!!!
+        response = templates.TemplateResponse("test_create_template.html", context={
+            "request": request})
+        response.set_cookie(key="access_token",
+                        value=tokens["access_token"], httponly=True)
+        response.set_cookie(key="refresh_token",
+                        value=tokens["refresh_token"], httponly=True)
+        return response
+    players_lst = json.loads(players)
+    await players_services.post_players_to_tournament(players_lst, tournament_id)
+    contact_details = await players_services.find_user(player, player_sport)
+    for player in players_lst:
+        email, name = [(contact[1], contact[2]) for contact in contact_details if contact[0] == player][0]
+        send_email.send_email(email, name,
+                            tournament_participation=tournament[1])
+    response = templates.TemplateResponse("not_implemented", context={"request": request})
+    response.set_cookie(key="access_token",
+                        value=tokens["access_token"], httponly=True)
+    response.set_cookie(key="refresh_token",
+                        value=tokens["refresh_token"], httponly=True)
+    return response    
+    
+    
+    
+    
+            
+    
     
         
