@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>View Tournaments by Date</title>
+    <style>
+        body {
+            background-color: #888888;
+            color: #ffffff;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 800px;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+            background-color: rgba(0, 0, 0, 0.8);
+            animation: fade-in 1s ease-in-out;
+        }
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        li {
+            margin-bottom: 20px;
+            border-bottom: 1px solid #555555;
+            padding-bottom: 10px;
+        }
+        h2 {
+            text-align: center;
+        }
+        h3 {
+            margin-bottom: 5px;
+        }
+        p {
+            margin: 5px 0;
+        }
+        @keyframes fade-in {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+        button {
+            background-color: #47095a;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        {% for tournament_id, tournament_info in tournaments_matches.items() %}
+            <h2>{{ tournament_info['tournament_title'] }}</h2>
+
+            <ul>
+                {% for match_id, match_info in tournament_info['matches'].items() %}
+                    <li>
+                        {% if match_info['participants'] %}
+                            {% for participant, result in match_info['participants'].items() %}
+                                {% if not participant %}
+                                    <p>Players: None</p>
+                                {% else %}
+                                    <p>{{ participant }} {{ result or '-' }}</p>
+                                {% endif %}
+                            {% endfor %}
+                        {% else %}
+                            <p>No participants yet</p>
+                        {% endif %}
+                        <p>Time: {{ match_info['played_on'] }}</p>
+                        <p>Location: {{ match_info['location'] }}</p>
+                        <p>Finished: {{ match_info['finished'] }}</p>
+
+                        <form action="/matches/match/{{ match_id }}" method="get">
+                            <button type="submit">View Match Details</button>
+                        </form>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% endfor %}
+    </div>
+</body>
+</html>

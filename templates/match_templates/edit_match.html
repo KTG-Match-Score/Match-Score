@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit match details</title>
+    <style>
+        body {
+            background-color: #888888;
+            color: #ffffff;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 800px;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+            background-color: rgba(0, 0, 0, 0.8);
+            animation: fade-in 1s ease-in-out;
+            
+        }
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        li {
+            margin-bottom: 20px;
+            border-bottom: 1px solid #555555;
+            padding-bottom: 10px;
+        }
+        h2 {
+            text-align: center;
+        }
+        h3 {
+            margin-bottom: 5px;
+        }
+        p {
+            margin: 5px 0;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        label {
+            margin-bottom: 5px;
+        }
+        select,
+        
+        input,
+        textarea {
+            margin-bottom: 10px;
+            padding: 8px;
+            border: 1px solid #555555;
+            border-radius: 4px;
+            background-color: rgb(185, 185, 185);
+            color: #ffffff;
+        }
+        button {
+            padding: 10px;
+            border: none;
+            border-radius: 4px;
+            background-color: #4CAF50;
+            color: #ffffff;
+            cursor: pointer;
+        }
+        @keyframes fade-in {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <form action="/matches/edit/{{match.id}}" method="POST" id="editMatchForm">
+        <div class="container">                
+            <label for="new_year">Edit year</label>  
+            <input type="datetime" name="new_year" id="new_year" value="{{match.played_on.year}}">
+            <label for="new_month">month</label>  
+            <input type="datetime" name="new_month" id="new_month" value="{{match.played_on.month}}">
+            <label for="new_day">day</label>  
+            <input type="datetime" name="new_day" id="new_day" value="{{match.played_on.day}}"><br>
+            <label for="new_hour">Edit hour</label>  
+            <input type="datetime" name="new_hour" id="new_hour" value="{{match.played_on.hour}}">
+            <label for="new_minute">minutes</label>  
+            <input type="datetime" name="new_minute" id="new_minute" value="{{match.played_on.minute}}"><br>
+        
+        
+            <!-- <h4>Current participants:</h4>
+            {% for player in match.participants %}
+                <li>
+                   {{ player[1] }}, {{ player[-1] }}
+                </li>
+            {% endfor %} -->
+            <div id="new_participants">
+                <h4>Participants:</h4>
+                <div id="new_participants">
+                    <!-- Existing participants displayed here -->
+                    {% for player in match.participants %}
+                        <div>
+                            <input type="text" name="participants[]" value="{{ player }}" readonly>
+                            <button type="button" class="removeParticipant">Remove player</button>
+                        </div>
+                    {% endfor %}
+                </div>
+                <button type="button" id="addParticipant">Add player</button>
+            </div>
+        
+            <label for="new_format">Edit match format</label>
+            <select name="new_format" id="new_format" value="{{match.format}}">
+                <option value="first finisher">First finisher</option>
+                <option value="time limited">Time limited</option>
+                <option value="score limited">Score limited</option>
+            </select>
+          
+            <label for="new_location">Location</label>
+            <input type="text" id="new_location" name="new_location" value="{{match.location}}" required>
+            
+            <label for="new_is_individuals" hidden>Individuals:</label>
+            <select name="new_is_individuals" id="new_is_individuals" >
+                <option value="true">Individuals</option>
+                <option value="false">Team</option>
+            </select>
+        </div>
+        <button type="submit">Edit Match</button>      
+    </form>
+    <script>
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const addParticipantBtn = document.getElementById('addParticipant');
+        const participantsList = document.getElementById('participantsList');
+    
+        addParticipantBtn.addEventListener('click', function () {
+            const participantDiv = document.createElement('div');
+            participantDiv.innerHTML = `
+                <input type="text" name="participants[]" placeholder="New Participant">
+                <button type="button" class="removeParticipant">-</button>
+            `;
+            participantsList.appendChild(participantDiv);
+        });
+    
+        participantsList.addEventListener('click', function (event) {
+            if (event.target.classList.contains('removeParticipant')) {
+                event.target.parentElement.remove();
+            }
+        });
+    
+        const editMatchForm = document.getElementById('editMatchForm');
+        editMatchForm.addEventListener('submit', function () {
+            const participantInputs = participantsList.querySelectorAll('input[name="participants[]"]');
+            // You can process and submit the participant data here before submitting the form
+            // For example, you can collect the participant names from the inputs
+            const participantNames = Array.from(participantInputs).map(input => input.value);
+            console.log('Participants:', participantNames);
+        });
+    });
+    </script>
+</body>
+</html>
