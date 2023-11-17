@@ -21,12 +21,12 @@ templates = Jinja2Templates(directory="templates/players")
 @players_router.post('/')
 async def create_player(
     request: Request,
-    added_players: str = Form(None),
+    added_players: Optional[str] = Form(None),
     max_players: Optional[int] = Form(None),
     tournament_id: Optional[int] = Form(None),
     player_name: str = Form(...),
     player_sport: str = Form(...),
-    sports_club:Optional[str] = Form(None),
+    sports_club_id: Optional[int] = Form(None),
     country: Optional[str] = Form(None),
     manual: Optional[int] = Form(None)
 ):
@@ -40,8 +40,11 @@ async def create_player(
             user = auth.refresh_access_token(access_token, refresh_token)
             tokens = auth.token_response(user)
         except:
-            RedirectResponse(url='/', status_code=303)
-    added_players_lst = json.loads(added_players)
+            RedirectResponse(url='/', status_code=303)       
+    if added_players:    
+        added_players_lst = json.loads(added_players)
+    else:
+        added_players_lst = []
     if user.role == "player":
         return RedirectResponse(url="/players/invalidcredentials?param=create_players", status_code=303)  
     if user.role =="director":
@@ -52,30 +55,31 @@ async def create_player(
             if not tournament_exists:
                 return RedirectResponse(url="/players/invalidcredentials?param=invalid_director", status_code=303) 
     if user.role =="club_manager":
-        if not sports_club:
+        if not sports_club_id:
            return RedirectResponse(url="/players/invalidcredentials?param=create_players", status_code=303) 
         else:
-            sports_club_exists = await users_services.check_club_manager(sports_club, user.id)
+            sports_club_exists = await users_services.check_club_manager(sports_club_id, user.id)
             if not sports_club_exists:
                 return RedirectResponse(url="/players/invalidcredentials?param=invalid_manager", status_code=303)
          
-    created = await players_services.register_player(player_name, player_sport, sports_club, country)
+    created = await players_services.register_player(player_name, player_sport, sports_club_id, country)
     if created:
-        if added_players is not None and tournament_id is not None:
-            added_players_lst.append(player_name)
-            response = templates.TemplateResponse("create_multiple_players.html", context={
-            "request": request, 
-            "max_players": max_players,  
-            "player_sport": player_sport,
-            "added_players": added_players_lst,
-            "tournament_id": tournament_id})
-            response.set_cookie(key="access_token",
-                        value=tokens["access_token"], httponly=True)
-            response.set_cookie(key="refresh_token",
-                        value=tokens["refresh_token"], httponly=True)
-            return response
+        added_players_lst.append(player_name)
+        response = templates.TemplateResponse("create_multiple_players.html", context={
+        "request": request,
+        "player_name": player_name, 
+        "max_players": max_players,  
+        "player_sport": player_sport,
+        "added_players": added_players_lst,
+        "tournament_id": tournament_id})
+        response.set_cookie(key="access_token",
+                    value=tokens["access_token"], httponly=True)
+        response.set_cookie(key="refresh_token",
+                    value=tokens["refresh_token"], httponly=True)
+        return response
     response = templates.TemplateResponse("create_multiple_players.html", context={
             "request": request, 
+            "player_name": player_name,
             "max_players": max_players, 
             "player_sport": player_sport, 
             "no_player": "Such player already exists! Try search!", 
@@ -89,12 +93,15 @@ async def create_player(
         
 @players_router.post('/creation')
 async def show_player(
-    request: Request, 
-    max_players: int = Form(...),
+    request: Request,
+    added_players: Optional[str] = Form(None),
+    max_players: Optional[int] = Form(None),
+    tournament_id: Optional[int] = Form(None),
     player_name: str = Form(...),
     player_sport: str = Form(...),
-    added_players: str = Form(...),
-    tournament_id: int = Form(...)
+    sports_club_id: Optional[int] = Form(None),
+    country: Optional[str] = Form(None),
+    manual: Optional[int] = Form(None)
     ):
     access_token = request.cookies.get("access_token")
     refresh_token = request.cookies.get("refresh_token")
@@ -108,15 +115,20 @@ async def show_player(
         except:
             RedirectResponse(url='/', status_code=303)
     players = await players_services.find_player(player_name, player_sport)
-    added_players_lst = json.loads(added_players)
+    if added_players:
+        added_players_lst = json.loads(added_players)
+    else:
+        added_players_lst=[]
     if not players:
         response =  templates.TemplateResponse("create_multiple_players.html", context={
             "request": request, 
+            "player_name": player_name,
             "max_players": max_players, 
             "player_sport": player_sport, 
             "no_player": "No such player", 
             "added_players": added_players_lst,
-            "tournament_id": tournament_id})
+            "tournament_id": tournament_id,
+            "sports_club_id": sports_club_id})
         response.set_cookie(key="access_token",
                         value=tokens["access_token"], httponly=True)
         response.set_cookie(key="refresh_token",
@@ -140,11 +152,13 @@ async def show_player(
         "create_multiple_players.html", 
         context={
             "request": request, 
+            "player_name": player_name,
             "max_players": max_players, 
             "player_sport": player_sport, 
             "post_players": post_players,
             "added_players": added_players_lst,
-            "tournament_id": tournament_id})
+            "tournament_id": tournament_id,
+            "sports_club_id": sports_club_id})
     response.set_cookie(key="access_token",
                         value=tokens["access_token"], httponly=True)
     response.set_cookie(key="refresh_token",
@@ -180,13 +194,14 @@ async def show_invalid_credntials(request: Request, param: Optional[str] = Query
                         value=tokens["refresh_token"], httponly=True)
     return response
 
-@players_router.get('/createmultipletemplate')
+@players_router.post('/createmultipletemplate')
 async def get_create_multiple_players(
     request: Request,
-    max_players: int = Query(),
-    player_sport: str = Query(),
-    tournament_id: int = Query()
-    ):
+    max_players: Optional[int] = Form(None),
+    tournament_id: Optional[int] = Form(None),
+    player_sport: Optional[str] = Form(None),
+    sports_club_id: Optional[int] = Form(None)
+):
     access_token = request.cookies.get("access_token")
     refresh_token = request.cookies.get("refresh_token")
     tokens = {"access_token": access_token, "refresh_token": refresh_token}
@@ -199,14 +214,86 @@ async def get_create_multiple_players(
         except:
             RedirectResponse(url='/', status_code=303)
     if user.role == "player":
-        return RedirectResponse(url="/", status_code=303)
+        return RedirectResponse(url="/players/invalidcredentials?param=create_players", status_code=303)  
+    if user.role =="director":
+        if not tournament_id:
+           return RedirectResponse(url="/players/invalidcredentials?param=create_players", status_code=303) 
+        else:
+            tournament_exists = await users_services.check_tournament_director(tournament_id, user.id)
+            if not tournament_exists:
+                return RedirectResponse(url="/players/invalidcredentials?param=invalid_director", status_code=303) 
+    if user.role =="club_manager":
+        if not sports_club_id:
+           return RedirectResponse(url="/players/invalidcredentials?param=create_players", status_code=303) 
+        else:
+            sports_club_exists = await users_services.check_club_manager(sports_club_id, user.id)
+            if not sports_club_exists:
+                return RedirectResponse(url="/players/invalidcredentials?param=invalid_manager", status_code=303)
     response =  templates.TemplateResponse("create_multiple_players.html", context={
             "request": request, 
             "max_players": max_players, 
             "player_sport": player_sport,
-            "tournament_id": tournament_id})
+            "tournament_id": tournament_id,
+            "sports_club_id": sports_club_id})
     response.set_cookie(key="access_token",
                         value=tokens["access_token"], httponly=True)
     response.set_cookie(key="refresh_token",
                         value=tokens["refresh_token"], httponly=True)
     return response
+
+
+@players_router.post('/createsingletemplate')
+async def get_create_single_player_template(
+    request: Request,
+    player_name: Optional[str]= Form(None),
+    max_players: Optional[int] = Form(None),
+    tournament_id: Optional[int] = Form(None),
+    player_sport: Optional[str] = Form(None),
+    sports_club_id: Optional[int] = Form(None)
+):
+    access_token = request.cookies.get("access_token")
+    refresh_token = request.cookies.get("refresh_token")
+    tokens = {"access_token": access_token, "refresh_token": refresh_token}
+    try:
+        user = await auth.get_current_user(access_token)
+    except:
+        try:
+            user = auth.refresh_access_token(access_token, refresh_token)
+            tokens = auth.token_response(user)
+        except:
+            RedirectResponse(url='/', status_code=303)
+    if user.role == "player":
+        return RedirectResponse(url="/players/invalidcredentials?param=create_players", status_code=303)  
+    if user.role =="director":
+        if not tournament_id:
+           return RedirectResponse(url="/players/invalidcredentials?param=create_players", status_code=303) 
+        else:
+            tournament_exists = await users_services.check_tournament_director(tournament_id, user.id)
+            if not tournament_exists:
+                return RedirectResponse(url="/players/invalidcredentials?param=invalid_director", status_code=303) 
+    if user.role =="club_manager":
+        if not sports_club_id:
+           return RedirectResponse(url="/players/invalidcredentials?param=create_players", status_code=303) 
+        else:
+            sports_club_exists = await users_services.check_club_manager(sports_club_id, user.id)
+            if not sports_club_exists:
+                return RedirectResponse(url="/players/invalidcredentials?param=invalid_manager", status_code=303)
+    response = templates.TemplateResponse("create_player.html", context={
+            "request": request, 
+            "player_name": player_name,
+            "max_players": max_players, 
+            "player_sport": player_sport,
+            "tournament_id": tournament_id,
+            "sports_club_id": sports_club_id})
+    response.set_cookie(key="access_token",
+                        value=tokens["access_token"], httponly=True)
+    response.set_cookie(key="refresh_token",
+                        value=tokens["refresh_token"], httponly=True)
+    return response
+    
+@players_router.get('/test')
+async def get_test_template(request: Request):
+    return templates.TemplateResponse("test_create_template.html", context={
+            "request": request})
+    
+        

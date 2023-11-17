@@ -188,6 +188,20 @@ async def show_passwordreset_form(request: Request):
 @users_router.get("/dashboard")
 async def show_userdashboard_form(request: Request):
     access_token = request.cookies.get("access_token")
-    user = await auth.get_current_user(access_token)
+    refresh_token = request.cookies.get("refresh_token")
+    tokens = {"access_token": access_token, "refresh_token": refresh_token}
+    try:
+        user = await auth.get_current_user(access_token)
+    except:
+        try:
+            user = auth.refresh_access_token(access_token, refresh_token)
+            tokens = auth.token_response(user)
+        except:
+            RedirectResponse(url='/', status_code=303)
     # need to add template and also provide logic...
-    return templates.TemplateResponse("password_reset_form.html", context={"request": request})
+    response =  templates.TemplateResponse("not_implemented.html", context={"request": request})
+    response.set_cookie(key="access_token",
+                        value=tokens["access_token"], httponly=True)
+    response.set_cookie(key="refresh_token",
+                        value=tokens["refresh_token"], httponly=True)
+    return response
