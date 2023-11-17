@@ -44,6 +44,29 @@ async def find_player(player_name: str, player_sport: str):
     if player:
         return player
     return
+
+async def check_tournament_exists(tournament_id: int):
+    tournament = read_query(''''select * from tournaments where id = ?''', (tournament_id,))
+    if tournament:
+        return tournament[0]
+    return
+
+async def post_players_to_tournament(players_lst: list[str], tournament_id: int):
+    for player in players_lst:
+        player_id = read_query('''select id from players where full_name = ?''', (player,))[0][0]
+        insert_query('''insert into tournaments_has_players (tournaments_id, players_id)
+                     values(?,?)''', (tournament_id, player_id))
+
+async def find_user(player_name: str, sport: str):
+    return read_query('''select p.full_name, u.email, u.fullname 
+                      from users u
+                      join players p on u.player_id = p.id
+                      join players_has_sports psp on psp.player_id = p.id
+                      join sports s on psp.sport_id = s.id
+                      where p.name =? and s.name =?''',
+                      (player_name, sport))
+        
+        
        
         
         
