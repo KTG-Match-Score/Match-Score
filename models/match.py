@@ -13,6 +13,7 @@ class Match(BaseModel):
     finished: Annotated[str, StringConstraints(pattern="^(finished|not finished)$")] = "not finished"
     participants: list = []
     tournament_name: Optional[str | None] = None
+    sport: Optional[str | None] = None
 
     @classmethod
     def from_query(
@@ -24,7 +25,8 @@ class Match(BaseModel):
         location, 
         tournament_id, 
         finished, 
-        tournament_name):
+        tournament_name,
+        sport):
         
         return cls(
             id=id,
@@ -34,5 +36,6 @@ class Match(BaseModel):
             location=location,
             tournament_id=tournament_id,
             finished=finished,
-            tournament_name=tournament_name
+            tournament_name=tournament_name,
+            sport=sport
         )
