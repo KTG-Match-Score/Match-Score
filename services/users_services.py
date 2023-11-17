@@ -10,11 +10,11 @@ async def register (email:str, password: str, fullname:str):
     try:
         auth.check_password(password)
     except AssertionError as error:
-        return error
+        raise AssertionError
     
     try:
         hashed_password = auth.get_password_hash(password)
-        db_picture = ph.convert_binary("pictures/users","default_picture.png") 
+        db_picture = ph.convert_binary("pictures/users","default_picture.jpg") 
         role = "player"   
         insert_query('''insert into users (email, password, fullname, role, picture) values(?,?,?,?,?)''',
                      (email, hashed_password,fullname, role, db_picture))
@@ -22,12 +22,17 @@ async def register (email:str, password: str, fullname:str):
     except IntegrityError as err:
         raise IntegrityError 
 
-async def validate(validation_code, email):
-    db_validation_code = read_query('''select validation_code from users where email=?''',(email,))
+async def validate(validation_code, id):
+    db_validation_code = read_query('''select validation_code from users where id=?''',(id,))
     if db_validation_code[0][0] == validation_code:
+        update_query('''update users set is_validated = ? where id = ?''', (1, id))
         return True
     else:
         return
+
+async def devalidate(id):
+    update_query('''update users set is_validated = ? where id = ?''', (0, id))
+    
     
 
 async def update_validation_code(user_id: int, validation_code: str):
@@ -45,8 +50,24 @@ async def update_password(id: int, password: str):
     update_query('''update users set password =?, validated_password = ? where id = ?''',(hashed_password, 1, id))
 
 async def check_validated_account(id: int):
-    db_validated = read_query('''select is_validated, validated password from users where email=?''',(id,))
+    db_validated = read_query('''select is_validated, validated_password from users where id=?''',(id,))
     return db_validated 
+
+async def check_tournament_director(tournament_id, user_id):
+    is_director = read_query('''select * from tournaments_has_directors 
+                             where tournaments_id = ? and users_id = ?''',
+                             (tournament_id, user_id))
+    if len(is_director)>0:
+        return True
+    return
+
+async def check_club_manager(sports_club_id, user_id):
+    is_manager = read_query('''select * from sports_clubs_has_managers 
+                             where sports_clubs_id = ? and users_id = ?''',
+                             (sports_club_id, user_id))
+    if len(is_manager)>0:
+        return True
+    return
     
     
     

@@ -44,10 +44,6 @@ async def register_user(
         response = templates.TemplateResponse("registration_form.html", context={
             "request": request, "email_exists": True})
         return response
-    if isinstance(registration, AssertionError):
-        return RedirectResponse("/", status_code=303)
-    if not registration:
-        return RedirectResponse("/", status_code=303)
     email, password = registration
     user = auth.authenticate_user(email, password)
     tokens = auth.token_response(user)
@@ -71,10 +67,9 @@ async def validate_user(
 ):
     token = request.cookies.get("access_token")
     user = await auth.get_current_user(token)
-    validation = await users_services.validate(validation_code, user.email)
+    validation = await users_services.validate(validation_code, user.id)
     if validation:
-        response = templates.TemplateResponse("user_dashboard.html", context={
-            "request": request})
+        response = RedirectResponse(url='/users/dashboard', status_code=303)
     else:
         response = templates.TemplateResponse("failed_validation.html", context={
             "request": request})
@@ -109,16 +104,18 @@ async def login_for_access_token(
             "request": request, "invalid_credentials": True})
 
     validated_account = await users_services.check_validated_account(user.id)
+    
+    
+    if validated_account[0][1] == 0:
+        await users_services.devalidate(user.id)
+        return templates.TemplateResponse("password_change_form.html", context={"request": request})
+    
     if validated_account[0][0] == 0:
         return templates.TemplateResponse("validation_form.html", context={
                                           "request": request})
-    
-    if validated_account[0][1] == 0:
-        return templates.TemplateResponse("password_change_form.html", context={"request": request})
 
     tokens = auth.token_response(user)
-    response = templates.TemplateResponse("user_dashboard.html", context={
-        "request": request})
+    response = RedirectResponse(url='/users/dashboard', status_code=303)
     response.set_cookie(key="access_token",
                         value=tokens["access_token"], httponly=True)
     response.set_cookie(key="refresh_token",
@@ -166,8 +163,7 @@ async def change_password(
     await users_services.update_password(user.id, new_password)
     user = auth.authenticate_user(email, current_password)
     tokens = auth.token_response(user)
-    response = templates.TemplateResponse("user_dashboard.html", context={
-        "request": request})
+    response = RedirectResponse(url='/users/dashboard', status_code=303)
     response.set_cookie(key="access_token",
                         value=tokens["access_token"], httponly=True)
     response.set_cookie(key="refresh_token",
@@ -187,4 +183,11 @@ async def show_login_form(request: Request):
 
 @users_router.get("/passwordreset")
 async def show_passwordreset_form(request: Request):
+    return templates.TemplateResponse("password_reset_form.html", context={"request": request})
+
+@users_router.get("/dashboard")
+async def show_userdashboard_form(request: Request):
+    access_token = request.cookies.get("access_token")
+    user = await auth.get_current_user(access_token)
+    # need to add template and also provide logic...
     return templates.TemplateResponse("password_reset_form.html", context={"request": request})
