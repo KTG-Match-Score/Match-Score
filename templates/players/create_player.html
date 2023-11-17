@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Create Player</title>
+    <style>
+        .container {
+            display: flex;
+        }
+        .section {
+            margin: 10px;
+            padding: 10px;
+            border: 1px solid #ddd;
+        }
+        .buttons-container {
+            margin-top: 10px;
+        }
+        .button {
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+    
+    <h1 style="text-align: center;"> MatchScore Create Player</h1>
+    <br><br><br>
+    <div class="container">
+        <form id="createForm" method="post" action="/players/creation">
+            {% if player_name %}    
+            <input type="text" name="player_name" id="player_name_input" value="{{ player_name }}" readonly>
+            {% else %}
+            <input type="text" name="player_name" id="player_name_input">
+            {% endif %}
+            {% if player_sport %}
+            <input type="text" name="player_sport" id="sport_input" value="{{ player_sport }}" readonly>
+            {% else %}
+            <input type="text" name="player_sport" id="sport_input">
+            {% endif %}
+            {% if sports_club %}
+            <input type="text" name="sports_club" id="club_input" value="{{ sports_club }}" readonly>
+            {% else %}
+            <input type="text" name="sports_club" id="club_input">
+            {% endif %}
+            {% if country %}
+            <input type="text" name="country" id="country_input" value="{{ country }}" readonly>
+            {% else %}
+            <input type="text" name="country" id="country_input">
+            {% endif %}
+            <input type="hidden" name="max_players" id="max_players_input" value="{{ max_players }}">
+            <input type="hidden" name="tournament_id" id="tournament_id_input" value="{{ tournament_id }}">
+            <input type="hidden" name="added_players" id="search_results_input" >
+            <div class="buttons-container">
+                <button type="submit" class="button" onclick="prepareSearchResultsForSubmission('/players/creation', 0);">Create Player</button>
+                <button type="submit" class="button" onclick="prepareSearchResultsForSubmission('/players', 1);">Create Manually</button>
+                <button type="submit" class="button" onclick="prepareSearchResultsForSubmission('/players', 0);">Create Automatically</button>
+                </div>
+            </form>
+            <div id="search_results" style="display:none;">
+            </div>
+        </div>
+
+        <div class="section">
+            <h3>Added Players</h3>
+            <ul id="added_players_list">
+                {% for player in added_players %}
+                    <li>{{ player }}
+                    <button onclick="removePlayer(this)">Remove</button>
+                    </li>
+                {% endfor %}
+                {% for player in player_names %}
+                    <li>{{ player }}
+                    <button onclick="removePlayer(this)">Remove</button>
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+    <div id="search_results" style="{{ 'display:block;' if post_players }}">
+        {% for player in post_players %}
+            <div>
+                <span onclick="addToAddedPlayers('{{ player.name }}')" style="cursor: pointer;">{{ player.name }}</span>
+                <img src="{{ player.image_data_url }}" alt="{{ player.name }}" style="height: 50px; width: 50px;">
+                <div><h5> Sport: {{ player.sport }} </h5></div>
+                <div><h5> Club: {{ player.sport_club }}</h5></div>
+            </div>
+        {% endfor %}
+        {% if no_player %}
+            <p>{{ no_player }}</p>
+        {% endif %}
+    </div>
+
+    <div id="warningMessage" class="warning-message" style="display: none; color: red; margin-top: 10px;"></div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+             // Initially disable buttons
+            checkAndSetButtonStates(); 
+            setButtonsDisabled(true);// Then check for player count
+        });
+        
+        document.getElementById("player_name_input").addEventListener("input", function() {
+            var player_name = this.value;
+            var isAdded = isNameAdded(player_name)
+            var isInputEmpty = player_name.trim() === '';
+            var maxPlayers = parseInt(document.getElementById("max_players_input").value, 10);
+            var currentPlayersCount = document.getElementById("added_players_list").getElementsByTagName("li").length;
+        
+            // Enable buttons if there's input, the player name hasn't been added, and max players limit isn't reached
+            setButtonsDisabled(isAdded || isInputEmpty || currentPlayersCount >= maxPlayers);
+            if (isAdded) {
+                alert("Player with this name was already added");
+            }
+        });
+        
+        function checkAndSetButtonStates() {
+            var maxPlayers = parseInt(document.getElementById("max_players_input").value, 10);
+            var currentPlayersCount = document.getElementById("added_players_list").getElementsByTagName("li").length;
+            var buttons = document.getElementsByClassName("button");
+            var warningMessageDiv = document.getElementById("warningMessage");
+        
+            var shouldDisable = currentPlayersCount >= maxPlayers;
+            for (var i = 0; i < buttons.length; i++) {
+                buttons[i].disabled = shouldDisable;
+            }
+        
+            
+            if (shouldDisable) {
+                warningMessageDiv.style.display = 'block';
+                warningMessageDiv.textContent = "The maximum number of players in the tournament has been reached. You need to remove a player so as to add another one.";
+            } else {
+                warningMessageDiv.style.display = 'none';
+                warningMessageDiv.textContent = '';
+            }
+        }
+
+        function isNameAdded(name) {
+            var addedPlayers = document.getElementById("added_players_list").getElementsByTagName("li");
+            for (var i = 0; i < addedPlayers.length; i++) {
+                var playerName = addedPlayers[i].childNodes[0].textContent.trim();
+                if (playerName === name) {
+                    return true;
+                }
+            }
+            return false;
+        }
+    
+        function setButtonsDisabled(disabled) {
+            var buttons = document.getElementsByClassName("button");
+            for (var i = 0; i < buttons.length; i++) {
+                buttons[i].disabled = disabled;
+            }
+        }
+        
+        function addToAddedPlayers(playerName) {
+            var maxPlayers = parseInt(document.getElementById("max_players_input").value, 10);
+            var currentPlayersCount = document.getElementById("added_players_list").getElementsByTagName("li").length;
+        
+            if (currentPlayersCount >= maxPlayers) {
+                alert("Maximum number of participants has been reached");
+                return;
+            }
+        
+            if (!isNameAdded(playerName)) {
+                var addedPlayersList = document.getElementById("added_players_list");
+                var newListItem = document.createElement("li");
+        
+                var textNode = document.createTextNode(playerName);
+                newListItem.appendChild(textNode);
+        
+                newListItem.appendChild(document.createTextNode(" "));
+        
+                var removeBtn = document.createElement("button");
+                removeBtn.textContent = "Remove";
+                removeBtn.onclick = function() { removePlayer(this); };
+        
+                newListItem.appendChild(removeBtn);
+        
+                addedPlayersList.appendChild(newListItem);
+                
+                checkAndSetButtonStates();
+                setButtonsDisabled(true);
+
+            } else {
+                alert("This player has already been added.");
+            }
+            checkAndSetButtonStates();
+            setButtonsDisabled(true);
+        }
+        
+        
+        
+        function prepareSearchResultsForSubmission(actionUrl, manualValue) {
+            var form = document.getElementById('searchForm');
+            var manualInput = document.getElementById('manual');
+            var addedPlayers = [];
+            var playerElements = document.getElementById("added_players_list").getElementsByTagName("li");
+        
+            form.action = actionUrl;
+            manualInput.value = manualValue;
+        
+            for (var i = 0; i < playerElements.length; i++) {
+                var playerName = playerElements[i].childNodes[0].textContent.trim();
+                addedPlayers.push(playerName);
+            }
+            document.getElementById("search_results_input").value = JSON.stringify(addedPlayers);
+        
+            form.submit();
+        }
+        function removePlayer(button) {
+            var listItem = button.parentElement;
+            listItem.remove();
+        }
+    </script>
+    
+    
+</body>
+</html>

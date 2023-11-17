@@ -2,31 +2,37 @@ from data.database import insert_query, update_query, read_query
 import common.picture_handler as ph
 
 async def register_player(fullname, sport, sports_club=None, country=None):    
-    existing_players = read_query('''select pl.fullname, sc.name, c.name, sp.name  
+    existing_players = read_query('''select pl.full_name, sc.name, c.name, sp.name  
                                  from players pl
                                  join players_has_sports ps on pl.id = ps.player_id
                                  join sports sp on sp.id = ps.sport_id
                                  left join countries c on pl.country_code = c.country_code
                                  left join sports_clubs sc on sc.id = pl.sports_club_id
-                                 where pl.fullname = ? and sp.name =?''', (fullname,sport))
+                                 where pl.full_name = ? and sp.name =?''', (fullname,sport))
     
     player_exists = [player for player in existing_players if 
                      (player[0]==fullname and player[1]==sports_club and player[2]==country and player[3]==sport)]
     if len(player_exists) == 0:
         if country is not None:    
             country_code = read_query('''select country_code from countries where name = ?''',(country,))[0][0]
+        else: country_code = None
+        
+        if sports_club is not None:    
+            sports_club_id = read_query('''select id from sports_clubs where name = ?''',(sports_club,))[0][0]
+        else:
+            sports_club_id = None
 
-        picture = ph.convert_binary("pictures/users",f"{sport}.jpg") 
+        picture = ph.convert_binary("pictures/players",f"{sport.lower().capitalize()}.jpg") 
           
         
         player_id = insert_query('''insert into players 
-                     (fullname, picture, sports_club_id, country_code) 
+                     (full_name, profile_picture, sports_club_id, country_code) 
                      values(?,?,?,?)''',
                      (fullname, picture, sports_club_id,country_code))
         
         sport_id = read_query('''select id from sports where name = ?''',(sport,))[0][0]
         
-        insert_query('''insert into players_has_sports (player_id, sport_id) values (?,?)'''
+        insert_query('''insert into players_has_sports (player_id, sport_id) values (?,?)''',
                      (player_id, sport_id))
         return fullname, picture, sports_club, country_code
     return 
