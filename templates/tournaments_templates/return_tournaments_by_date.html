@@ -63,23 +63,38 @@
         button:hover {
             background-color: #45a049;
         }
+        .tournament-item {
+            cursor: pointer;
+            transition: color 0.3s;
+            list-style-type: none;
+            padding: 5px;
+        }
+        .tournament-item:hover {
+            color: #47095a;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         {% for tournament_id, tournament_info in tournaments_matches.items() %}
-            <h2>{{ tournament_info['tournament_title'] }}</h2>
-
+            <li class="tournament-item" onclick="window.location='/matches/?tournament_id={{ tournament_id }}';" style="margin-right: 10px; text-decoration: none;">
+                <h2>{{ tournament_info['tournament_title'] }}</h2>
+            </li>
             <ul>
                 {% for match_id, match_info in tournament_info['matches'].items() %}
                     <li>
                         {% if match_info['participants'] %}
-                            {% for participant, result in match_info['participants'].items() %}
-                                {% if not participant %}
-                                    <p>Players: None</p>
-                                {% else %}
-                                    <p>{{ participant }} {{ result or '-' }}</p>
-                                {% endif %}
+                            {% for participant, data in match_info['participants'].items() %}
+                                <div style="display: flex; align-items: center;">
+                                    {% if not participant %}
+                                        <p>Players: None</p>
+                                    {% else %}
+                                        {% if data['picture'] %}
+                                            <img src="data:image/jpeg;base64,{{ data['picture'] }}" alt="Profile Picture" style="width: 30px; height: 30px; border-radius: 50%;">
+                                        {% endif %}
+                                        <p>{{ participant }} {{ data['result'] or '-' }}</p>
+                                    {% endif %}
+                                </div>
                             {% endfor %}
                         {% else %}
                             <p>No participants yet</p>
