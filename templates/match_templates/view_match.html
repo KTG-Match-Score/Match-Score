@@ -58,7 +58,7 @@
         {% if match.is_individuals == false %}    
             <li>
                 <h4>{{ match.tournament_name }}</h4>
-                <h3>{{ match.participants[0][0] }} - {{ match.participants[1][0] }}</h3>
+                <h3>{{ match.participants[0] }} - {{ match.participants[1] }}</h3>
                 <h4>{{ match.played_on.strftime("%Y-%m-%d  %H:%M") }}</h4>
                 <h3>{{ match.location }}</h3>
                 <p>{{ match.finished }}</p>
@@ -71,7 +71,9 @@
                 <h3>Participants list: </h3>
                 {% for player in match.participants %}
                 <li>
-                    {{ player[1] }}, {{ player[-1] }}
+                    <p><img src="{{ player.picture }}" alt="{{ player.fullname }}" 
+                        style="height: 30px; width: 30px; border-radius: 50%;">
+                        {{ player.fullname }}, {{ player.country_code }}</p>
                 </li>
                 {% endfor %}
                 <h4>{{ match.finished }}</h4>

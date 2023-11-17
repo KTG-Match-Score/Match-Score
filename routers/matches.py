@@ -1,6 +1,7 @@
 from datetime import datetime
 from enum import Enum
 from fastapi import APIRouter, Body, Depends, Form, HTTPException, Header, Path, Query, Request, status
+from fastapi.responses import RedirectResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
@@ -68,6 +69,18 @@ async def add_result_redirect(id: int, request: Request):
 @matches_router.post("/result/{id}", tags=["Matches"])
 async def add_result(request: Request, id: int):
     """update the result, update the places of the participants"""
+    access_token = request.cookies.get("access_token")
+    refresh_token = request.cookies.get("refresh_token")
+    tokens = {"access_token": access_token, "refresh_token": refresh_token}
+    try:
+        user = await auth.get_current_user(access_token)
+    except:
+        try:
+            user = auth.refresh_access_token(access_token, refresh_token)
+            tokens = auth.token_response(user)
+        except:
+            RedirectResponse(url='/', status_code=303)
+
     match = ms.view_single_match(id)
 
     if not match: return not_found(request)
@@ -93,6 +106,17 @@ async def create_match(
     ):
     """ requires login and director/admin rights """
     # user, token and checks for admin, director
+    access_token = request.cookies.get("access_token")
+    refresh_token = request.cookies.get("refresh_token")
+    tokens = {"access_token": access_token, "refresh_token": refresh_token}
+    try:
+        user = await auth.get_current_user(access_token)
+    except:
+        try:
+            user = auth.refresh_access_token(access_token, refresh_token)
+            tokens = auth.token_response(user)
+        except:
+            RedirectResponse(url='/', status_code=303)
 
     played_on_date = datetime(year, month, day, hour, minute)
 
@@ -105,8 +129,9 @@ async def create_match(
         played_on=played_on_date, 
         is_individuals=is_individuals, 
         location=location,
-        tournament_id=tournament_id), 
-        participants[0].split(", ")
+        tournament_id=tournament_id
+        ), 
+        participants
         )
     return templates.TemplateResponse("view_match.html", 
                                       {"request": request, "new_match": new_match}, 
@@ -124,27 +149,46 @@ async def edit_match(
     new_minute: Annotated[int, Form(...)],
     new_format: Annotated[str, Form(...)], 
     new_is_individuals: Annotated[bool, Form(...)], 
-    new_location: Annotated[str, Form(...)],
-    new_participants: Annotated[list, Form(...)]
+    new_location: Annotated[str, Form(pattern="[A-z]{3}")],
+    new_participants: Annotated[list, Form(min_length=2)]
     ):
     """ 
     requires login and director/admin rights
     change match time, change match format, change location
     update the list of participants"""
+    access_token = request.cookies.get("access_token")
+    refresh_token = request.cookies.get("refresh_token")
+    tokens = {"access_token": access_token, "refresh_token": refresh_token}
+    try:
+        user = await auth.get_current_user(access_token)
+    except:
+        try:
+            user = auth.refresh_access_token(access_token, refresh_token)
+            tokens = auth.token_response(user)
+        except:
+            RedirectResponse(url='/', status_code=303)
     
     match = ms.view_single_match(id)
 
     if not match: return not_found(request)
+    new_date = datetime(new_year, new_month, new_day, new_hour, new_minute)
+    
+    if new_date < datetime.now(): 
+        return bad_request(request, "You can't create an event in the past")
 
+    match.played_on = new_date
     if new_format: match.format = new_format
     if new_is_individuals: match.is_individuals = new_is_individuals
     if new_location: match.location = new_location
-    if new_participants: match.participants = new_participants
-    match.played_on = datetime(new_year, new_month, new_day, new_hour, new_minute)
+    if new_participants: 
+        old_participants = match.participants
+        match.participants = new_participants
+    
+    result = ms.edit_match_details(match, old_participants)
+    if result: return templates.TemplateResponse("view_match.html", {"request": request, "match": match})
 
-    return templates.TemplateResponse("view_match.html", {"request": request, "match": match})
+    return responses.InternalServerError
 
-# add result 
 # get result
 # get match winner (so it can be assigned to the next match in a tournament)
 
