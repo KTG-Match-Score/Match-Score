@@ -10,7 +10,7 @@ class User(BaseModel):
     fullname: constr(min_length=4, max_length=100)
     email: EmailStr
     password: str 
-    role: Literal["admin", "player", "director"] 
+    role: Literal["admin", "player", "director", "club_manager"] 
     player_id: Optional[int] = None
     picture: bytes
 
