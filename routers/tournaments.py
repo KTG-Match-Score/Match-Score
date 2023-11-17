@@ -1,6 +1,5 @@
-from fastapi import APIRouter, status, Form, Request, Path
+from fastapi import APIRouter, status, Form, Request, Path, Query
 from models.tournament import Tournament, MatchesInTournament
-from models.match import Match
 from typing import Annotated
 from services import tournaments_services
 from fastapi.templating import Jinja2Templates
@@ -11,8 +10,8 @@ templates = Jinja2Templates(directory="templates/tournaments_templates")
 
 @tournaments_router.get("/", status_code=status.HTTP_200_OK, response_model=list[Tournament])
 async def view_tournaments(request: Request,
-                        sport_name: Annotated[str | None, Form(min_length=1, max_length=100)] = None,
-                        tournament_name: Annotated[str | None, Form(min_length=1, max_length=100)] = None,
+                        sport_name: str = Query(None, min_length=1, max_length=100),
+                        tournament_name: str = Query(None, min_length=1, max_length=100),
                         ):
     
     tournaments = tournaments_services.get_tournaments(sport_name, tournament_name)

@@ -35,6 +35,15 @@
         }
         h2 {text-align: center;}
         h3 {margin-bottom: 5px;}
+        .tournament-item {
+            cursor: pointer;
+            transition: color 0.3s;
+            list-style-type: none;
+            padding: 5px;
+        }
+        .tournament-item:hover {
+            color: #47095a;
+        }
         @keyframes fade-in {from {opacity: 0;} to {opacity: 1;}}
     </style>
 </head>
@@ -44,8 +53,8 @@
 
         <ul>
             {% for tournament in tournaments %}
-                <li>
-                    <h3><a href="/matches/?tournament_id={{tournament.id}}">{{tournament.title}}</a></h3>
+                <li class="tournament-item" onclick="window.location='/matches/?tournament_id={{ tournament.id }}';" style="margin-right: 10px; text-decoration: none;">
+                    <h3>{{ tournament.title }}</h3>
                 </li>
             {% endfor %}
         </ul>
