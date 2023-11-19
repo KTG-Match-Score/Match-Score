@@ -11,4 +11,4 @@ templates = Jinja2Templates(directory="templates/sports_templates")
 async def view_all_sports(request: Request):
     sports = sports_services.get_all_sports()
     
-    return templates.TemplateResponse("sports.html", {"request": request, "sports": sports})
+    return templates.TemplateResponse("sports.html", context={"request": request, "sports": sports})
