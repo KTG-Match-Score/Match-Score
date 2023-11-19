@@ -40,16 +40,19 @@
             justify-content: center;
             width: 40px;
             height: 40px;
-            color: #ffffff;
             border-radius: 8px;
             margin: 10px;
-            text-decoration: none;
             cursor: pointer;
-            transition: background-color 0.3s;
+            text-decoration: none;
         }
 
-        .small-box:hover {
-            background-color: None;
+        .small-box span {
+            color: #ffffff;
+            transition: color 0.3s;
+        }
+
+        .small-box:hover span {
+            color: #47095a;
         }
 
         .expanded-box {
@@ -120,12 +123,15 @@
                 var dayName = formattedDate === formatDate(new Date(selectedDate)) ? "Selected" : getDayName(day);
 
                 var smallBox = document.createElement("a");
-                smallBox.classList.add("small-box");
-                smallBox.href = "/tournaments/" + formattedDate;
-                smallBox.textContent = dayName + " " + day.getDate() + " " + getMonthName(day);
+                    smallBox.classList.add("small-box");
+                    smallBox.href = "/tournaments/" + formattedDate;
 
-                daysContainer.appendChild(smallBox);
-            }
+                var span = document.createElement("span");
+                    span.textContent = dayName + " " + day.getDate() + " " + getMonthName(day);
+
+                    smallBox.appendChild(span);
+                    daysContainer.appendChild(smallBox);
+                }
         }
 
         function formatDate(date) {

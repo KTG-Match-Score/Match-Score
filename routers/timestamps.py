@@ -24,4 +24,4 @@ async def get_timestamps(request: Request):
                     "end_timestamp": end_timestamp
                 })
 
-    return templates.TemplateResponse("timestamps.html", {"request": request, "timestamps_data": timestamps_data})
+    return templates.TemplateResponse("timestamps.html", context={"request": request, "timestamps_data": timestamps_data})
