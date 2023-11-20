@@ -12,9 +12,10 @@ class Tournament(BaseModel):
     parent_tournament_id: Optional[Annotated[int, Field(ge=0)]] | None = None
     participants_per_match: Optional[Annotated[int, Field(ge=2)]] | None = None
     is_individuals: bool | None = None
+    child_tournament_id: int | None = None
 
     @classmethod
-    def from_query_result(cls, id, title, format, prize_type, start_date, end_date, parent_tournament_id, participant_per_match, is_individuals):
+    def from_query_result(cls, id, title, format, prize_type, start_date, end_date, parent_tournament_id, participant_per_match, is_individuals, child_tournament_id):
         return cls(
             id=id, 
             title=title, 
@@ -24,7 +25,8 @@ class Tournament(BaseModel):
             end_date=end_date, 
             parent_tournament_id=parent_tournament_id, 
             participant_per_match=participant_per_match,
-            is_individuals=is_individuals
+            is_individuals=is_individuals,
+            child_tournament_id=child_tournament_id
             )
     
 class MatchesInTournament(BaseModel):

@@ -78,8 +78,11 @@ async def create_tournament(request: Request,
                                 is_individuals=is_individuals)
 
     new_tournament.id = tournaments_services.create_tournament(new_tournament, user, sport_name)
-
-    response =  players.templates.TemplateResponse("create_multiple_players.html", {"request": request, "max_players": number_of_participants, "tournament_id": new_tournament.id, "player_sport": sport_name})
+    if is_individuals:
+        is_sports_club = 0
+    if not is_individuals:
+        is_sports_club = 1
+    response =  players.templates.TemplateResponse("create_multiple_players.html", {"request": request, "max_players": number_of_participants, "tournament_id": new_tournament.id, "player_sport": sport_name, "is_sports_club": is_sports_club})
     response.set_cookie(key="access_token",
                         value=tokens["access_token"], httponly=True)
     response.set_cookie(key="refresh_token",
