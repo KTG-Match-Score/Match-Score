@@ -139,6 +139,12 @@
             playerSportField.setAttribute("name", "player_sport");
             playerSportField.setAttribute("value", document.getElementById("sport_input").value);
             form.appendChild(playerSportField);
+
+            var playerSportField = document.createElement("input");
+            playerSportField.setAttribute("type", "hidden");
+            playerSportField.setAttribute("name", "is_sports_club");
+            playerSportField.setAttribute("value", document.getElementById("is_sports_club").value);
+            form.appendChild(playerSportField);
         
             document.body.appendChild(form);
             form.submit();
