@@ -78,7 +78,6 @@ async def create_tournament(request: Request,
                                 is_individuals=is_individuals)
 
     new_tournament.id = tournaments_services.create_tournament(new_tournament, user, sport_name)
-
     if is_individuals:
         is_sports_club = 0
     if not is_individuals:

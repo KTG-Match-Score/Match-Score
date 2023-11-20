@@ -32,6 +32,7 @@
             <input type="hidden" name="tournament_id" id="tournament_id_input" value="{{ tournament_id if tournament_id is not none else ''}}">
             <input type="hidden" name="sports_club_id" id="sports_club_id_input" value="{{ sports_club_id if sports_club_id is not none else '' }}">
             <input type="hidden" name="manual" id="manual" value=0>
+            <input type="hidden" name="is_sports_club" id="is_sports_club" value={{ is_sports_club }}>
             <input type="hidden" name="added_players" id="search_results_input" >
             <div class="buttons-container">
                 <button type="submit" class="button" onclick="prepareSearchResultsForSubmission('/players/creation', 0);">Search Player</button>
@@ -137,6 +138,12 @@
             playerSportField.setAttribute("type", "hidden");
             playerSportField.setAttribute("name", "player_sport");
             playerSportField.setAttribute("value", document.getElementById("sport_input").value);
+            form.appendChild(playerSportField);
+
+            var playerSportField = document.createElement("input");
+            playerSportField.setAttribute("type", "hidden");
+            playerSportField.setAttribute("name", "is_sports_club");
+            playerSportField.setAttribute("value", document.getElementById("is_sports_club").value);
             form.appendChild(playerSportField);
         
             document.body.appendChild(form);
