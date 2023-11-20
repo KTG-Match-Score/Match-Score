@@ -63,20 +63,19 @@ def get_tournaments_by_date(date: date):
                 SELECT
                     t.id AS tournament_id,
                     t.title AS tournament_title,
+                    t.parent_tournament_id,
                     m.id AS match_id,
                     m.format AS match_format,
                     m.played_on AS match_played_on,
                     m.location AS match_location,
                     t.is_individuals AS match_is_individuals,
                     m.finished AS match_finished,
-                    COALESCE(sc.name, p.full_name) AS participant,
-                    COALESCE(p.profile_picture, sc.logo) AS profile_or_logo,
-                    COALESCE(mc.result, mp.result) AS result
+                    p.full_name AS participant,
+                    p.profile_picture AS profile_or_logo,
+                    mp.result AS result
                 FROM
                     tournaments t
                 LEFT JOIN matches m ON t.id = m.tournament_id
-                LEFT JOIN matches_has_sports_clubs mc ON m.id = mc.matches_id
-                LEFT JOIN sports_clubs sc ON mc.sports_clubs_id = sc.id
                 LEFT JOIN matches_has_players mp ON m.id = mp.matches_id
                 LEFT JOIN players p ON mp.players_id = p.id
                 WHERE
@@ -96,7 +95,8 @@ def get_tournaments_by_date(date: date):
                     tp.profile_or_logo AS picture,
                     tp.result
                 FROM
-                    TournamentParticipants tp"""
+                    TournamentParticipants tp
+                WHERE tp.parent_tournament_id IS NULL"""
 
     params = [date]
 
