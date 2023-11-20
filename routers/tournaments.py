@@ -1,5 +1,6 @@
 from fastapi import APIRouter, status, Form, Request, Path, Query
 from models.tournament import Tournament, MatchesInTournament
+from models.player import Player
 import routers.players as players
 import common.auth as auth
 from typing import Annotated, Optional
@@ -51,7 +52,6 @@ async def create_tournament(request: Request,
                             is_individuals: bool = Form(),
                             number_of_participants: int = Form(min=2),
                             sport_name: str = Form(min_length=3, max_length=60)):
-    # трябва да подава към @players_router.post('/createmultipletemplate') max_players, tournament_id, player_sport/sport, sports_clubid ??
 
     access_token = request.cookies.get("access_token")
     refresh_token = request.cookies.get("refresh_token")
@@ -79,10 +79,23 @@ async def create_tournament(request: Request,
 
     new_tournament.id = tournaments_services.create_tournament(new_tournament, user, sport_name)
 
-    response =  players.templates.TemplateResponse("create_multiple_players.html", {"request": request, "max_players": number_of_participants, "tournament_id": new_tournament.id, "player_sport": sport_name})
+    if is_individuals:
+        is_sports_club = 0
+    if not is_individuals:
+        is_sports_club = 1
+
+    response =  players.templates.TemplateResponse("create_multiple_players.html", {"request": request, "max_players": number_of_participants, "tournament_id": new_tournament.id, "player_sport": sport_name, "is_sports_club": is_sports_club})
     response.set_cookie(key="access_token",
                         value=tokens["access_token"], httponly=True)
     response.set_cookie(key="refresh_token",
                         value=tokens["refresh_token"], httponly=True)
     
     return response
+
+@tournaments_router.post("/create_tournament_schema")
+async def create_tournament_schema(request: Request,
+                                   data: tuple[Tournament, int, str]):
+    tournament, participants, sport = data
+
+    schema = tournaments_services.generate_schema(tournament, participants, sport)
+
