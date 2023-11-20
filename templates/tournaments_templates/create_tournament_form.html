@@ -100,6 +100,7 @@
                 <option value="" disabled selected hidden>Select Format</option>
                 <option value="knockout">Knockout</option>
                 <option value="league">League</option>
+                <option value="league">Single</option>
             </select>
 
             <label for="prize_type">Prize Type (Optional):</label>
@@ -128,7 +129,7 @@
             <input type="number" id="number_of_participants" name="number_of_participants" min="2" required>
 
             <label for="participants_per_match">Participants per Match (Number):</label>
-            <input type="number" id="participants_per_match" name="participants_per_match" min="2" required>
+            <input type="number" id="participants_per_match" name="participants_per_match" min="2" required> <!-- не знам как да валидирам макса да е <= number_of_participants  -->
 
             <label for="is_individuals">Individuals or Team:</label>
             <select name="is_individuals" id="is_individuals" required>

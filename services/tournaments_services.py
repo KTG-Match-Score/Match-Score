@@ -2,7 +2,7 @@ from data.database import read_query, insert_query
 from models.tournament import Tournament, MatchesInTournament
 from models.match import Match
 from models.user import User
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 import base64
 import data.database as db
 from fastapi.responses import RedirectResponse
@@ -151,7 +151,8 @@ def get_tournaments_by_date(date: date):
 
 
 def create_tournament(t: Tournament, user: User, sport: str):
-    is_individuals = convert_form(t.is_individuals)
+    if isinstance(is_individuals, bool):
+        is_individuals = convert_form(t.is_individuals)
 
     try:
         with db._get_connection() as connection:
@@ -198,3 +199,19 @@ def create_tournament(t: Tournament, user: User, sport: str):
         return RedirectResponse(url="/tournaments/create_tournament_form", status_code=303) 
 
     return t.id
+
+def generate_schema(t: Tournament, participants: int, sport: str):
+    schema = {}
+
+    if t.participants_per_match == participants or sport == "athletics":
+        schema[t.id] = [participants]
+        return schema, t
+    
+    if t.participants_per_match < participants and t.format == "league":
+        time_intervals = None
+        if sport == "football":
+            time_intervals = timedelta(days=6)
+        if sport == "tennis":
+            time_intervals = timedelta(days=1)
+        
+        number_of_matches = ...
