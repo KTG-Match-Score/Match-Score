@@ -121,7 +121,7 @@ async def show_player(
             tokens = auth.token_response(user)
         except:
             return RedirectResponse(url='/', status_code=303)
-    players = await players_services.find_player(player_name, player_sport)
+    players = await players_services.find_player(player_name, player_sport, is_sports_club)
     if added_players:
         added_players_lst = json.loads(added_players)
     else:
@@ -145,7 +145,7 @@ async def show_player(
         
     post_players =[]
     for player in players:
-        name, picture, sport, sport_club = player
+        id, name, picture, sport, sport_club = player
         mime_type = "image/jpg"
         base64_encoded_data = base64.b64encode(picture).decode('utf-8')
         image_data_url = f"data:{mime_type};base64,{base64_encoded_data}" 
@@ -316,7 +316,8 @@ async def add_players_to_tornament(
     request: Request,
     players: str = Form(...),
     tournament_id: int = Form(...),
-    player_sport: str = Form(...)
+    player_sport: str = Form(...),
+    is_sports_club: int = Form (...)
 ):
     access_token = request.cookies.get("access_token")
     refresh_token = request.cookies.get("refresh_token")
@@ -340,12 +341,12 @@ async def add_players_to_tornament(
                         value=tokens["refresh_token"], httponly=True)
         return response
     players_lst = json.loads(players)
-    await players_services.post_players_to_tournament(players_lst, tournament_id)
+    await players_services.post_players_to_tournament(players_lst, tournament_id, is_sports_club, player_sport)
     for player in players_lst:
-        contact_details = await players_services.find_user(player, player_sport)
+        contact_details = await players_services.find_user(player, player_sport, is_sports_club)
         if contact_details:
-            email, name = [(contact[1], contact[2]) for contact in contact_details if contact[0] == player][0]
-            send_email.send_email(email, name,
+            email, name = contact_details[0]
+            await send_email.send_email(email, name,
                                 tournament_participation=tournament[1])
     return Tournament.from_query_result(*tournament), len(players_lst), player_sport, tokens 
     
