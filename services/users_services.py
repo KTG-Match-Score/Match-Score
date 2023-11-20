@@ -62,10 +62,12 @@ async def check_tournament_director(tournament_id, user_id):
     return
 
 async def check_club_manager(sports_club_id, user_id):
-    is_manager = read_query('''select * from sports_clubs_has_managers 
-                             where sports_clubs_id = ? and users_id = ?''',
+    is_manager = read_query('''select p.is_sports_club 
+                            from players p
+                            join users u on p.id = u.player_id 
+                            where p.id = ? and u.id = ?''',
                              (sports_club_id, user_id))
-    if len(is_manager)>0:
+    if is_manager and is_manager[0][0] == 1:
         return True
     return
     

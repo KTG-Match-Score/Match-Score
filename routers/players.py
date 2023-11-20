@@ -11,6 +11,7 @@ from fastapi.responses import RedirectResponse
 import common.send_email as send_email
 import base64
 import json
+from models.tournament import Tournament
 
 
 
@@ -28,6 +29,7 @@ async def create_player(
     player_sport: str = Form(...),
     sports_club_id: Optional[int] = Form(None),
     country: Optional[str] = Form(None),
+    is_sports_club: int = Form(),
     manual: Optional[int] = Form(None)
 ):
     access_token = request.cookies.get("access_token")
@@ -62,7 +64,7 @@ async def create_player(
             if not sports_club_exists:
                 return RedirectResponse(url="/players/invalidcredentials?param=invalid_manager", status_code=303)
          
-    created = await players_services.register_player(player_name, player_sport, sports_club_id, country)
+    created = await players_services.register_player(player_name, player_sport, is_sports_club, sports_club_id, country)
     if created:
         added_players_lst.append(player_name)
         response = templates.TemplateResponse("create_multiple_players.html", context={
@@ -71,7 +73,9 @@ async def create_player(
         "max_players": max_players,  
         "player_sport": player_sport,
         "added_players": added_players_lst,
-        "tournament_id": tournament_id})
+        "tournament_id": tournament_id,
+        "sports_club_id": sports_club_id,
+        "is_sports_club": is_sports_club})
         response.set_cookie(key="access_token",
                     value=tokens["access_token"], httponly=True)
         response.set_cookie(key="refresh_token",
@@ -84,7 +88,9 @@ async def create_player(
             "player_sport": player_sport, 
             "no_player": "Such player already exists! Try search!", 
             "added_players": added_players_lst,
-            "tournament_id": tournament_id})
+            "tournament_id": tournament_id,
+            "sports_club_id": sports_club_id,
+            "is_sports_club": is_sports_club})
     response.set_cookie(key="access_token",
                         value=tokens["access_token"], httponly=True)
     response.set_cookie(key="refresh_token",
@@ -100,6 +106,7 @@ async def show_player(
     player_name: str = Form(...),
     player_sport: str = Form(...),
     sports_club_id: Optional[int] = Form(None),
+    is_sports_club: int = Form(),
     country: Optional[str] = Form(None),
     manual: Optional[int] = Form(None)
     ):
@@ -128,7 +135,8 @@ async def show_player(
             "no_player": "No such player", 
             "added_players": added_players_lst,
             "tournament_id": tournament_id,
-            "sports_club_id": sports_club_id})
+            "sports_club_id": sports_club_id,
+            "is_sports_club": is_sports_club})
         response.set_cookie(key="access_token",
                         value=tokens["access_token"], httponly=True)
         response.set_cookie(key="refresh_token",
@@ -158,7 +166,8 @@ async def show_player(
             "post_players": post_players,
             "added_players": added_players_lst,
             "tournament_id": tournament_id,
-            "sports_club_id": sports_club_id})
+            "sports_club_id": sports_club_id,
+            "is_sports_club": is_sports_club})
     response.set_cookie(key="access_token",
                         value=tokens["access_token"], httponly=True)
     response.set_cookie(key="refresh_token",
@@ -200,7 +209,8 @@ async def get_create_multiple_players(
     max_players: Optional[int] = Form(1000000),
     tournament_id: Optional[int] = Form(None),
     player_sport: Optional[str] = Form(None),
-    sports_club_id: Optional[int] = Form(None)
+    sports_club_id: Optional[int] = Form(None),
+    is_sports_club: int = Form()
 ):
     access_token = request.cookies.get("access_token")
     refresh_token = request.cookies.get("refresh_token")
@@ -234,7 +244,8 @@ async def get_create_multiple_players(
             "max_players": max_players, 
             "player_sport": player_sport,
             "tournament_id": tournament_id,
-            "sports_club_id": sports_club_id})
+            "sports_club_id": sports_club_id,
+            "is_sports_club": is_sports_club})
     response.set_cookie(key="access_token",
                         value=tokens["access_token"], httponly=True)
     response.set_cookie(key="refresh_token",
@@ -250,7 +261,8 @@ async def get_create_single_player_template(
     tournament_id: Optional[int] = Form(None),
     player_sport: Optional[str] = Form(None),
     sports_club_id: Optional[int] = Form(None),
-    added_players: Optional[str] = Form(None)
+    added_players: Optional[str] = Form(None),
+    is_sports_club: int = Form()
 ):
     access_token = request.cookies.get("access_token")
     refresh_token = request.cookies.get("refresh_token")
@@ -286,7 +298,8 @@ async def get_create_single_player_template(
             "player_sport": player_sport,
             "tournament_id": tournament_id,
             "sports_club_id": sports_club_id,
-            "added_players": added_players})
+            "added_players": added_players,
+            "is_sports_club": is_sports_club})
     response.set_cookie(key="access_token",
                         value=tokens["access_token"], httponly=True)
     response.set_cookie(key="refresh_token",
@@ -317,8 +330,9 @@ async def add_players_to_tornament(
         except:
             return RedirectResponse(url='/', status_code=303)
     tournament = await players_services.check_tournament_exists(tournament_id)
-    if not players or not tournament: #THIS PART NEEDS TO BE UPDATED TO GO TOWARDS CREATE TOURNAMENT!!!!
-        response = templates.TemplateResponse("test_create_template.html", context={
+    if not players or not tournament: 
+        templates = Jinja2Templates(directory="templates/tournaments_templates")
+        response = templates.TemplateResponse("create_tournament_form.html", context={
             "request": request})
         response.set_cookie(key="access_token",
                         value=tokens["access_token"], httponly=True)
@@ -333,12 +347,7 @@ async def add_players_to_tornament(
             email, name = [(contact[1], contact[2]) for contact in contact_details if contact[0] == player][0]
             send_email.send_email(email, name,
                                 tournament_participation=tournament[1])
-    response = templates.TemplateResponse("not_implemented", context={"request": request})
-    response.set_cookie(key="access_token",
-                        value=tokens["access_token"], httponly=True)
-    response.set_cookie(key="refresh_token",
-                        value=tokens["refresh_token"], httponly=True)
-    return response    
+    return Tournament.from_query_result(*tournament), len(players_lst), player_sport, tokens 
     
     
     

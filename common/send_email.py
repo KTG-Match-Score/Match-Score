@@ -60,7 +60,7 @@ async def send_email(
                             "Name": recipient_name
                         }
                     ],
-                    "TemplateID": 5307823,
+                    "TemplateID": 5321869,
                     "TemplateLanguage": True,
                     "Variables": {
                         "name": recipient_name,
