@@ -64,7 +64,7 @@ async def send_email(
                     "TemplateLanguage": True,
                     "Variables": {
                         "name": recipient_name,
-                        "reset_password": reset_password
+                        "tournament_name": tournament_participation
                     }
                 }
             ]

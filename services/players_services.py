@@ -11,7 +11,7 @@ async def register_player(fullname, sport, sports_club_id=None, country=None):
                                  where pl.full_name = ? and sp.name =?''', (fullname,sport))
     
     player_exists = [player for player in existing_players if 
-                     (player[0]==fullname and player[1]==sports_club_id and player[2]==country and player[3]==sport)]
+                     (player[0]==fullname and player[3]==sport)]
     if len(player_exists) == 0:
         if country is not None:    
             country_code = read_query('''select country_code from countries where name = ?''',(country,))[0][0]
@@ -46,7 +46,7 @@ async def find_player(player_name: str, player_sport: str):
     return
 
 async def check_tournament_exists(tournament_id: int):
-    tournament = read_query(''''select * from tournaments where id = ?''', (tournament_id,))
+    tournament = read_query('''select * from tournaments where id = ?''', (tournament_id,))
     if tournament:
         return tournament[0]
     return
