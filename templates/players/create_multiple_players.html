@@ -95,6 +95,7 @@
             if (isAdded) {
                 alert("Player with this name was already added");
             }
+            checkAndSetButtonStates();
         });
 
         document.getElementById("createTournamentBtn").addEventListener("click", submitTournamentData);
@@ -118,7 +119,7 @@
         
             var form = document.createElement("form");
             form.setAttribute("method", "post");
-            form.setAttribute("action", "/post/players/tournament");
+            form.setAttribute("action", "tournament");
         
             var playersField = document.createElement("input");
             playersField.setAttribute("type", "hidden");
@@ -140,26 +141,26 @@
         
             document.body.appendChild(form);
             form.submit();
+            
         }
         
         function checkAndSetButtonStates() {
             var maxPlayers = parseInt(document.getElementById("max_players_input").value, 10);
             var currentPlayersCount = document.getElementById("added_players_list").getElementsByTagName("li").length;
             var buttons = document.getElementsByClassName("button");
-            var warningMessageDiv = document.getElementById("warningMessage");
+            var createTournamentBtn = document.getElementById("createTournamentBtn");
         
             var shouldDisable = currentPlayersCount >= maxPlayers;
             for (var i = 0; i < buttons.length; i++) {
-                buttons[i].disabled = shouldDisable;
+                if(buttons[i].id !== 'createTournamentBtn'){
+                    buttons[i].disabled = shouldDisable;
+                }
             }
         
-            
-            if (shouldDisable) {
-                warningMessageDiv.style.display = 'block';
-                warningMessageDiv.textContent = "The maximum number of players in the tournament has been reached. You need to remove a player so as to add another one.";
+            if (currentPlayersCount === maxPlayers) {
+                createTournamentBtn.disabled = false;
             } else {
-                warningMessageDiv.style.display = 'none';
-                warningMessageDiv.textContent = '';
+                createTournamentBtn.disabled = true;
             }
         }
 
@@ -213,8 +214,8 @@
             } else {
                 alert("This player has already been added.");
             }
-            checkAndSetButtonStates();
             setButtonsDisabled(true);
+            checkAndSetButtonStates();
         }
         
         
@@ -239,6 +240,7 @@
         function removePlayer(button) {
             var listItem = button.parentElement;
             listItem.remove();
+            checkAndSetButtonStates();
         }
     </script>
     

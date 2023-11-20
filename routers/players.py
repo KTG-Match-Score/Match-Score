@@ -249,7 +249,8 @@ async def get_create_single_player_template(
     max_players: Optional[int] = Form(1000000),
     tournament_id: Optional[int] = Form(None),
     player_sport: Optional[str] = Form(None),
-    sports_club_id: Optional[int] = Form(None)
+    sports_club_id: Optional[int] = Form(None),
+    added_players: Optional[str] = Form(None)
 ):
     access_token = request.cookies.get("access_token")
     refresh_token = request.cookies.get("refresh_token")
@@ -284,7 +285,8 @@ async def get_create_single_player_template(
             "max_players": max_players, 
             "player_sport": player_sport,
             "tournament_id": tournament_id,
-            "sports_club_id": sports_club_id})
+            "sports_club_id": sports_club_id,
+            "added_players": added_players})
     response.set_cookie(key="access_token",
                         value=tokens["access_token"], httponly=True)
     response.set_cookie(key="refresh_token",
@@ -325,11 +327,12 @@ async def add_players_to_tornament(
         return response
     players_lst = json.loads(players)
     await players_services.post_players_to_tournament(players_lst, tournament_id)
-    contact_details = await players_services.find_user(player, player_sport)
     for player in players_lst:
-        email, name = [(contact[1], contact[2]) for contact in contact_details if contact[0] == player][0]
-        send_email.send_email(email, name,
-                            tournament_participation=tournament[1])
+        contact_details = await players_services.find_user(player, player_sport)
+        if contact_details:
+            email, name = [(contact[1], contact[2]) for contact in contact_details if contact[0] == player][0]
+            send_email.send_email(email, name,
+                                tournament_participation=tournament[1])
     response = templates.TemplateResponse("not_implemented", context={"request": request})
     response.set_cookie(key="access_token",
                         value=tokens["access_token"], httponly=True)
