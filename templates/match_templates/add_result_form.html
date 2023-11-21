@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Result Form</title>
+    <style>
+        body {
+            background-color: #888888;
+            color: #ffffff;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 800px;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+            background-color: rgba(0, 0, 0, 0.8);
+            animation: fade-in 1s ease-in-out;
+            
+        }
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        li {
+            margin-bottom: 20px;
+            border-bottom: 1px solid #555555;
+            padding-bottom: 10px;
+        }
+        h2 {
+            text-align: center;
+        }
+        h3 {
+            margin-bottom: 5px;
+        }
+        p {
+            margin: 5px 0;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        label {
+            margin-bottom: 5px;
+        }
+        select,
+        
+        input,
+        textarea {
+            margin-bottom: 10px;
+            padding: 8px;
+            border: 1px solid #555555;
+            border-radius: 4px;
+            background-color: rgb(185, 185, 185);
+            color: #ffffff;
+        }
+        button {
+            padding: 10px;
+            border: none;
+            border-radius: 4px;
+            background-color: #4CAF50;
+            color: #ffffff;
+            cursor: pointer;
+        }
+        @keyframes fade-in {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Add Result: {{ match.tournament_name }}</h2>
+        <form id="myForm" action="/matches/result/{{ match.id }}" method="POST">
+            {% if match.format == "time limited "%}
+            <ul>
+                {% for player in match.participants %}
+                <li>
+                    {{ player.fullname}}
+                    <input type="text" name="name{{ loop.index }}" placeholder="{{ player.fullname }}" value="{{player.id}}" hidden>
+                    <input type="number" name="score{{ loop.index }}" placeholder="Score"><br>
+                </li>
+                {% endfor %}                
+                <button type="button" onclick="submitData()">Submit</button>
+            </ul>
+            {% elif match.format == "score limited" %}
+            <ul>
+                {% for player in match.participants %}
+                <li>
+                    {{ player.fullname}}
+                    <input type="text" name="name{{ loop.index }}" placeholder="{{ player.fullname }}" value="{{player.id}}" hidden>
+                    <input type="number" name="score{{ loop.index }}" placeholder="Score"><br>
+                </li>
+                {% endfor %}                
+                <button type="button" onclick="submitData()">Submit</button>
+            </ul>
+            {% else %}
+            <ul>
+                {% for player in match.participants %}
+                <li>
+                    {{ player.fullname}}
+                    <input type="text" name="name{{ loop.index }}" placeholder="{{ player.fullname }}" value="{{player.id}}" hidden>
+                    <input type="text" name="score{{ loop.index }}" placeholder="hrs,min,sec,microsec"><br>
+                </li>
+                {% endfor %}                
+                {% endif%}
+                <button type="button" onclick="submitData()">Submit</button>
+            </ul>
+        </form>
+    </div>
+    <script>
+    function submitData() {
+        const formData = new FormData(document.getElementById('myForm'));
+        const data = {};
+
+        // Loop through form data and create a dictionary
+        for (const [key, value] of formData.entries()) {
+            const name = key.split(/[0-9]+/)[0]; // Extract the 'name' or 'score' part
+            const index = key.match(/[0-9]+$/)[0]; // Extract the index
+            if (!data[index]) {
+                data[index] = {};
+            }
+            data[index][name] = value;
+        }
+
+        // Convert the data to an array of dictionaries
+        const results = Object.values(data).map(item => {
+            return {
+                [item.name]: item.score
+            };
+        });
+
+        // Perform an AJAX request using Fetch API
+        fetch('/matches/result/{{ match.id }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(results)
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(result => {
+            // Handle response from the server
+            console.log('Success:', result);
+        })
+        .catch(error => {
+            // Handle errors
+            console.error('Error:', error);
+        });
+    }
+    </script>
+</body>
+</html>

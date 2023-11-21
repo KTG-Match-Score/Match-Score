@@ -82,6 +82,7 @@
 </head>
 <body>
     <form action="/matches/edit/{{match.id}}" method="POST" id="editMatchForm">
+        <h4>{{ match.tournament_name }}</h4>
         <div class="container">                
             <label for="new_year">Edit year</label>  
             <input type="datetime" name="new_year" id="new_year" value="{{match.played_on.year}}">
@@ -93,76 +94,67 @@
             <input type="datetime" name="new_hour" id="new_hour" value="{{match.played_on.hour}}">
             <label for="new_minute">minutes</label>  
             <input type="datetime" name="new_minute" id="new_minute" value="{{match.played_on.minute}}"><br>
-        
-        
-            <!-- <h4>Current participants:</h4>
-            {% for player in match.participants %}
-                <li>
-                   {{ player[1] }}, {{ player[-1] }}
-                </li>
-            {% endfor %} -->
-            <div id="new_participants">
-                <h4>Participants:</h4>
-                <div id="new_participants">
-                    <!-- Existing participants displayed here -->
+            
+            <label for="new_format">Edit format</label>
+            <select name="new_format" id="new_format" value="{{match.format}}">
+                <option value="first finisher">First finisher</option>
+                <option value="time limited">Time limited</option>
+                <option value="score limited">Score limited</option>
+            </select>
+            
+            <label for="new_location">Edit location</label>
+            <input type="text" id="new_location" name="new_location" value="{{match.location}}" required>
+            
+            <label for="new_is_individuals">Individuals/Team:</label>
+            <select name="new_is_individuals" id="new_is_individuals" >
+                <option value="true">Individuals</option>
+                <option value="false">Team</option>
+            </select>
+
+            <div id="participantsSection">
+                <h4>Add/remove players:</h4>
+                <div id="participantsList">
                     {% for player in match.participants %}
                         <div>
-                            <input type="text" name="participants[]" value="{{ player }}" readonly>
+                            <input type="text" name="new_participants" value="{{ player.fullname }}">
                             <button type="button" class="removeParticipant">Remove player</button>
                         </div>
                     {% endfor %}
                 </div>
                 <button type="button" id="addParticipant">Add player</button>
             </div>
-        
-            <label for="new_format">Edit match format</label>
-            <select name="new_format" id="new_format" value="{{match.format}}">
-                <option value="first finisher">First finisher</option>
-                <option value="time limited">Time limited</option>
-                <option value="score limited">Score limited</option>
-            </select>
-          
-            <label for="new_location">Location</label>
-            <input type="text" id="new_location" name="new_location" value="{{match.location}}" required>
-            
-            <label for="new_is_individuals" hidden>Individuals:</label>
-            <select name="new_is_individuals" id="new_is_individuals" >
-                <option value="true">Individuals</option>
-                <option value="false">Team</option>
-            </select>
         </div>
         <button type="submit">Edit Match</button>      
     </form>
     <script>
-
         document.addEventListener('DOMContentLoaded', function () {
             const addParticipantBtn = document.getElementById('addParticipant');
-        const participantsList = document.getElementById('participantsList');
-    
-        addParticipantBtn.addEventListener('click', function () {
-            const participantDiv = document.createElement('div');
-            participantDiv.innerHTML = `
-                <input type="text" name="participants[]" placeholder="New Participant">
-                <button type="button" class="removeParticipant">-</button>
-            `;
-            participantsList.appendChild(participantDiv);
+            const participantsList = document.getElementById('participantsList');
+
+            addParticipantBtn.addEventListener('click', function () {
+                const participantDiv = document.createElement('div');
+                participantDiv.innerHTML = `
+                    <input type="text" name="new_participants" placeholder="New Participant">
+                    <button type="button" class="removeParticipant">Remove player</button>
+                `;
+                participantsList.appendChild(participantDiv);
+            });
+
+            participantsList.addEventListener('click', function (event) {
+                if (event.target.classList.contains('removeParticipant')) {
+                    event.target.parentElement.remove();
+                }
+            });
+
+            const editMatchForm = document.getElementById('editMatchForm');
+            editMatchForm.addEventListener('submit', function (event) {
+                const participantInputs = participantsList.querySelectorAll('input[name="new_participants"]');
+                const participantNames = Array.from(participantInputs).map(input => {
+                    const value = input.value.trim();
+                    return value;
+                });
+            });
         });
-    
-        participantsList.addEventListener('click', function (event) {
-            if (event.target.classList.contains('removeParticipant')) {
-                event.target.parentElement.remove();
-            }
-        });
-    
-        const editMatchForm = document.getElementById('editMatchForm');
-        editMatchForm.addEventListener('submit', function () {
-            const participantInputs = participantsList.querySelectorAll('input[name="participants[]"]');
-            // You can process and submit the participant data here before submitting the form
-            // For example, you can collect the participant names from the inputs
-            const participantNames = Array.from(participantInputs).map(input => input.value);
-            console.log('Participants:', participantNames);
-        });
-    });
     </script>
 </body>
 </html>
