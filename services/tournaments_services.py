@@ -167,7 +167,7 @@ def get_tournaments_by_date(date: date):
 
 
 def create_tournament(t: Tournament, user: User, sport: str):
-    if isinstance(is_individuals, bool):
+    if isinstance(t.is_individuals, bool):
         is_individuals = convert_form(t.is_individuals)
 
     try:
