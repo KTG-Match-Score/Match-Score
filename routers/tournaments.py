@@ -1,4 +1,5 @@
 from fastapi import APIRouter, status, Form, Request, Path, Query
+from data.database import read_query
 from models.tournament import Tournament, MatchesInTournament
 from models.player import Player
 import routers.players as players
@@ -18,7 +19,7 @@ async def view_tournaments(request: Request,
                         sport_name: str = Query(None, min_length=1, max_length=100),
                         tournament_name: str = Query(None, min_length=1, max_length=100),
                         ):
-    
+
     tournaments = tournaments_services.get_tournaments(sport_name, tournament_name)
     
     return templates.TemplateResponse("return_tournaments.html", context={"request": request, "tournaments": tournaments})
@@ -96,5 +97,27 @@ async def create_tournament_schema(request: Request,
                                    data: tuple[Tournament, int, str]):
     tournament, participants, sport = data
 
+    access_token = request.cookies.get("access_token")
+    refresh_token = request.cookies.get("refresh_token")
+    tokens = {"access_token": access_token, "refresh_token": refresh_token}
+    try:
+        user = await auth.get_current_user(access_token)
+    except:
+        try:
+            user = auth.refresh_access_token(access_token, refresh_token)
+            tokens = auth.token_response(user)
+        except:
+            RedirectResponse(url='/landing_page', status_code=303)
+
+    if user.role != "director":
+        RedirectResponse(url='/landing_page', status_code=303)
+
     schema = tournaments_services.generate_schema(tournament, participants, sport)
 
+    response =  ... # players.templates.TemplateResponse("waiting_for_template.html", {"request": request, "schema": schema, "tournament": tournament})
+    response.set_cookie(key="access_token",
+                        value=tokens["access_token"], httponly=True)
+    response.set_cookie(key="refresh_token",
+                        value=tokens["refresh_token"], httponly=True)
+    
+    return response

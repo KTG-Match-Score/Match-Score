@@ -6,9 +6,10 @@ from datetime import datetime, date, timedelta
 import base64
 import data.database as db
 from fastapi.responses import RedirectResponse
+from itertools import combinations
+import random
 
-
-def convert_form(data):
+def convert_form(data: bool):
     # if isinstance(data, int) and data == 1:
     #     return "Individuals"
     # elif isinstance(data, int) and data == 0:
@@ -17,6 +18,21 @@ def convert_form(data):
         return 1
     elif data == False:
         return 0
+
+# def calculate_league_matches(players: int):
+#     matches = players * (players-1) // 2
+#     return matches
+
+# def calculate_league_free_days_for_play(start_date: datetime, end_date:datetime):
+#     startdate_str = start_date.strftime("%Y-%m-%d %H-%M-%S")
+#     enddate_str = end_date.strftime("%Y-%m-%d %H-%M-%S")
+
+#     start_date = datetime.combine(startdate_str, datetime.min.time())
+#     end_date = datetime.combine(enddate_str, datetime.min.time())
+
+#     days_to_play = end_date - start_date
+
+#     return days_to_play
 
 
 def get_tournaments(sport_name: str = None, tournament_name: str = None):
@@ -200,18 +216,49 @@ def create_tournament(t: Tournament, user: User, sport: str):
 
     return t.id
 
-def generate_schema(t: Tournament, participants: int, sport: str):
-    schema = {}
-
-    if t.participants_per_match == participants or sport == "athletics":
-        schema[t.id] = [participants]
-        return schema, t
+def generate_schema(t: Tournament, number_of_participants: int, sport: str):
+    schema = []
+    knockout_schema = {}
+    participants = [(part[0]) for part in read_query('SELECT players_id FROM tournaments_has_players WHERE tournaments_id = t.id')]
+    random.shuffle(participants)
     
-    if t.participants_per_match < participants and t.format == "league":
-        time_intervals = None
-        if sport == "football":
-            time_intervals = timedelta(days=6)
-        if sport == "tennis":
-            time_intervals = timedelta(days=1)
-        
-        number_of_matches = ...
+    if t.participants_per_match == number_of_participants or sport == "athletics":
+        schema.append(participants)
+    
+    elif t.participants_per_match < number_of_participants and t.format == "league":
+        schema = list(combinations(participants, 2))
+
+    elif t.participants_per_match < number_of_participants and t.format == "knockout":
+        first_round = [list(zip(participants[0::2], participants[1::2]))]
+        knockout_schema[1] = first_round
+
+        round_number = 2
+        while len(first_round) > 1:
+            if knockout_schema == {}:
+                knockout_schema[1] = first_round
+                continue
+            if len(knockout_schema.keys()) == 1:
+                couples = []
+                for players in first_round:
+                    couples.append(list(players))
+                next_round = []
+                for index in range(0, len(couples), 2):
+                    next_round.append((couples[index], couples[index+1]))
+                knockout_schema[round_number]=next_round
+                first_round = next_round
+                round_number += 1
+                continue
+            couples = []
+            for players in first_round:
+                couples.append(players[0] + players[1])
+            next_round = []
+            for index in range(0, len(couples), 2):
+                next_round.append((couples[index], couples[index+1]))
+            knockout_schema[round_number]=next_round
+            first_round = next_round
+            round_number += 1
+    
+    if t.format == "knockout":
+        return knockout_schema
+    
+    return schema
