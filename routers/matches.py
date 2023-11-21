@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, time, timedelta
 from enum import Enum
 from fastapi import APIRouter, Body, Depends, Form, HTTPException, Header, Path, Query, Request, status
 from fastapi.responses import RedirectResponse
@@ -6,6 +6,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 from models.match import Match
+from models.player import Player
 from models.user import User
 import services.users_services as users_services
 from services import matches_services as ms
@@ -59,6 +60,7 @@ async def view_match_by_id(id: int, request: Request):
 
 @matches_router.get("/result/{id}", tags=["Matches redirect"])
 async def add_result_redirect(id: int, request: Request):
+
     match = ms.view_single_match(id)
 
     if not match: return not_found(request)
@@ -69,25 +71,35 @@ async def add_result_redirect(id: int, request: Request):
 @matches_router.post("/result/{id}", tags=["Matches"])
 async def add_result(request: Request, id: int):
     """update the result, update the places of the participants"""
-    access_token = request.cookies.get("access_token")
-    refresh_token = request.cookies.get("refresh_token")
-    tokens = {"access_token": access_token, "refresh_token": refresh_token}
-    try:
-        user = await auth.get_current_user(access_token)
-    except:
-        try:
-            user = auth.refresh_access_token(access_token, refresh_token)
-            tokens = auth.token_response(user)
-        except:
-            RedirectResponse(url='/', status_code=303)
-
+    # access_token = request.cookies.get("access_token")
+    # refresh_token = request.cookies.get("refresh_token")
+    # tokens = {"access_token": access_token, "refresh_token": refresh_token}
+    # try:
+    #     user = await auth.get_current_user(access_token)
+    # except:
+    #     try:
+    #         user = auth.refresh_access_token(access_token, refresh_token)
+    #         tokens = auth.token_response(user)
+    #     except:
+    #         RedirectResponse(url='/', status_code=303)
+    result: list[dict] = await request.json()
+    temp_result = {}
+    for el in result:
+        for k, v in el.items():
+            temp_result[k] = temp_result.get(k, v)
+    
     match = ms.view_single_match(id)
 
     if not match: return not_found(request)
+    if match.played_on < datetime.now():
+        ms.change_match_to_finished(match)
     if match.finished == "not finished":
         return bad_request(request, "Match not finished")
     
-    return templates.TemplateResponse("view_finished_match.html", {"request": request, "match": match}) 
+    new_result = result_extractor(match, temp_result)
+    
+    match = ms.add_match_result(match, new_result)
+    return templates.TemplateResponse("view_match.html", {"request": request, "match": match}) 
 
 
 @matches_router.post("/create", tags=["Matches"])
@@ -106,17 +118,17 @@ async def create_match(
     ):
     """ requires login and director/admin rights """
     # user, token and checks for admin, director
-    access_token = request.cookies.get("access_token")
-    refresh_token = request.cookies.get("refresh_token")
-    tokens = {"access_token": access_token, "refresh_token": refresh_token}
-    try:
-        user = await auth.get_current_user(access_token)
-    except:
-        try:
-            user = auth.refresh_access_token(access_token, refresh_token)
-            tokens = auth.token_response(user)
-        except:
-            RedirectResponse(url='/', status_code=303)
+    # access_token = request.cookies.get("access_token")
+    # refresh_token = request.cookies.get("refresh_token")
+    # tokens = {"access_token": access_token, "refresh_token": refresh_token}
+    # try:
+    #     user = await auth.get_current_user(access_token)
+    # except:
+    #     try:
+    #         user = auth.refresh_access_token(access_token, refresh_token)
+    #         tokens = auth.token_response(user)
+    #     except:
+    #         RedirectResponse(url='/', status_code=303)
 
     played_on_date = datetime(year, month, day, hour, minute)
 
@@ -150,23 +162,23 @@ async def edit_match(
     new_format: Annotated[str, Form(...)], 
     new_is_individuals: Annotated[bool, Form(...)], 
     new_location: Annotated[str, Form(pattern="[A-z]{3}")],
-    new_participants: Annotated[list, Form(min_length=2)]
+    new_participants: Annotated[list, Form(min_length=2)]  # should be list[Player | SportClub]
     ):
     """ 
     requires login and director/admin rights
     change match time, change match format, change location
     update the list of participants"""
-    access_token = request.cookies.get("access_token")
-    refresh_token = request.cookies.get("refresh_token")
-    tokens = {"access_token": access_token, "refresh_token": refresh_token}
-    try:
-        user = await auth.get_current_user(access_token)
-    except:
-        try:
-            user = auth.refresh_access_token(access_token, refresh_token)
-            tokens = auth.token_response(user)
-        except:
-            RedirectResponse(url='/', status_code=303)
+    # access_token = request.cookies.get("access_token")
+    # refresh_token = request.cookies.get("refresh_token")
+    # tokens = {"access_token": access_token, "refresh_token": refresh_token}
+    # try:
+    #     user = await auth.get_current_user(access_token)
+    # except:
+    #     try:
+    #         user = auth.refresh_access_token(access_token, refresh_token)
+    #         tokens = auth.token_response(user)
+    #     except:
+    #         RedirectResponse(url='/', status_code=303)
     
     match = ms.view_single_match(id)
 
@@ -189,8 +201,6 @@ async def edit_match(
 
     return responses.InternalServerError
 
-# get result
-# get match winner (so it can be assigned to the next match in a tournament)
 
 def not_found(request: Request): 
     return templates.TemplateResponse(
@@ -209,3 +219,64 @@ def bad_request(request: Request, content: str):
         "content": content
         },
         status_code=status.HTTP_400_BAD_REQUEST)
+
+def result_extractor(match: Match, result: dict):
+    if not match.is_individuals:
+        if match.format == "time limited":
+            score = {"winner": 0, "loser": 0}
+            team1 = list(result.keys())[0]
+            team2 = list (result.keys())[1]
+            if result[team1] > result[team2]:
+                score["winner"] = {team1: result[team1]}
+                score["loser"] = {team2: result[team2]}
+            elif result[team1] < result[team2]:
+                score["winner"] = {team2: result[team2]}
+                score["loser"] = {team1: result[team1]}
+            else:
+                score["draw"] = {team1: result[team1],
+                                 team2: result[team2]} 
+        elif match.format == "score limited":
+            score = {"winner": 0, "loser": 0}
+            p1, p2 = 0, 0
+
+            for sett in result[team1]:
+                if result[team1][sett] > result[team2][sett]:
+                    p1 += 1
+                else: p2 += 1
+            if p1 > p2:
+                score["winner"] = {team1: result[team1]}
+                score["loser"] = {team2: result[team2]}
+            else:
+                score["winner"] = {team2: result[team2]}
+                score["loser"] = {team1: result[team1]}
+        elif match.format == "first finisher":
+            score = sorted(result.items(), key=lambda x: x[1])
+            final = {}
+            for pl, sc in score:
+                final[sc] = final.get(sc, []) + [pl]
+            score = dict(enumerate(final.items(),1))
+    else:
+        if match.format == "time limited" or match.format == "score limited":
+            score = sorted(result.items(), key=lambda x: -x[1])
+            final = {}
+            for pl, sc in score:
+                final[sc] = final.get(sc, []) + [pl]
+            score = dict(enumerate(final.items(),1))
+        elif match.format == "first finisher":
+            for p, s in result.items():
+                result[p] = score_convertor(s)
+            score = sorted(result.items(), key=lambda x: x[1])
+            final = {}
+            for pl, sc in score:
+                final[sc] = final.get(sc, []) + [pl]
+            score = dict(enumerate(final.items(),1))
+
+    return score
+
+def score_convertor(s):
+    try:
+        hours, minutes, seconds, milliseconds = list(map(int, s.split(',')))
+        total_milliseconds = (hours * 60 * 60 * 1000) + (minutes * 60 * 1000) + (seconds * 1000) + milliseconds
+        return timedelta(milliseconds=total_milliseconds)
+    except:
+        return
