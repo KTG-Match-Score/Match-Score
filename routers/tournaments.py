@@ -1,5 +1,4 @@
 from fastapi import APIRouter, status, Form, Request, Path, Query
-from data.database import read_query
 from models.tournament import Tournament, MatchesInTournament
 from models.player import Player
 import routers.players as players
@@ -48,7 +47,7 @@ async def create_tournament(request: Request,
                             prize_type: str = Form(None),
                             start_date: datetime = Form(),
                             end_date: datetime = Form(),
-                            parent_tournament_id: int = Form(),
+                            parent_tournament_id: Optional[int] = Form(None),
                             participants_per_match: int = Form(min=2),
                             is_individuals: bool = Form(),
                             number_of_participants: int = Form(min=2),
@@ -79,6 +78,7 @@ async def create_tournament(request: Request,
                                 is_individuals=is_individuals)
 
     new_tournament.id = tournaments_services.create_tournament(new_tournament, user, sport_name)
+    
     if is_individuals:
         is_sports_club = 0
     if not is_individuals:
