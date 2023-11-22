@@ -12,7 +12,8 @@ import common.send_email as send_email
 import base64
 import json
 from models.tournament import Tournament
-
+import httpx
+from models.tournament import Tournament
 
 
 players_router = APIRouter(prefix='/players')
@@ -106,7 +107,7 @@ async def show_player(
     player_name: str = Form(...),
     player_sport: str = Form(...),
     sports_club_id: Optional[int] = Form(None),
-    is_sports_club: int = Form(),
+    is_sports_club: Optional[int] = Form(None),
     country: Optional[str] = Form(None),
     manual: Optional[int] = Form(None)
     ):
@@ -210,7 +211,7 @@ async def get_create_multiple_players(
     tournament_id: Optional[int] = Form(None),
     player_sport: Optional[str] = Form(None),
     sports_club_id: Optional[int] = Form(None),
-    is_sports_club: int = Form()
+    is_sports_club: Optional[int] = Form(None)
 ):
     access_token = request.cookies.get("access_token")
     refresh_token = request.cookies.get("refresh_token")
@@ -262,7 +263,7 @@ async def get_create_single_player_template(
     player_sport: Optional[str] = Form(None),
     sports_club_id: Optional[int] = Form(None),
     added_players: Optional[str] = Form(None),
-    is_sports_club: int = Form()
+    is_sports_club: Optional[int] = Form(None)
 ):
     access_token = request.cookies.get("access_token")
     refresh_token = request.cookies.get("refresh_token")
@@ -306,8 +307,11 @@ async def get_create_single_player_template(
                         value=tokens["refresh_token"], httponly=True)
     return response
     
-@players_router.get('/test')
-async def get_test_template(request: Request):
+@players_router.get('/user/clubmanager')
+async def move_to_multiple(
+    request: Request,
+    sports_club_id: int = Query(),
+    is_sports_club: int = Query()):
     return templates.TemplateResponse("test_create_template.html", context={
             "request": request})
 
@@ -331,6 +335,7 @@ async def add_players_to_tornament(
         except:
             return RedirectResponse(url='/', status_code=303)
     tournament = await players_services.check_tournament_exists(tournament_id)
+    tournament_model = Tournament.from_query_result(*tournament)
     if not players or not tournament: 
         templates = Jinja2Templates(directory="templates/tournaments_templates")
         response = templates.TemplateResponse("create_tournament_form.html", context={
@@ -348,7 +353,54 @@ async def add_players_to_tornament(
             email, name = contact_details[0]
             await send_email.send_email(email, name,
                                 tournament_participation=tournament[1])
-    return Tournament.from_query_result(*tournament), len(players_lst), player_sport, tokens 
+    cookies = request.cookies
+    async with httpx.AsyncClient() as client:
+        response = await client.post("http://localhost:8000/tournaments/create_tournament_schema", cookies=cookies, json={ "tournament_id":tournament_model.id, "participants_per_match":tournament_model.participants_per_match, "format":tournament_model.format,"number_participants":len(players_lst), "sport":player_sport}) 
+
+@players_router.post('/searchplayerforclub')
+async def return_player(
+    request: Request,
+    player_name: str = Form(...),
+    sports_club_id: int = Form(...),
+    is_sports_club: int = Form(...),
+    player_sport: str = Form (...),
+    added_players: Optional[str] = Form(None)
+):
+    access_token = request.cookies.get("access_token")
+    refresh_token = request.cookies.get("refresh_token")
+    tokens = {"access_token": access_token, "refresh_token": refresh_token}
+    try:
+        user = await auth.get_current_user(access_token)
+    except:
+        try:
+            user = auth.refresh_access_token(access_token, refresh_token)
+            tokens = auth.token_response(user)
+        except:
+            return RedirectResponse(url='/', status_code=303)
+    
+    if added_players:
+        added_players_lst = json.loads(added_players)
+    else:
+        added_players_lst = []
+    players = await players_services.find_player_for_club(player_name, player_sport, 0)
+    templates = Jinja2Templates(directory="templates/users")
+    response = templates.TemplateResponse("add_players_club.html", context={
+        "request": request,
+        "player_name": player_name,
+        "sports_club_id": sports_club_id,
+        "is_sports_club":is_sports_club,
+        "player_sport": player_sport,
+        "players": players,
+        "added_players":added_players_lst
+                
+    })
+    response.set_cookie(key="access_token",
+                        value=tokens["access_token"], httponly=True)
+    response.set_cookie(key="refresh_token",
+                        value=tokens["refresh_token"], httponly=True)
+    return response
+    
+    
     
     
     

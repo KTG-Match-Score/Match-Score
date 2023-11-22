@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MatchScore Add Players to Club</title>
+</head>
+<style>
+    /* Style for the top bar */
+    #topBar {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center; 
+        padding: 10px;
+        background-color: #f8f8f8; /* Example background color */
+        box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1); /* Example shadow for depth */
+    }
+
+    /* Style for user details inside the top bar */
+    #userDetails {
+        display: flex;
+        align-items: center;
+    }
+
+    /* Style for the user image */
+    #userDetails img {
+        margin-left: 10px;
+        height: 50px;
+        width: 50px;
+        border-radius: 50%; /* Optional: makes the image circular */
+    }
+
+    
+</style>
+</head>
+<body>
+    <div id="topBar">
+        <div id="userDetails">
+            <span>{{ name }}</span>
+            <img src="{{ image_data_url }}" alt="User Image">
+            
+        </div>
+    </div>
+    <div id="dashboard">
+        <h2 style="text-align: center;">Add Players to Club</h2>
+            <div id="playerSearchForm">
+                <form method="post" action="/players/searchplayerforclub">
+                    <label for="player_name">Player Name:</label>
+                    <input type="text" id="player_name" name="player_name" required>
+                    <input type="hidden" name="sports_club_id" value="{{ sports_club_id }}">
+                    <input type="hidden" name="is_sports_club" value={{1}}>
+                    <input type="hidden" name="player_sport" value="{{ player_sport }}">
+                    <button type="submit" class="dashboard-button">Search</button>
+                </form>
+                <div class="section">
+                    <h3>Added Players</h3>
+                    <ul id="added_players_list">
+                        {% for player in added_players %}
+                            <li>{{ player }}
+                            <button onclick="removePlayer(this)">Remove</button>
+                            </li>
+                        {% endfor %}
+                        {% for player in player_names %}
+                            <li>{{ player }}
+                            <button onclick="removePlayer(this)">Remove</button>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initially disable buttons
+           checkAndSetButtonStates(); 
+           setButtonsDisabled(true);// Then check for player count
+       });
+       
+       document.getElementById("player_name_input").addEventListener("input", function() {
+           var player_name = this.value;
+           var isAdded = isNameAdded(player_name)
+           var isInputEmpty = player_name.trim() === '';
+           var maxPlayers = parseInt(document.getElementById("max_players_input").value, 10);
+           var currentPlayersCount = document.getElementById("added_players_list").getElementsByTagName("li").length;
+       
+           // Enable buttons if there's input, the player name hasn't been added, and max players limit isn't reached
+           setButtonsDisabled(isAdded || isInputEmpty || currentPlayersCount >= maxPlayers);
+           if (isAdded) {
+               alert("Player with this name was already added");
+           }
+           checkAndSetButtonStates();
+       });
+
+       document.getElementById("createTournamentBtn").addEventListener("click", submitTournamentData);
+
+       function submitTournamentData() {
+           var addedPlayers = document.getElementById("added_players_list").getElementsByTagName("li").length;
+           var maxPlayers = parseInt(document.getElementById("max_players_input").value, 10);
+           var warningMessageDiv = document.getElementById("warningMessage");
+           
+           if (addedPlayers !== maxPlayers) {
+               warningMessageDiv.style.display = 'block';
+               warningMessageDiv.textContent = "Not sufficient number of players added";
+               return;
+           }
+       
+           var addedPlayersData = [];
+           var playerElements = document.getElementById("added_players_list").getElementsByTagName("li");
+           for (var i = 0; i < playerElements.length; i++) {
+               addedPlayersData.push(playerElements[i].childNodes[0].textContent.trim());
+           }
+       
+           var form = document.createElement("form");
+           form.setAttribute("method", "post");
+           form.setAttribute("action", "tournament");
+       
+           var playersField = document.createElement("input");
+           playersField.setAttribute("type", "hidden");
+           playersField.setAttribute("name", "players");
+           playersField.setAttribute("value", JSON.stringify(addedPlayersData));
+           form.appendChild(playersField);
+       
+           var tournamentIdField = document.createElement("input");
+           tournamentIdField.setAttribute("type", "hidden");
+           tournamentIdField.setAttribute("name", "tournament_id");
+           tournamentIdField.setAttribute("value", document.getElementById("tournament_id_input").value);
+           form.appendChild(tournamentIdField);
+
+           var playerSportField = document.createElement("input");
+           playerSportField.setAttribute("type", "hidden");
+           playerSportField.setAttribute("name", "player_sport");
+           playerSportField.setAttribute("value", document.getElementById("sport_input").value);
+           form.appendChild(playerSportField);
+
+           var playerSportField = document.createElement("input");
+           playerSportField.setAttribute("type", "hidden");
+           playerSportField.setAttribute("name", "is_sports_club");
+           playerSportField.setAttribute("value", document.getElementById("is_sports_club").value);
+           form.appendChild(playerSportField);
+       
+           document.body.appendChild(form);
+           form.submit();
+           
+       }
+       
+       function checkAndSetButtonStates() {
+           var maxPlayers = parseInt(document.getElementById("max_players_input").value, 10);
+           var currentPlayersCount = document.getElementById("added_players_list").getElementsByTagName("li").length;
+           var buttons = document.getElementsByClassName("button");
+           var createTournamentBtn = document.getElementById("createTournamentBtn");
+       
+           var shouldDisable = currentPlayersCount >= maxPlayers;
+           for (var i = 0; i < buttons.length; i++) {
+               if(buttons[i].id !== 'createTournamentBtn'){
+                   buttons[i].disabled = shouldDisable;
+               }
+           }
+       
+           if (currentPlayersCount === maxPlayers) {
+               createTournamentBtn.disabled = false;
+           } else {
+               createTournamentBtn.disabled = true;
+           }
+       }
+
+       function isNameAdded(name) {
+           var addedPlayers = document.getElementById("added_players_list").getElementsByTagName("li");
+           for (var i = 0; i < addedPlayers.length; i++) {
+               var playerName = addedPlayers[i].childNodes[0].textContent.trim();
+               if (playerName === name) {
+                   return true;
+               }
+           }
+           return false;
+       }
+   
+       function setButtonsDisabled(disabled) {
+           var buttons = document.getElementsByClassName("button");
+           for (var i = 0; i < buttons.length; i++) {
+               buttons[i].disabled = disabled;
+           }
+       }
+       
+       function addToAddedPlayers(playerName) {
+           var maxPlayers = parseInt(document.getElementById("max_players_input").value, 10);
+           var currentPlayersCount = document.getElementById("added_players_list").getElementsByTagName("li").length;
+       
+           if (currentPlayersCount >= maxPlayers) {
+               alert("Maximum number of participants has been reached");
+               return;
+           }
+       
+           if (!isNameAdded(playerName)) {
+               var addedPlayersList = document.getElementById("added_players_list");
+               var newListItem = document.createElement("li");
+       
+               var textNode = document.createTextNode(playerName);
+               newListItem.appendChild(textNode);
+       
+               newListItem.appendChild(document.createTextNode(" "));
+       
+               var removeBtn = document.createElement("button");
+               removeBtn.textContent = "Remove";
+               removeBtn.onclick = function() { removePlayer(this); };
+       
+               newListItem.appendChild(removeBtn);
+       
+               addedPlayersList.appendChild(newListItem);
+               
+               checkAndSetButtonStates();
+               setButtonsDisabled(true);
+
+           } else {
+               alert("This player has already been added.");
+           }
+           setButtonsDisabled(true);
+           checkAndSetButtonStates();
+       }
+       
+       
+       
+       function prepareSearchResultsForSubmission(actionUrl, manualValue) {
+           var form = document.getElementById('searchForm');
+           var manualInput = document.getElementById('manual');
+           var addedPlayers = [];
+           var playerElements = document.getElementById("added_players_list").getElementsByTagName("li");
+       
+           form.action = actionUrl;
+           manualInput.value = manualValue;
+       
+           for (var i = 0; i < playerElements.length; i++) {
+               var playerName = playerElements[i].childNodes[0].textContent.trim();
+               addedPlayers.push(playerName);
+           }
+           document.getElementById("search_results_input").value = JSON.stringify(addedPlayers);
+       
+           form.submit();
+       }
+       function removePlayer(button) {
+           var listItem = button.parentElement;
+           listItem.remove();
+           checkAndSetButtonStates();
+       }
+   </script>   
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MatchScore Dashboard</title>
+</head>
+<style>
+    /* Style for the top bar */
+    #topBar {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center; 
+        padding: 10px;
+        background-color: #f8f8f8; /* Example background color */
+        box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1); /* Example shadow for depth */
+    }
+
+    /* Style for user details inside the top bar */
+    #userDetails {
+        display: flex;
+        align-items: center;
+    }
+
+    /* Style for the user image */
+    #userDetails img {
+        margin-left: 10px;
+        height: 50px;
+        width: 50px;
+        border-radius: 50%; /* Optional: makes the image circular */
+    }
+
+    /* New container for main content */
+    #mainContainer {
+        display: flex;
+        height: calc(100vh - 60px); /* Adjust based on the height of the top bar */
+        margin-top: 10px; /* Optional: adds some space below the top bar */
+    }
+
+    /* Style for the dashboard section */
+    #dashboard {
+        width: calc(50% - 15px);
+        margin-right: 10px;
+        padding: 10px;
+        overflow-y: auto; /* Enables scrolling for overflow content */
+    }
+
+    /* Style for the buttons in the dashboard */
+    .dashboard-button {
+        display: block;
+        margin-bottom: 10px;
+        padding: 8px 15px;
+        background-color: #007bff;
+        color: white;
+        text-align: center;
+        text-decoration: none;
+        border-radius: 4px;
+        transition: background-color 0.3s ease;
+        justify-content: space-between;
+    }
+
+    #dashboard h2 {
+        margin-bottom: 20px; /* Add some space below the heading */
+    }
+
+    .dashboard-buttons-container {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        flex-grow: 1; /* Ensures it takes up available space */
+    }
+
+    .dashboard-button:hover {
+        background-color: #0056b3;
+    }
+
+    /* Style for warning messages */
+    .warning-message {
+        color: red;
+        margin-bottom: 10px;
+    }
+
+    /* Style for the right-hand content area */
+    #content {
+        flex: 1;
+        padding: 10px;
+    }
+</style>
+</head>
+<body>
+    <div id="topBar">
+        <div id="userDetails">
+            <span>{{ name }}</span>
+            <img src="{{ image_data_url }}" alt="User Image">
+            
+        </div>
+    </div>
+    <div id="dashboard">
+        <h2>Dashboard</h2>
+        {% if user_role == 'player' %}
+            <a href="/get/users/accountmanagement" class="dashboard-button">Manage your account</a>
+            <a href="/get/users/playerrequest" class="dashboard-button">Request to link a player profile</a>
+            {% if invalid_request %}
+                <div class="warning-message">You have other requests, which need to be processed before you can post a new request!</div>
+            {% endif %}
+            <a href="/get/users/directorrequest" class="dashboard-button">Request to get elevated to tournament director</a>
+            {% if invalid_request %}
+                <div class="warning-message">You have other requests, which need to be processed before you can post a new request!</div>
+            {% endif %}
+            <a href="/get/users/clubmanagerrequest" class="dashboard-button">Request to get elevated to club manager</a>
+            {% if invalid_request %}
+                <div class="warning-message">You have other requests, which need to be processed before you can post a new request!</div>
+            {% endif %}
+        {% endif %}
+
+        {% if user_role == 'director' %}
+            <a href="/get/users/accountmanagement" class="dashboard-button">Manage your account</a>
+            <a href="/tournaments/create_tournament_form" class="dashboard-button">Create a tournament</a>
+        {% endif %}
+
+        {% if user_role == 'club_manager' %}
+            <a href="/get/users/accountmanagement" class="dashboard-button">Manage your account</a>
+            <form id="addPlayersForm" method="post" class="dashboard-form" action ="/users/addplayerstoclub" >
+                <input type="hidden" name="sports_club_id" value="{{ sports_club_id }}">
+                <input type="hidden" name="is_sports_club" value={{1}}>
+                <input type="hidden" name="player_sport" value="{{ sport }}">
+                <button type="submit" class="dashboard-button">Add players to club</button>
+            </form>
+            <div id="playerSearchForm" style="display: none;">
+                <form method="post" action="/players/searchplayerforclub">
+                    <label for="player_name">Player Name:</label>
+                    <input type="text" id="player_name" name="player_name" required>
+                    <input type="hidden" name="sports_club_id" value="{{ sports_club_id }}">
+                    <input type="hidden" name="is_sports_club" value={{1}}>
+                    <input type="hidden" name="player_sport" value="{{ sport }}">
+                    <button type="submit" class="dashboard-button">Search</button>
+                </form>
+                <div class="section">
+                    <h3>Added Players</h3>
+                    <ul id="added_players_list">
+                        {% for player in added_players %}
+                            <li>{{ player }}
+                            <button onclick="removePlayer(this)">Remove</button>
+                            </li>
+                        {% endfor %}
+                        {% for player in player_names %}
+                            <li>{{ player }}
+                            <button onclick="removePlayer(this)">Remove</button>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        {% endif %}
+
+        {% if user_role == 'admin' %}
+            <a href="/get/accountmanagement" class="dashboard-button">Manage your account</a>
+            <a href="/get/users/manage" class="dashboard-button">Create a tournament</a>
+        {% endif %}
+    </div>
+    <script>
+        function showPlayerSearchForm() {
+            // Hide the original form
+            document.getElementById('addPlayersForm').style.display = 'none';
+    
+            // Show the new player search form
+            document.getElementById('playerSearchForm').style.display = 'block';
+        }
+    </script>
+
+</body>
+</html>

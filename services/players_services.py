@@ -15,7 +15,11 @@ async def register_player(fullname:str, sport:str, is_sports_club:int, sports_cl
                      (player[0]==fullname and player[3]==sport)]
         if len(player_exists) == 0:
             if country is not None:    
-                country_code = read_query('''select country_code from countries where name = ?''',(country,))[0][0]
+                country_code = read_query('''select country_code from countries where name = ?''',(country,))
+                if not country_code:
+                    country_code = None
+                else:
+                    country_code = country_code[0][0]
             else: country_code = None
             
             if is_sports_club == 0:
@@ -39,11 +43,25 @@ async def register_player(fullname:str, sport:str, is_sports_club:int, sports_cl
 async def find_player(player_name: str, player_sport: str, is_sports_club: int):
     search_name = f'%{player_name}%'
     player = read_query('''select p.id, p.full_name, p.profile_picture, sp.name, pc.full_name 
+                            from players p
+                            join players_has_sports psp on p.id = psp.player_id
+                            join sports sp on psp.sport_id = sp.id
+                            left join players pc on pc.id = p.sports_club_id
+                            where p.full_name like ? and sp.name=? and p.is_sports_club = ?''',
+                            (search_name, player_sport, is_sports_club))
+    
+        
+    if player:
+        return player
+    return
+
+async def find_player_for_club(player_name: str, player_sport: str, is_sports_club: int):
+    search_name = f'%{player_name}%'
+    player = read_query('''select p.id, p.full_name, p.profile_picture, sp.name 
                         from players p
                         join players_has_sports psp on p.id = psp.player_id
                         join sports sp on psp.sport_id = sp.id
-                        left join players pc on pc.id = p.sports_club_id
-                        where p.full_name like ? and sp.name=? and p.is_sports_club = ?''',
+                        where p.full_name like ? and sp.name=? and p.is_sports_club = ? and p.sports_club_id is Null''',
                         (search_name, player_sport, is_sports_club))
     if player:
         return player
