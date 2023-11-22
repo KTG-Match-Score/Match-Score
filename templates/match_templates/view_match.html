@@ -55,36 +55,46 @@
 <body>
     <div class="container">
         <ul>
-        {% if match.is_individuals == false %}    
-            <li>
+        {% if match.is_individuals == false %}
                 <h4>{{ match.tournament_name }}</h4>
-                <h3>{{ match.participants[0] }} - {{ match.participants[1] }}</h3>
-                <h4>{{ match.played_on.strftime("%Y-%m-%d  %H:%M") }}</h4>
-                <h3>{{ match.location }}</h3>
-                <p>{{ match.finished }}</p>
-            </li>
+                {% for player in match.participants %}
+                    {% if match.finished == "finished" %}
+                        <h4><img src="{{ player.picture }}" alt="{{ player.fullname }}" 
+                        style="height: 30px; width: 30px; border-radius: 50%;">
+                        {{ player.fullname }}, {{ player.country_code }}:
+                        <strong>{{ player.result }}</strong></h4>
+                    {% else %}
+                        <h4> <img src="{{ player.picture }}" alt="{{ player.fullname }}" 
+                        style="height: 30px; width: 30px; border-radius: 50%;">
+                        {{ player.fullname }}, {{ player.country_code }}</h4>
+                    {% endif %}
+                {% endfor %}
+                <h3>Will be played in {{ match.location }}: 
+                    {{ match.played_on.strftime("%Y-%m-%d  %H:%M") }}</h3>
         {% else %}
-            <li>
                 <h4>{{ match.tournament_name }}</h4>
                 <h4>{{ match.played_on.strftime("%Y-%m-%d  %H:%M") }}</h4>
                 <h3>{{ match.location }}</h3>
                 <h3>Participants list: </h3>
                 {% for player in match.participants|sort(attribute="place") %}
                 <li>
-                    {% if match.finished == "finished"%}
+                    {% if match.finished == "finished" %}
                         <p><img src="{{ player.picture }}" alt="{{ player.fullname }}" 
                         style="height: 30px; width: 30px; border-radius: 50%;">
                         {{ player.fullname }}, {{ player.country_code }} <br>Place:
-                        <strong>{{ player.place}}</strong>, Time: <strong>{{ player.result }}</strong></p>
+                        <strong>{{ player.place}}</strong>, Score: <strong>{{ player.result }}</strong></p>
                     {% else %}
                         <p><img src="{{ player.picture }}" alt="{{ player.fullname }}" 
                         style="height: 30px; width: 30px; border-radius: 50%;">
                         {{ player.fullname }}, {{ player.country_code }}</p>
-                        <h4>{{ match.finished }}</h4>
+                        {% endif %}
+                    </li>
+                    {% endfor %}
+                    {% if match.finished == "finished" %}
+                    <h4 style="color: green;">{{ match.finished }}</h4>
+                    {% else %}
+                    <h4 style="color: red;">{{ match.finished }}</h4>
                     {% endif %}
-                </li>
-                {% endfor %}
-            </li>
         {% endif %}
         </ul>
     </div>

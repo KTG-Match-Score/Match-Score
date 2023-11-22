@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>View match</title>
+    <title>View matches</title>
     <style>
         body {
             background-color: #888888;
@@ -54,31 +54,51 @@
 </head>
 <body>
     <div class="container">
-        <!-- <h2>Matches:</h2> -->
-
+        <h2>Matches:</h2>
+        {% if matches == [] %}
+        <h4>No matches</h4>
+        <form action="/matches/create" method="get">
+            <button type="submit">Create match</button>
+        </form>
+        {% else %}
         <ul>
             {% for match in matches %}
                 {% if match.is_individuals == false %}    
-                    <li>
-                        <h4>{{ match.tournament_name }}</h4>
-                        <a style="color: aqua;"
-                        href="/matches/match/{{match.id}}">{{ match.participants[0][0] }} - {{ match.participants[1][0] }}</a>
-                        <h4>{{ match.played_on.strftime("%Y-%m-%d  %H:%M") }}</h4>
-                        <h4>{{ match.location }}</h4>
-                        <p>{{ match.finished }}</p>
-                    </li>
+                <li>
+                    <h4>{{ match.tournament_name }}</h4>
+                    <form action="/matches/match/{{ match.id }}" method="get">
+                        <button style="background-color: rgb(38, 174, 192);" type="submit">
+                            {{ match.participants[0].fullname }} - {{ match.participants[1].fullname }}</button>
+                    </form>
+                    
+                    
+                    <h4>{{ match.played_on.strftime("%Y-%m-%d  %H:%M") }}</h4>
+                    <h4>{{ match.location }}</h4>
+                    {% if match.finished == "finished" %}
+                    <h4 style="color: green;">{{ match.finished }}</h4>
                     {% else %}
-                    <li>
-                        <h4>{{ match.tournament_name }}</h4>
-                        <h4>{{ match.played_on.strftime("%Y-%m-%d  %H:%M") }}</h4>
-                        <h4>{{ match.location }}</h4>
-                        <p>Participants: {{ match.participants }}</p>
-                        <p>{{ match.finished }}</p>
-                        <a style="color: aqua;" href="/matches/match/{{match.id}}">Match details</a>
-                    </li>
+                    <h4 style="color: red;">{{ match.finished }}</h4>
+                    {% endif %}
+                </li>
+                {% else %}
+                <li>
+                    <h4>{{ match.tournament_name }}</h4>
+                    <h4>{{ match.played_on.strftime("%Y-%m-%d  %H:%M") }}</h4>
+                    <h4>{{ match.location }}</h4>
+                    <p>Participants: {{ match.participants }}</p>
+                    {% if match.finished == "finished" %}
+                    <h4 style="color: green;">{{ match.finished }}</h4>
+                    {% else %}
+                    <h4 style="color: red;">{{ match.finished }}</h4>
+                    {% endif %}
+                    <form action="/matches/match/{{ match.id }}" method="get">
+                        <button style="background-color: rgb(38, 174, 192);" type="submit">Match Details</button>
+                    </form>
+                </li>
                 {% endif %}
             {% endfor %}
         </ul>
+        {% endif %}
     </div>
 </body>
 </html>
