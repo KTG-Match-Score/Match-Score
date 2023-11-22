@@ -1,12 +1,11 @@
-from datetime import datetime, time, timedelta
-from enum import Enum
+from datetime import datetime, timedelta
 from fastapi import APIRouter, Body, Depends, Form, HTTPException, Header, Path, Query, Request, status
 from fastapi.responses import RedirectResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.templating import Jinja2Templates
-from pydantic import BaseModel
 from models.match import Match
 from models.player import Player
+from models.tournament import Tournament
 from models.user import User
 import services.users_services as users_services
 from services import matches_services as ms
@@ -82,21 +81,23 @@ async def add_result(request: Request, id: int):
     #         tokens = auth.token_response(user)
     #     except:
     #         RedirectResponse(url='/', status_code=303)
-    result: list[dict] = await request.json()
-    temp_result = {}
-    for el in result:
-        for k, v in el.items():
-            temp_result[k] = temp_result.get(k, v)
+    try:
+        result = convert_result_from_string(await request.json())
+    except:
+        return bad_request(request, "Error while converting the score! Review your input")
     
     match = ms.view_single_match(id)
 
     if not match: return not_found(request)
-    if match.played_on < datetime.now():
+    if match.played_on < datetime.utcnow() and match.finished == "not finished":
         ms.change_match_to_finished(match)
     if match.finished == "not finished":
         return bad_request(request, "Match not finished")
     
-    new_result = result_extractor(match, temp_result)
+    try:
+        new_result, winner = calculate_result_and_get_winner(match, result)
+    except:
+        return bad_request(request, "Error while calculating the score! Review your input")
     
     match = ms.add_match_result(match, new_result)
     return templates.TemplateResponse("view_match.html", {"request": request, "match": match}) 
@@ -106,15 +107,10 @@ async def add_result(request: Request, id: int):
 async def create_match(
     request: Request,
     format: Annotated[str, Form(...)], 
-    is_individuals: Annotated[bool, Form(...)], 
+    tournament: Tournament,
     location: Annotated[str, Form(...)],
-    participants: list = [],
-    tournament_id: Annotated[int, Form(...)] = 0, 
-    year: int = Form(),
-    month: int = Form(),
-    day: int = Form(),
-    hour: int = Form(),
-    minute: int = Form()
+    played_on_date: Annotated[datetime, Form(...)],
+    participants: list = []
     ):
     """ requires login and director/admin rights """
     # user, token and checks for admin, director
@@ -130,18 +126,16 @@ async def create_match(
     #     except:
     #         RedirectResponse(url='/', status_code=303)
 
-    played_on_date = datetime(year, month, day, hour, minute)
-
-    if played_on_date < datetime.now(): 
-        return bad_request(request, "You can't create an event in the past")
-
+    if played_on_date < tournament.start_date or played_on_date >= tournament.end_date: 
+        return bad_request(request, "The time of the match should be within the time of the tournament")
+    
     new_match = ms.create_new_match(
         Match(
-        format=format, 
-        played_on=played_on_date, 
-        is_individuals=is_individuals, 
-        location=location,
-        tournament_id=tournament_id
+        format = format, 
+        played_on = played_on_date, 
+        is_individuals = tournament.is_individuals, 
+        location = location,
+        tournament_id = tournament.id
         ), 
         participants
         )
@@ -185,7 +179,7 @@ async def edit_match(
     if not match: return not_found(request)
     new_date = datetime(new_year, new_month, new_day, new_hour, new_minute)
     
-    if new_date < datetime.now(): 
+    if new_date < datetime.utcnow(): 
         return bad_request(request, "You can't create an event in the past")
 
     match.played_on = new_date
@@ -220,63 +214,61 @@ def bad_request(request: Request, content: str):
         },
         status_code=status.HTTP_400_BAD_REQUEST)
 
-def result_extractor(match: Match, result: dict):
-    if not match.is_individuals:
-        if match.format == "time limited":
-            score = {"winner": 0, "loser": 0}
-            team1 = list(result.keys())[0]
-            team2 = list (result.keys())[1]
-            if result[team1] > result[team2]:
-                score["winner"] = {team1: result[team1]}
-                score["loser"] = {team2: result[team2]}
-            elif result[team1] < result[team2]:
-                score["winner"] = {team2: result[team2]}
-                score["loser"] = {team1: result[team1]}
-            else:
-                score["draw"] = {team1: result[team1],
-                                 team2: result[team2]} 
-        elif match.format == "score limited":
-            score = {"winner": 0, "loser": 0}
-            p1, p2 = 0, 0
+def calculate_result_and_get_winner(match: Match, result: dict):
+    if match.format == "time limited":
+        score = {1: 0, 2: 0}
+        team1 = list(result.keys())[0]
+        team2 = list (result.keys())[1]
+        if int(result[team1]) > int(result[team2]):
+            score[1] = {team1: result[team1]}
+            score[2] = {team2: result[team2]}
+        elif int(result[team1]) < int(result[team2]):
+            score[1] = {team2: result[team2]}
+            score[2] = {team1: result[team1]}
+        else:
+            score["draw"] = {team1: result[team1],
+                                team2: result[team2]} 
 
-            for sett in result[team1]:
-                if result[team1][sett] > result[team2][sett]:
+    elif match.format == "score limited":
+        score = {1: 0, 2: 0}
+        p1, p2 = 0, 0
+        team1, team2 = list(result.keys())[0], list (result.keys())[1]
+        result[team1] = list(map(int, result[team1].split(',')))
+        result[team2] = list(map(int, result[team2].split(',')))
+        for pl, sett in result.items():
+            for i in range(len(sett)):
+                if int(result[team1][i]) > int(result[team2][i]):
                     p1 += 1
                 else: p2 += 1
-            if p1 > p2:
-                score["winner"] = {team1: result[team1]}
-                score["loser"] = {team2: result[team2]}
-            else:
-                score["winner"] = {team2: result[team2]}
-                score["loser"] = {team1: result[team1]}
-        elif match.format == "first finisher":
-            score = sorted(result.items(), key=lambda x: x[1])
-            final = {}
-            for pl, sc in score:
-                final[sc] = final.get(sc, []) + [pl]
-            score = dict(enumerate(final.items(),1))
-    else:
-        if match.format == "time limited" or match.format == "score limited":
-            score = sorted(result.items(), key=lambda x: -x[1])
-            final = {}
-            for pl, sc in score:
-                final[sc] = final.get(sc, []) + [pl]
-            score = dict(enumerate(final.items(),1))
-        elif match.format == "first finisher":
-            for p, s in result.items():
-                result[p] = score_convertor(s)
-            score = sorted(result.items(), key=lambda x: x[1])
-            final = {}
-            for pl, sc in score:
-                final[sc] = final.get(sc, []) + [pl]
-            score = dict(enumerate(final.items(),1))
+            break
+        if p1 > p2:
+            score[1] = {team1: result[team1]}
+            score[2] = {team2: result[team2]}
+        elif p1 < p2:
+            score[1] = {team2: result[team2]}
+            score[2] = {team1: result[team1]}
+            
+    elif match.format == "first finisher":
+        for p, s in result.items():
+            result[p] = score_convertor(s)
+        score = sorted(result.items(), key=lambda x: x[1])
+        final = {}
+        for pl, sc in score:
+            final[sc] = final.get(sc, []) + [pl]
+        score = dict(enumerate(final.items(),1))
 
-    return score
+    return score, score[1]
+
+def convert_result_from_string(result):
+    temp_result = {}
+    for el in result:
+        for k, v in el.items():
+            temp_result[k] = temp_result.get(k, v)
+
+    return temp_result
 
 def score_convertor(s):
-    try:
-        hours, minutes, seconds, milliseconds = list(map(int, s.split(',')))
-        total_milliseconds = (hours * 60 * 60 * 1000) + (minutes * 60 * 1000) + (seconds * 1000) + milliseconds
-        return timedelta(milliseconds=total_milliseconds)
-    except:
-        return
+    hours, minutes, seconds, milliseconds = list(map(int, s.split(',')))
+    total_milliseconds = (hours * 60 * 60 * 1000) + (minutes * 60 * 1000) + (seconds * 1000) + milliseconds
+    
+    return timedelta(milliseconds=total_milliseconds)
