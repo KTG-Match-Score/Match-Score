@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Header, status, Body, Form, Request, Response
+from fastapi import APIRouter, Depends, HTTPException, Header, status, Body, Form, Request, Response, Query
 from fastapi.security import OAuth2PasswordRequestForm
 from models.user import User
 import services.users_services as users_services
@@ -8,6 +8,7 @@ import common.responses as responses
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import RedirectResponse
 import common.send_email as send_email
+import base64
 
 
 users_router = APIRouter(prefix='/users')
@@ -186,7 +187,11 @@ async def show_passwordreset_form(request: Request):
     return templates.TemplateResponse("password_reset_form.html", context={"request": request})
 
 @users_router.get("/dashboard")
-async def show_userdashboard_form(request: Request):
+async def show_userdashboard_form(
+    request: Request,
+    search_type: Optional[str] = Query(None),
+    search_param: Optional[str] = Query(None)):
+    
     access_token = request.cookies.get("access_token")
     refresh_token = request.cookies.get("refresh_token")
     tokens = {"access_token": access_token, "refresh_token": refresh_token}
@@ -198,10 +203,46 @@ async def show_userdashboard_form(request: Request):
             tokens = auth.token_response(user)
         except:
             RedirectResponse(url='/', status_code=303)
-    # need to add template and also provide logic...
-    response =  templates.TemplateResponse("not_implemented.html", context={"request": request})
+    final_matches = []
+    final_tournaments = []
+    pending_requests = []
+    if user.role == "player" or user.role == "club_manager":
+        player = await users_services.find_player(user.id)
+        if player:
+            player_id = player.id
+            matches = await users_services.find_matches(user.id, user.role, player.id)
+        else:
+            player_id = None
+    if user.role == "director":
+        tournaments = await users_services.find_tournaments(user.id, user.role)
+    if user.role == "admin":
+        pending_requests = await users_services.find_requests()
+    
+    if search_type =="tournament":
+        final_matches = [match for match in matches if match[0].title == search_param]
+        final_tournaments = [tournament for tournament in tournaments if tournament.title == search_param]
+    
+    elif search_type == "opponent":
+        final_matches = [match for match in matches if search_param in match[1].participants]     
+        
+    mime_type = "image/jpg"
+    base64_encoded_data = base64.b64encode(user.picture).decode('utf-8')
+    image_data_url = f"data:{mime_type};base64,{base64_encoded_data}" 
+    
+    
+    response =  templates.TemplateResponse("user_dashboard.html", 
+        context={
+        "request": request,
+        "name": user.email,
+        "image_data_url": image_data_url,
+        "user_role": user.role,
+        "player_id": player_id,
+        "matches": final_matches,
+        "tournaments": final_tournaments,
+        "pending_requests": pending_requests})
     response.set_cookie(key="access_token",
                         value=tokens["access_token"], httponly=True)
     response.set_cookie(key="refresh_token",
                         value=tokens["refresh_token"], httponly=True)
     return response
+

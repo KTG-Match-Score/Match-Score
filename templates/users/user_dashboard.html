@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MatchScore Dashboard</title>
+</head>
+<style>
+    /* Style for the top bar */
+    #topBar {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center; 
+        padding: 10px;
+        background-color: #f8f8f8; /* Example background color */
+        box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1); /* Example shadow for depth */
+    }
+
+    /* Style for user details inside the top bar */
+    #userDetails {
+        display: flex;
+        align-items: center;
+    }
+
+    /* Style for the user image */
+    #userDetails img {
+        margin-left: 10px;
+        height: 50px;
+        width: 50px;
+        border-radius: 50%; /* Optional: makes the image circular */
+    }
+
+    /* New container for main content */
+    #mainContainer {
+        display: flex;
+        height: calc(100vh - 60px); /* Adjust based on the height of the top bar */
+        margin-top: 10px; /* Optional: adds some space below the top bar */
+    }
+
+    /* Style for the dashboard section */
+    #dashboard {
+        flex: 1;
+        margin-right: 10px;
+        padding: 10px;
+        border-right: 1px solid #ccc;
+        overflow-y: auto; /* Enables scrolling for overflow content */
+    }
+
+    /* Style for the buttons in the dashboard */
+    .dashboard-button {
+        display: block;
+        margin-bottom: 10px;
+        padding: 8px 15px;
+        background-color: #007bff;
+        color: white;
+        text-align: center;
+        text-decoration: none;
+        border-radius: 4px;
+        transition: background-color 0.3s ease;
+    }
+
+    .dashboard-button:hover {
+        background-color: #0056b3;
+    }
+
+    /* Style for warning messages */
+    .warning-message {
+        color: red;
+        margin-bottom: 10px;
+    }
+
+    /* Style for the right-hand content area */
+    #content {
+        flex: 1;
+        padding: 10px;
+    }
+</style>
+</head>
+<body>
+    <div id="topBar">
+        <div id="userDetails">
+            <span>{{ name }}</span>
+            <img src="{{ image_data_url }}" alt="User Image">
+            
+        </div>
+    </div>
+    <div id="dashboard">
+        <h2>Dashboard</h2>
+        {% if user_role == 'player' %}
+            <a href="/get/accountmanagement" class="dashboard-button">Manage your account</a>
+            <a href="/get/playerrequest" class="dashboard-button">Request to link a player profile</a>
+            {% if invalid_request %}
+                <div class="warning-message">You have other requests, which need to be processed before you can post a new request!</div>
+            {% endif %}
+            <a href="/get/directorrequest" class="dashboard-button">Request to get elevated to tournament director</a>
+            {% if invalid_request %}
+                <div class="warning-message">You have other requests, which need to be processed before you can post a new request!</div>
+            {% endif %}
+            <a href="/get/clubmanagerrequest" class="dashboard-button">Request to get elevated to club manager</a>
+            {% if invalid_request %}
+                <div class="warning-message">You have other requests, which need to be processed before you can post a new request!</div>
+            {% endif %}
+        {% endif %}
+    </div>
+
+
+</body>
+</html>
