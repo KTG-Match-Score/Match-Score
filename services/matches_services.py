@@ -109,6 +109,11 @@ def view_single_match(id: int):
             )
     if not match: return
 
+    match = get_match_participants(match)
+
+    return match
+
+def get_match_participants(match: Match):
     if not match.is_individuals:
         match.participants = [
             Player.from_query_with_results(*p) for p in read_query(
@@ -140,13 +145,13 @@ def view_single_match(id: int):
         mime_type = "image/jpg"
         base64_encoded_data = base64.b64encode(player.picture).decode('utf-8')
         image_data_url = f"data:{mime_type};base64,{base64_encoded_data}"
-        player.picture = image_data_url 
-    return match
+        player.picture = image_data_url
 
+    return match
 
 def create_new_match(
         match: Match,
-        participants: Optional[list] = []
+        participants: list = []
         ):
     match.id = insert_query(
         '''INSERT INTO 
@@ -163,30 +168,8 @@ def create_new_match(
         match.participants = add_participants(match, participants)
     return match
 
-def add_participants(match: Match, participants: list[Player]): # to refactor
-    # if not match.is_individuals:
-    #     match.participants = [
-    #         Player.from_query(*p) for p in read_query(
-    #         f'''SELECT
-    #         p.id, p.full_name, p. profile_picture, p.country_code, p.is_sports_club, p.sports_club_id,  
-    #         (SELECT
-    #         s.name FROM sports s 
-    #         JOIN players_has_sports phs ON s.id = phs.sport_id 
-    #         WHERE phs.player_id=p.id) AS sport
-    #         FROM players p
-    #         WHERE p.is_sports_club = 1''')
-    #         ]
-    # else:
-    #     match.participants: list[Player] = [
-    #         Player.from_query(*p) for p in read_query(
-    #         f'''SELECT
-    #         p.id, p.full_name, p. profile_picture, p.country_code, is_sports_club, p.sports_club_id,  
-    #         (SELECT
-    #         s.name FROM sports s 
-    #         JOIN players_has_sports phs ON s.id = phs.sport_id 
-    #         WHERE phs.player_id=p.id) AS sport
-    #         FROM players p''')
-    #         ]
+def add_participants(match: Match, participants: list[Player]):
+    
     query = '''
             INSERT INTO matches_has_players
             (matches_id, players_id, result) VALUES''' 
@@ -208,38 +191,40 @@ def add_participants(match: Match, participants: list[Player]): # to refactor
         match.participants.extend(participants) # if the request is edit_match, the participants list will be already updated
     return match
 
-def edit_match_details(match: Match, old_participants: list): # to refactor
-    result = update_query(f"""
-        UPDATE matches SET format = '{match.format}', played_on = '{match.played_on}', 
-        location = '{match.location}' WHERE (id = '{match.id}');""")
-    
-    temp_lst = []
-    for pl in match.participants:
-        player = next(Player.from_query(*p) for p in read_query(
+def create_players_from_names(participants: list[str]) -> list[Player]:
+    temp_participants = []
+    for pl in participants:
+        temp_participants.append(next(Player.from_query_with_results(*p) for p in read_query(
             f'''SELECT
-            p.id, p.full_name, p. profile_picture, p.country_code, p.is_sports_club, p.sports_club_id,  
+            p.id, p.full_name, p. profile_picture, p.country_code, is_sports_club, p.sports_club_id,  
             (SELECT
             s.name FROM sports s 
             JOIN players_has_sports phs ON s.id = phs.sport_id 
-            WHERE phs.player_id=p.id) AS sport
+            WHERE phs.player_id=p.id) AS sport,
+            mp.result, mp. place
             FROM players p
-            WHERE  p.full_name LIKE "%{pl}%"'''))
-        temp_lst.append(player)
-    match.participants = temp_lst
+            JOIN matches_has_players mp ON p.id = mp.players_id WHERE p.full_name LIKE "%{pl}%" ''')))
+
+    return temp_participants
+
+def edit_match_details(match: Match, old_participants: list[Player]): 
+    _ = update_query(f"""
+        UPDATE matches SET format = '{match.format}', played_on = '{match.played_on}', 
+        location = '{match.location}' WHERE (id = '{match.id}');""")
+    
     update_participants(old_participants, match)
 
     return match
 
-def update_participants(old_participants: list[Player], match: Match): # to refactor
-    to_remove = tuple(el.id for el in set(old_participants).difference(match.participants))
-    to_add = tuple(el for el in set(match.participants).difference(old_participants))
-    print(to_add)
-    print("------------")
+def update_participants(old_participants: list[Player], match: Match):
+    to_remove = tuple(el.id for el in old_participants)
+    
     print(to_remove)
     query = f"""DELETE FROM matches_has_players WHERE matches_id={match.id} and players_id in {to_remove} """
     print(query)
-    update_query(query)
-    add_participants(match, to_add)
+    _ = update_query(query)
+    add_participants(match, match.participants)
+    return match
 
 def add_match_result(match: Match, result: dict):
     new_line = '\n'

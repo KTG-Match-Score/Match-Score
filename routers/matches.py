@@ -30,11 +30,12 @@ def view_matches(
 
     return templates.TemplateResponse("view_matches.html", {"request":request, "matches": matches})
 
-
-@matches_router.get("/create", tags=["Matches redirect"])
+# maybe create match should be called directly from the tournaments schema endpoint???
+@matches_router.get("/create", tags=["Matches redirect"]) 
 async def create_redirect(request: Request):
     """ requires login after redirection """
-    return templates.TemplateResponse("create_match.html", {"request": request})
+    return templates.TemplateResponse("create_match.html", 
+                                      {"request": request})
 
 
 @matches_router.get("/edit/{id}", tags=["Matches redirect"])
@@ -186,7 +187,8 @@ async def edit_match(
     if new_format: match.format = new_format
     if new_is_individuals: match.is_individuals = new_is_individuals
     if new_location: match.location = new_location
-    if new_participants: 
+    if new_participants:
+        new_participants = ms.create_players_from_names(new_participants)
         old_participants = match.participants
         match.participants = new_participants
     
