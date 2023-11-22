@@ -79,144 +79,77 @@
             }
         }
     </style>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 </head>
 <body>
     <form action="/matches/create" method="POST">
+        <p>
+            <label for="start_date">Played on:</label>
+            <div class="calendar-trigger" id="start-calendar-dp-trigger">
+                <img alt="calendar" loading="lazy" decoding="async"
+                src="https://www.livescore.com/ls-web-assets/svgs/common/calendar-62a86ad26c51fe49ea1c6abb202a15b4.svg"
+                style="color: transparent;">
+                <input type="text" id="start_date" name="start_date" placeholder="Select Date" required>
+            </div>
+        </p>
         <div>
-            <p>Played on:
-            <label for="year" >Year:</label>    
-            <select type="number" name="year" id="year" required>
-                <option value=2023>2023</option>
-                <option value=2024>2024</option>
-                <option value=2025>2025</option>
-                <option value=2026>2026</option>
-                <option value=2027>2027</option>
-                <option value=2028>2028</option>
-                <option value=2029>2029</option>
-                <option value=2030>2030</option>
-            </select>
-            <label for="month">Month:</label>
-            <select type="number" name="month" id="month" required>
-                <option value=1>JAN</option>
-                <option value=2>FEB</option>
-                <option value=3>MAR</option>
-                <option value=4>APR</option>
-                <option value=5>MAY</option>
-                <option value=6>JUN</option>
-                <option value=7>JUL</option>
-                <option value=8>AUG</option>
-                <option value=9>SEP</option>
-                <option value=10>OCT</option>
-                <option value=11>NOV</option>
-                <option value=12>DEC</option>
-            </select>
-            <label for="day">Day:</label>
-            <select type="number" name="day" id="day" required>
-                <option value=1>1</option>
-                <option value=2>2</option>
-                <option value=3>3</option>
-                <option value=4>4</option>
-                <option value=5>5</option>
-                <option value=6>6</option>
-                <option value=7>7</option>
-                <option value=8>8</option>
-                <option value=9>9</option>
-                <option value=10>10</option>
-                <option value=11>11</option>
-                <option value=12>12</option>
-                <option value=13>13</option>
-                <option value=14>14</option>
-                <option value=15>15</option>
-                <option value=16>16</option>
-                <option value=17>17</option>
-                <option value=18>18</option>
-                <option value=19>19</option>
-                <option value=20>20</option>
-                <option value=21>21</option>
-                <option value=22>22</option>
-                <option value=23>23</option>
-                <option value=24>24</option>
-                <option value=25>25</option>
-                <option value=26>26</option>
-                <option value=27>27</option>
-                <option value=28>28</option>
-                <option value=29>29</option>
-                <option value=30>30</option>
-                <option value=31>31</option>
-            </select>
-            <label for="hour">Hour:</label>
-            <select type="number" name="hour" id="hour" required>
-                <option value=7>07</option>
-                <option value=8>08</option>
-                <option value=9>09</option>
-                <option value=10>10</option>
-                <option value=11>11</option>
-                <option value=12>12</option>
-                <option value=13>13</option>
-                <option value=14>14</option>
-                <option value=15>15</option>
-                <option value=16>16</option>
-                <option value=17>17</option>
-                <option value=18>18</option>
-                <option value=19>19</option>
-                <option value=20>20</option>
-                <option value=21>21</option>
-                <option value=22>22</option>
-                <option value=23>23</option>
-                <option value=0>00</option>
-                <option value=1>01</option>
-                <option value=2>02</option>
-                <option value=3>03</option>
-                <option value=4>04</option>
-                <option value=5>05</option>
-                <option value=6>06</option>
-            </select>   
-            <label for="minute">Minute</label>
-            <select type="number" name="minute" id="minute" required>
-                <option value=0>00</option>
-                <option value=5>05</option>
-                <option value=10>10</option>
-                <option value=15>15</option>
-                <option value=20>20</option>
-                <option value=25>25</option>
-                <option value=30>30</option>
-                <option value=35>35</option>
-                <option value=40>40</option>
-                <option value=45>45</option>
-                <option value=50>50</option>
-                <option value=55>55</option>
-            </select>
-            </p>
-        </div>
-        
-        <button type="submit">Create New Match</button> 
-        
+            <label for="format">Format:</label>
+            <select name="format" id="format" required >
+                <option value="" disabled selected hidden>Select Format</option>
+                <option value="time limited">Time limited</option>
+                <option value="score limited">Score limited</option>
+                <option value="first finisher">First finisher</option>
+            </div>    
         <div>
-            <textarea name="participants" id="participants" cols="60" rows="10" 
-            placeholder='
-            Participants: separate by comma ","
-            example:
-            player 1, player 2...
-                or
-            team 1, team 2...' ></textarea>
-        </div>
-        <div>
-            <input type="text" id="format" name="format" placeholder=
-            "*Match format: [ff] first finisher [tl] time-limited [sl] score-limited" size="60" required>
-        </div>    
-        <div>
-            <input type="text" id="location" name="location" placeholder="*Location" size="47" required>
+            <input type="text" id="location" name="location" placeholder="*Location" size="27" required>
             <label for="is_individuals" hidden>Individuals:</label>
             <select name="is_individuals" id="is_individuals" >
                 <option value="true">Individuals</option>
                 <option value="false">Team</option>
             </select>
-            
         </div>
         <div>
             <input type="text" id="tournament" name="tournament" placeholder=
-            "Tournament name" size="60">
+            "tournament_id" size="50">
         </div>
+        <button type="submit">Create New Match</button> 
     </form>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            flatpickr("#start_date", {
+                enableTime: true,
+                dateFormat: "Y-m-d H:i:S",
+                minDate: "today",
+                onClose: function (selectedDates, dateStr, instance) {
+                    updateEndDateOptions(dateStr);
+                },
+                time_24hr: true,
+            });
+
+            flatpickr("#end_date", {
+                enableTime: true,
+                dateFormat: "Y-m-d H:i:S",
+                minDate: "today",
+                time_24hr: true,
+            });
+        });
+
+        function updateEndDateOptions(selectedStartDate) {
+            var endDatePicker = document.getElementById("end_date")._flatpickr;
+            endDatePicker.set("minDate", selectedStartDate);
+
+        function validateForm() {
+            var requiredFields = document.querySelectorAll('[required]');
+            for (var i = 0; i < requiredFields.length; i++) {
+                if (!requiredFields[i].value.trim()) {
+                    alert("Please fill in all required fields.");
+                    return false;
+                }
+            }
+            return true;
+        }
+        }
+    </script>
 </body>
 </html>

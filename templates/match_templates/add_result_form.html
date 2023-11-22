@@ -84,7 +84,7 @@
     <div class="container">
         <h2>Add Result: {{ match.tournament_name }}</h2>
         <form id="myForm" action="/matches/result/{{ match.id }}" method="POST">
-            {% if match.format == "time limited "%}
+            {% if match.format == "time limited" %}
             <ul>
                 {% for player in match.participants %}
                 <li>
@@ -92,8 +92,7 @@
                     <input type="text" name="name{{ loop.index }}" placeholder="{{ player.fullname }}" value="{{player.id}}" hidden>
                     <input type="number" name="score{{ loop.index }}" placeholder="Score"><br>
                 </li>
-                {% endfor %}                
-                <button type="button" onclick="submitData()">Submit</button>
+                {% endfor %}               
             </ul>
             {% elif match.format == "score limited" %}
             <ul>
@@ -101,10 +100,9 @@
                 <li>
                     {{ player.fullname}}
                     <input type="text" name="name{{ loop.index }}" placeholder="{{ player.fullname }}" value="{{player.id}}" hidden>
-                    <input type="number" name="score{{ loop.index }}" placeholder="Score"><br>
+                    <input type="text" name="score{{ loop.index }}" placeholder="Score"><br>
                 </li>
                 {% endfor %}                
-                <button type="button" onclick="submitData()">Submit</button>
             </ul>
             {% else %}
             <ul>
@@ -159,6 +157,7 @@
         .then(result => {
             // Handle response from the server
             console.log('Success:', result);
+            window.history.back();
         })
         .catch(error => {
             // Handle errors
