@@ -40,10 +40,9 @@
 
     /* Style for the dashboard section */
     #dashboard {
-        flex: 1;
+        width: calc(50% - 15px);
         margin-right: 10px;
         padding: 10px;
-        border-right: 1px solid #ccc;
         overflow-y: auto; /* Enables scrolling for overflow content */
     }
 
@@ -58,6 +57,18 @@
         text-decoration: none;
         border-radius: 4px;
         transition: background-color 0.3s ease;
+        justify-content: space-between;
+    }
+
+    #dashboard h2 {
+        margin-bottom: 20px; /* Add some space below the heading */
+    }
+
+    .dashboard-buttons-container {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        flex-grow: 1; /* Ensures it takes up available space */
     }
 
     .dashboard-button:hover {
@@ -88,22 +99,75 @@
     <div id="dashboard">
         <h2>Dashboard</h2>
         {% if user_role == 'player' %}
-            <a href="/get/accountmanagement" class="dashboard-button">Manage your account</a>
-            <a href="/get/playerrequest" class="dashboard-button">Request to link a player profile</a>
+            <a href="/get/users/accountmanagement" class="dashboard-button">Manage your account</a>
+            <a href="/get/users/playerrequest" class="dashboard-button">Request to link a player profile</a>
             {% if invalid_request %}
                 <div class="warning-message">You have other requests, which need to be processed before you can post a new request!</div>
             {% endif %}
-            <a href="/get/directorrequest" class="dashboard-button">Request to get elevated to tournament director</a>
+            <a href="/get/users/directorrequest" class="dashboard-button">Request to get elevated to tournament director</a>
             {% if invalid_request %}
                 <div class="warning-message">You have other requests, which need to be processed before you can post a new request!</div>
             {% endif %}
-            <a href="/get/clubmanagerrequest" class="dashboard-button">Request to get elevated to club manager</a>
+            <a href="/get/users/clubmanagerrequest" class="dashboard-button">Request to get elevated to club manager</a>
             {% if invalid_request %}
                 <div class="warning-message">You have other requests, which need to be processed before you can post a new request!</div>
             {% endif %}
         {% endif %}
-    </div>
 
+        {% if user_role == 'director' %}
+            <a href="/get/users/accountmanagement" class="dashboard-button">Manage your account</a>
+            <a href="/tournaments/create_tournament_form" class="dashboard-button">Create a tournament</a>
+        {% endif %}
+
+        {% if user_role == 'club_manager' %}
+            <a href="/get/users/accountmanagement" class="dashboard-button">Manage your account</a>
+            <form id="addPlayersForm" method="post" class="dashboard-form" action ="/users/addplayerstoclub" >
+                <input type="hidden" name="sports_club_id" value="{{ sports_club_id }}">
+                <input type="hidden" name="is_sports_club" value={{1}}>
+                <input type="hidden" name="player_sport" value="{{ sport }}">
+                <button type="submit" class="dashboard-button">Add players to club</button>
+            </form>
+            <div id="playerSearchForm" style="display: none;">
+                <form method="post" action="/players/searchplayerforclub">
+                    <label for="player_name">Player Name:</label>
+                    <input type="text" id="player_name" name="player_name" required>
+                    <input type="hidden" name="sports_club_id" value="{{ sports_club_id }}">
+                    <input type="hidden" name="is_sports_club" value={{1}}>
+                    <input type="hidden" name="player_sport" value="{{ sport }}">
+                    <button type="submit" class="dashboard-button">Search</button>
+                </form>
+                <div class="section">
+                    <h3>Added Players</h3>
+                    <ul id="added_players_list">
+                        {% for player in added_players %}
+                            <li>{{ player }}
+                            <button onclick="removePlayer(this)">Remove</button>
+                            </li>
+                        {% endfor %}
+                        {% for player in player_names %}
+                            <li>{{ player }}
+                            <button onclick="removePlayer(this)">Remove</button>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        {% endif %}
+
+        {% if user_role == 'admin' %}
+            <a href="/get/accountmanagement" class="dashboard-button">Manage your account</a>
+            <a href="/get/users/manage" class="dashboard-button">Create a tournament</a>
+        {% endif %}
+    </div>
+    <script>
+        function showPlayerSearchForm() {
+            // Hide the original form
+            document.getElementById('addPlayersForm').style.display = 'none';
+    
+            // Show the new player search form
+            document.getElementById('playerSearchForm').style.display = 'block';
+        }
+    </script>
 
 </body>
 </html>

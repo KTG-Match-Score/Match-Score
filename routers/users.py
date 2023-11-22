@@ -188,9 +188,7 @@ async def show_passwordreset_form(request: Request):
 
 @users_router.get("/dashboard")
 async def show_userdashboard_form(
-    request: Request,
-    search_type: Optional[str] = Query(None),
-    search_param: Optional[str] = Query(None)):
+    request: Request):
     
     access_token = request.cookies.get("access_token")
     refresh_token = request.cookies.get("refresh_token")
@@ -206,24 +204,21 @@ async def show_userdashboard_form(
     final_matches = []
     final_tournaments = []
     pending_requests = []
+    player_id = None
+    sport = None
+    is_sports_club = None
     if user.role == "player" or user.role == "club_manager":
         player = await users_services.find_player(user.id)
         if player:
             player_id = player.id
+            is_sports_club = player.is_sports_club
+            sport = player.sport
             matches = await users_services.find_matches(user.id, user.role, player.id)
-        else:
-            player_id = None
     if user.role == "director":
         tournaments = await users_services.find_tournaments(user.id, user.role)
     if user.role == "admin":
         pending_requests = await users_services.find_requests()
     
-    if search_type =="tournament":
-        final_matches = [match for match in matches if match[0].title == search_param]
-        final_tournaments = [tournament for tournament in tournaments if tournament.title == search_param]
-    
-    elif search_type == "opponent":
-        final_matches = [match for match in matches if search_param in match[1].participants]     
         
     mime_type = "image/jpg"
     base64_encoded_data = base64.b64encode(user.picture).decode('utf-8')
@@ -233,10 +228,13 @@ async def show_userdashboard_form(
     response =  templates.TemplateResponse("user_dashboard.html", 
         context={
         "request": request,
-        "name": user.email,
+        "name": user.fullname,
         "image_data_url": image_data_url,
         "user_role": user.role,
         "player_id": player_id,
+        "sports_club_id": player_id,
+        "sport": sport,
+        "is_sports_club": is_sports_club,
         "matches": final_matches,
         "tournaments": final_tournaments,
         "pending_requests": pending_requests})
@@ -245,4 +243,53 @@ async def show_userdashboard_form(
     response.set_cookie(key="refresh_token",
                         value=tokens["refresh_token"], httponly=True)
     return response
-
+@users_router.post("/addplayerstoclub")
+async def show_userdashboard_form(
+    request: Request,
+    sports_club_id: int = Form(...),
+    is_sports_club: int = Form(...),
+    player_sport: str = Form (...)):
+    
+    access_token = request.cookies.get("access_token")
+    refresh_token = request.cookies.get("refresh_token")
+    tokens = {"access_token": access_token, "refresh_token": refresh_token}
+    try:
+        user = await auth.get_current_user(access_token)
+    except:
+        try:
+            user = auth.refresh_access_token(access_token, refresh_token)
+            tokens = auth.token_response(user)
+        except:
+            RedirectResponse(url='/', status_code=303)
+    if user.role == "player" or user.role == "club_manager":
+        player = await users_services.find_player(user.id)
+        if player:
+            player_id = player.id
+            is_sports_club = player.is_sports_club
+            sport = player.sport
+            matches = await users_services.find_matches(user.id, user.role, player.id)
+        else:
+            player_id = None
+            sport = None
+            is_sports_club = None
+    mime_type = "image/jpg"
+    base64_encoded_data = base64.b64encode(user.picture).decode('utf-8')
+    image_data_url = f"data:{mime_type};base64,{base64_encoded_data}" 
+    response =  templates.TemplateResponse("add_players_club.html", context={
+        "request": request,
+        "name": user.fullname,
+        "image_data_url": image_data_url,
+        "user_role": user.role,
+        "player_id": player_id,
+        "sports_club_id": player_id,
+        "is_sports_club": is_sports_club,
+        "player_sport": player_sport
+                
+    })
+    response.set_cookie(key="access_token",
+                        value=tokens["access_token"], httponly=True)
+    response.set_cookie(key="refresh_token",
+                        value=tokens["refresh_token"], httponly=True)
+    return response
+    
+    

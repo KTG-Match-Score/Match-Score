@@ -75,9 +75,11 @@ async def check_club_manager(sports_club_id, user_id):
     return
 
 async def find_player(user_id: int):
-    player_lst = read_query('''select p.id, p.full_name, p.profile_picture, p.country_code, p.is_sports_club, p.sports_club_id
+    player_lst = read_query('''select p.id, p.full_name, p.profile_picture, p.country_code, p.is_sports_club, p.sports_club_id, s.name
                         from players p 
                         join users u on u.player_id = p.id
+                        join players_has_sports psp on psp.player_id = p.id
+                        join sports s on s.id = psp.sport_id 
                         where u.id = ?''',
                         (user_id,))
     if player_lst:
@@ -149,9 +151,8 @@ async def find_matches(user_id: int, user_role: str, player_id: int):
     tournaments = await find_tournaments(user_id, user_role)
     if tournaments:
         all_matches = []
-        for i in tournaments:
+        for tournament in tournaments:
             tournament_matches=[]
-            tournament = Tournament.from_query_result(*i)
             matches = read_query('''select 
                                  m.id, 
                                  m.format, 
