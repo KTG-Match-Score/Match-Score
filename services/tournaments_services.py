@@ -1,8 +1,7 @@
 from data.database import read_query, insert_query
 from models.tournament import Tournament, MatchesInTournament
-from models.match import Match
 from models.user import User
-from datetime import datetime, date, timedelta
+from datetime import date
 import base64
 import data.database as db
 from fastapi.responses import RedirectResponse
@@ -172,6 +171,8 @@ def create_tournament(t: Tournament, user: User, sport: str):
 
     try:
         with db._get_connection() as connection:
+            cursor = connection.cursor()
+            
             if not t.prize_type:
                 query = """ INSERT INTO tournaments(title, format, start_date, end_date, parent_tournament_id, participants_per_match, is_individuals)
                             VALUES(?, ?, ?, ?, ?, ?, ?)"""
@@ -184,7 +185,7 @@ def create_tournament(t: Tournament, user: User, sport: str):
                     t.participants_per_match,
                     is_individuals,
                 ]
-
+                
             elif t.prize_type:
                 query = """ INSERT INTO tournaments(title, format, prize_type, start_date, end_date, parent_tournament_id, participants_per_match, is_individuals)
                             VALUES(?, ?, ?, ?, ?, ?, ?, ?)"""
@@ -198,22 +199,25 @@ def create_tournament(t: Tournament, user: User, sport: str):
                     t.participants_per_match,
                     is_individuals,
                 ]
-
-            t.id = insert_query(query, tuple(params))
             
-            td_query = """ INSERT INTO tournaments_has_directors(tournaments_id, users_id)
-                        VALUES(?, ?)"""
-            td_params = [t.id, user.id]
-            insert_query(td_query, tuple(td_params))
+            cursor.execute(query, tuple(params))
+            t.id = cursor.lastrowid
 
+            td_query = """  INSERT INTO tournaments_has_directors(tournaments_id, users_id)
+                            VALUES(?, ?)"""
+            td_params = [t.id, user.id]
+            cursor.execute(td_query, tuple(td_params))
+            
             ts_query = """  INSERT INTO tournaments_has_sports (tournament_id, sport_id)
                             VALUES (?, (SELECT id FROM sports WHERE name = ?))"""
             ts_params = [t.id, sport]
-            insert_query(ts_query, tuple(ts_params))
-    
+            cursor.execute(ts_query, tuple(ts_params))
+            
+            connection.commit()           
+            
     except Exception as e:
         return RedirectResponse(url="/tournaments/create_tournament_form", status_code=303) 
-
+    
     return t.id
 
 def generate_schema(t: Tournament, number_of_participants: int, sport: str):

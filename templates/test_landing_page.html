@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MatchScore Landing Page</title>
+
+    <!-- Stylesheets -->
+    <style>
+        body {
+            background-color: #888888;
+            color: #ffffff;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+            background-color: rgba(0, 0, 0, 0.8);
+            animation: fade-in 1s ease-in-out;
+            position: relative;
+            max-width: 800px; /* Adjust maximum width for the entire content */
+            margin: 0 auto; /* Center the content on the page */
+        }
+
+        .sports-container {
+            max-width: 400px; /* Adjust max-width for sports container */
+            width: 100%; /* Make it take the full width of the container */
+            text-align: center;
+        }
+
+        .sports-container h2 {
+            /* Sports header styles */
+            margin-bottom: 10px;
+        }
+
+        .sports-container .sport-item {
+            /* Sport item styles */
+            cursor: pointer;
+            transition: color 0.3s;
+            margin-right: 10px;
+            display: inline-block;
+        }
+
+        .sports-container .sport-item:hover {
+            color: #47095a;
+        }
+
+        .timestamp-container {
+            max-width: 600px; /* Adjust max-width for timestamps container */
+            width: 100%; /* Make it take the full width of the container */
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-around;
+        }
+
+        .timestamp-container .small-box {
+            /* Timestamp styles */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            margin: 10px;
+            cursor: pointer;
+            text-decoration: none;
+        }
+
+        .timestamp-container .small-box span {
+            color: #ffffff;
+            transition: color 0.3s;
+        }
+
+        .timestamp-container .small-box:hover span {
+            color: #47095a;
+        }
+
+        .calendar-trigger {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            cursor: pointer;
+            z-index: 1;
+        }
+
+        .auth-buttons {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+        }
+
+        .auth-buttons a {
+            text-decoration: none;
+            color: white;
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        .auth-buttons button {
+            background-color: #47095a;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            display: block;
+            margin-top: 10px;
+        }
+
+        .auth-buttons button:hover {
+            background-color: #45a049;
+        }
+
+        .tournaments-container {
+            max-width: 400px; /* Adjust max-width for tournaments container */
+            width: 100%; /* Make it take the full width of the container */
+            text-align: center;
+        }
+
+        .tournaments-container h2 {
+            /* Tournaments header styles */
+            margin-bottom: 10px;
+        }
+
+        .tournament-item {
+            /* Tournament item styles */
+            cursor: pointer;
+            transition: color 0.3s;
+            list-style-type: none;
+            padding: 5px;
+        }
+
+        .tournament-item:hover {
+            color: #47095a;
+        }
+
+        @keyframes fade-in {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+    </style>
+
+    <!-- Include JavaScript libraries or other dependencies -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+</head>
+<body>
+
+    <h1 style="text-align: center;">MatchScore</h1>
+
+    <!-- Tournaments -->
+    <div id="tournaments-section" class="container">
+        <div class="tournaments-container">
+            <div class="tournaments-container" id="tournamentsContainer"></div>
+            <h2>Tournaments:</h2>
+            <ul style="display: inline-block; padding: 0; list-style: none;">
+                <!-- Example tournaments data, replace this with your actual data -->
+                <li class="tournament-item" onclick="window.location='/matches/?tournament_id=1';" style="text-decoration: none;">
+                    <h3>Tournament 1</h3>
+                </li>
+                <li class="tournament-item" onclick="window.location='/matches/?tournament_id=2';" style="text-decoration: none;">
+                    <h3>Tournament 2</h3>
+                </li>
+                <li class="tournament-item" onclick="window.location='/matches/?tournament_id=3';" style="text-decoration: none;">
+                    <h3>Tournament 3</h3>
+                </li>
+                <!-- Add more tournaments as needed -->
+            </ul>
+        </div>
+    </div>
+
+    <!-- Sports -->
+    <div id="sports-section" class="container">
+        <div class="sports-container">
+            <ul style="display: inline-block; padding: 0; list-style: none;">
+                <!-- Example sports data, replace this with your actual data -->
+                <li class="sport-item" onclick="window.location='/tournaments?sport_name=football';" style="text-decoration: none;">
+                    <h2>Football</h2>
+                </li>
+                <li class="sport-item" onclick="window.location='/tournaments?sport_name=basketball';" style="text-decoration: none;">
+                    <h2>Basketball</h2>
+                </li>
+                <li class="sport-item" onclick="window.location='/tournaments?sport_name=athletics';" style="text-decoration: none;">
+                    <h2>Athletics</h2>
+                </li>
+                <!-- Add more sports as needed -->
+            </ul>
+        </div>
+    </div>
+
+    <!-- Timestamp Display -->
+    <div id="timestamp-display-section" class="container">
+        <div class="timestamp-container" id="timestampContainer">
+        </div>
+        <div class="calendar-trigger" id="match-calendar-dp-trigger">
+            <img alt="calendar" loading="lazy" width="18" height="18" decoding="async" data-nimg="1"
+                src="https://www.livescore.com/ls-web-assets/svgs/common/calendar-62a86ad26c51fe49ea1c6abb202a15b4.svg"
+                style="color: transparent;">
+        </div>
+    </div>
+
+    <!-- Authentication Buttons -->
+    <div class="auth-buttons">
+        <a href="users/registrationform">
+            <button>Register</button>
+        </a>
+        <a href="users/login">
+            <button>Login</button>
+        </a>
+    </div>
+
+    <!-- Include JavaScript from the existing HTML files -->
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            flatpickr("#match-calendar-dp-trigger", {
+                enableTime: false,
+                dateFormat: "Y-m-d",
+                onClose: function (selectedDates, dateStr, instance) {
+                    generateDates(dateStr);
+                }
+            });
+
+            generateDates(new Date());
+        });
+
+        function generateDates(selectedDate) {
+            var currentDate = new Date(selectedDate);
+            var daysContainer = document.getElementById("timestampContainer");
+
+            daysContainer.innerHTML = "";
+
+            for (var i = -2; i <= 2; i++) {
+                var day = new Date(currentDate);
+                day.setDate(currentDate.getDate() + i);
+
+                var formattedDate = formatDate(day);
+                var dayName = formattedDate === formatDate(new Date(selectedDate)) ? "Selected" : getDayName(day);
+
+                var smallBox = document.createElement("a");
+                smallBox.classList.add("small-box");
+                smallBox.href = "/tournaments/" + formattedDate;
+
+                var span = document.createElement("span");
+                span.textContent = dayName + " " + day.getDate() + " " + getMonthName(day);
+
+                smallBox.appendChild(span);
+                daysContainer.appendChild(smallBox);
+            }
+        }
+
+        function formatDate(date) {
+            var day = date.getDate();
+            var month = date.getMonth() + 1;
+            var year = date.getFullYear();
+
+            return year + "-" + (month < 10 ? "0" : "") + month + "-" + (day < 10 ? "0" : "") + day;
+        }
+
+        function getDayName(date) {
+            var dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+            return dayNames[date.getDay()];
+        }
+
+        function getMonthName(date) {
+            var monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+            return monthNames[date.getMonth()];
+        }
+        document.addEventListener("DOMContentLoaded", async function () {
+        // Fetch tournaments data from the FastAPI endpoint
+        const response = await fetch("/tournaments/");
+        const tournamentsData = await response.json();
+
+        // Call a function to dynamically generate and populate the tournaments container
+        generateTournaments(tournamentsData);
+    });
+
+    function generateTournaments(tournamentsData) {
+        var tournamentsContainer = document.getElementById("tournamentsContainer");
+
+        tournamentsContainer.innerHTML = "<h2>Tournaments:</h2><ul style='display: inline-block; padding: 0; list-style: none;'>";
+
+        // Loop through the tournaments data and create list items
+        tournamentsData.forEach(function (tournament) {
+            var tournamentItem = document.createElement("li");
+            tournamentItem.classList.add("tournament-item");
+
+            // Assuming tournament has an "id" attribute
+            tournamentItem.onclick = function () {
+                window.location = `/matches/?tournament_id=${tournament.id}`;
+            };
+
+            var h3 = document.createElement("h3");
+            h3.textContent = tournament.title;
+
+            tournamentItem.appendChild(h3);
+            tournamentsContainer.appendChild(tournamentItem);
+        });
+
+        tournamentsContainer.innerHTML += "</ul>";
+    }
+    </script>
+
+</body>
+</html>
