@@ -74,7 +74,11 @@
                     
                     <h4>{{ match.played_on.strftime("%Y-%m-%d  %H:%M") }}</h4>
                     <h4>{{ match.location }}</h4>
-                    <p>{{ match.finished }}</p>
+                    {% if match.finished == "finished" %}
+                    <h4 style="color: green;">{{ match.finished }}</h4>
+                    {% else %}
+                    <h4 style="color: red;">{{ match.finished }}</h4>
+                    {% endif %}
                 </li>
                 {% else %}
                 <li>
@@ -82,7 +86,11 @@
                     <h4>{{ match.played_on.strftime("%Y-%m-%d  %H:%M") }}</h4>
                     <h4>{{ match.location }}</h4>
                     <p>Participants: {{ match.participants }}</p>
-                    <p>{{ match.finished }}</p>
+                    {% if match.finished == "finished" %}
+                    <h4 style="color: green;">{{ match.finished }}</h4>
+                    {% else %}
+                    <h4 style="color: red;">{{ match.finished }}</h4>
+                    {% endif %}
                     <form action="/matches/match/{{ match.id }}" method="get">
                         <button style="background-color: rgb(38, 174, 192);" type="submit">Match Details</button>
                     </form>

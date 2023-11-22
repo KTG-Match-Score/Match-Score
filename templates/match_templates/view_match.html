@@ -59,14 +59,14 @@
                 <h4>{{ match.tournament_name }}</h4>
                 {% for player in match.participants %}
                     {% if match.finished == "finished" %}
-                        <p><img src="{{ player.picture }}" alt="{{ player.fullname }}" 
+                        <h4><img src="{{ player.picture }}" alt="{{ player.fullname }}" 
                         style="height: 30px; width: 30px; border-radius: 50%;">
-                        {{ player.fullname }}, {{ player.country_code }}: 
-                        <strong>{{ player.result }}</strong></p>
+                        {{ player.fullname }}, {{ player.country_code }}:
+                        <strong>{{ player.result }}</strong></h4>
                     {% else %}
-                        <p><img src="{{ player.picture }}" alt="{{ player.fullname }}" 
+                        <h4> <img src="{{ player.picture }}" alt="{{ player.fullname }}" 
                         style="height: 30px; width: 30px; border-radius: 50%;">
-                        {{ player.fullname }}, {{ player.country_code }}</p>
+                        {{ player.fullname }}, {{ player.country_code }}</h4>
                     {% endif %}
                 {% endfor %}
                 <h3>Will be played in {{ match.location }}: 
@@ -90,7 +90,11 @@
                         {% endif %}
                     </li>
                     {% endfor %}
-                    <h4>{{ match.finished }}</h4>
+                    {% if match.finished == "finished" %}
+                    <h4 style="color: green;">{{ match.finished }}</h4>
+                    {% else %}
+                    <h4 style="color: red;">{{ match.finished }}</h4>
+                    {% endif %}
         {% endif %}
         </ul>
     </div>
