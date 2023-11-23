@@ -28,11 +28,33 @@ async def view_tournaments(request: Request,
 
 @tournaments_router.get("/create_tournament_form")
 async def show_create_tournament_form(request: Request):
-    return templates.TemplateResponse("create_tournament_form.html", context={"request": request})
+    access_token = request.cookies.get("access_token")
+    refresh_token = request.cookies.get("refresh_token")
+    tokens = {"access_token": access_token, "refresh_token": refresh_token}
+    try:
+        user = await auth.get_current_user(access_token)
+    except:
+        try:
+            user = auth.refresh_access_token(access_token, refresh_token)
+            tokens = auth.token_response(user)
+        except:
+            RedirectResponse(url='/landing_page', status_code=303)
 
-@tournaments_router.get("/add_players")
-async def add_players_to_tournament(request: Request):
-    return 
+    if user.role != "director":
+        RedirectResponse(url='/landing_page', status_code=303)
+
+    response = templates.TemplateResponse("create_tournament_form.html", context={"request": request})
+
+    response.set_cookie(key="access_token",
+                        value=tokens["access_token"], httponly=True)
+    response.set_cookie(key="refresh_token",
+                        value=tokens["refresh_token"], httponly=True)
+    
+    return response
+
+# @tournaments_router.get("/add_players")
+# async def add_players_to_tournament(request: Request):
+#     return 
 
 @tournaments_router.get("/{date}", status_code=status.HTTP_200_OK, response_model=list[MatchesInTournament])
 async def view_tournaments_by_date(request: Request,
@@ -108,7 +130,7 @@ async def create_tournament_schema(request: Request):
 
     access_token = request.cookies.get("access_token")
     refresh_token = request.cookies.get("refresh_token")
-    tokens = {"access_token": access_token, "refresh_token": refresh_token}
+    
     try:
         user = await auth.get_current_user(access_token)
     except:
