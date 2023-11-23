@@ -4,9 +4,11 @@ from models.user import User
 from datetime import date
 import base64
 import data.database as db
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, JSONResponse
 from itertools import combinations
 import random
+import json
+
 
 def convert_form(data: bool):
     if data == True:
@@ -98,7 +100,7 @@ def get_tournaments_by_date(date: date):
     matches = [
         MatchesInTournament.from_query(*row) for row in read_query(query, tuple(params))
     ]
-
+    
     tournaments = {}
 
     for info in matches:
@@ -142,7 +144,8 @@ def get_tournaments_by_date(date: date):
                 "picture": picture,
             }
 
-    return tournaments
+    return JSONResponse(content=tournaments)
+
 
 
 def create_tournament(t: Tournament, user: User, sport: str):

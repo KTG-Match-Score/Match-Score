@@ -1,15 +1,16 @@
-from fastapi import APIRouter, status, Form, Request, Depends, Query
+from fastapi import APIRouter, status, Form, Request, Query
 from models.tournament import Tournament, MatchesInTournament
-from models.player import Player
 import routers.players as players
 import common.auth as auth
-from typing import Annotated, Optional
+from typing import Optional
 from services import tournaments_services
 from fastapi.templating import Jinja2Templates
 from datetime import date, datetime
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, JSONResponse
 import json
 import httpx
+
+
 
 tournaments_router = APIRouter(prefix="/tournaments")
 templates = Jinja2Templates(directory="templates/tournaments_templates")
@@ -62,8 +63,11 @@ async def view_tournaments_by_date(request: Request,
     tournaments_matches = tournaments_services.get_tournaments_by_date(date)
 
     if tournaments_matches == {}:
-        return templates.TemplateResponse("return_no_tournaments_by_date.html", context={"request": request})
-    return templates.TemplateResponse("return_tournaments_by_date.html", context={"request": request, "tournaments_matches": tournaments_matches})
+        return JSONResponse(content="No events for the selected date.")
+    return tournaments_matches
+    # if tournaments_matches == {}:
+    #     return templates.TemplateResponse("return_no_tournaments_by_date.html", context={"request": request})
+    # return templates.TemplateResponse("return_tournaments_by_date.html", context={"request": request, "tournaments_matches": tournaments_matches})
 
 @tournaments_router.post("/create_tournament")
 async def create_tournament(request: Request,

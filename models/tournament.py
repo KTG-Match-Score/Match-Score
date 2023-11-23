@@ -39,7 +39,7 @@ class MatchesInTournament(BaseModel):
     is_individuals: int 
     finished: str 
     participant: str 
-    picture: bytes
+    picture: bytes 
     result: str | None 
 
     @classmethod
