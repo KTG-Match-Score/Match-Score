@@ -15,7 +15,7 @@ class Tournament(BaseModel):
     child_tournament_id: Optional[Annotated[int, Field(ge=0)]] | None = None
 
     @classmethod
-    def from_query_result(cls, id, title, format, prize_type, start_date, end_date, parent_tournament_id, participant_per_match, is_individuals, child_tournament_id):
+    def from_query_result(cls, id, title, format, prize_type, start_date, end_date, parent_tournament_id, participants_per_match, is_individuals, child_tournament_id):
         return cls(
             id=id, 
             title=title, 
@@ -24,7 +24,7 @@ class Tournament(BaseModel):
             start_date=start_date, 
             end_date=end_date, 
             parent_tournament_id=parent_tournament_id, 
-            participant_per_match=participant_per_match,
+            participants_per_match=participants_per_match,
             is_individuals=is_individuals,
             child_tournament_id=child_tournament_id
             )

@@ -32,26 +32,58 @@
             margin: 0 auto; /* Center the content on the page */
         }
 
+        .tournaments-container {
+            max-width: 400px;
+            width: 100%;
+            text-align: center;
+        }
+
+        .tournaments-container h2 {
+            margin-bottom: 10px;
+            color: #45a049; /* Body text color for tournaments */
+        }
+
+        .tournament-item {
+            cursor: pointer;
+            transition: color 0.3s;
+            list-style-type: none;
+            padding: 5px;
+            color: white; /* Body text color for tournaments */
+        }
+
+        .tournament-item:hover {
+            color: #47095a;
+        }
+
+        /* Styles for sports container */
         .sports-container {
-            max-width: 400px; /* Adjust max-width for sports container */
-            width: 100%; /* Make it take the full width of the container */
+            max-width: 300px;
+            width: 100%;
             text-align: center;
         }
 
         .sports-container h2 {
-            /* Sports header styles */
             margin-bottom: 10px;
+            color: #ffcc00; /* Body text color for sports */
+        }
+        
+        .sports-container ul {
+            display: inline-block;
+            padding: 0;
+            list-style: none;
+            white-space: nowrap; /* Prevent line breaks */
         }
 
-        .sports-container .sport-item {
-            /* Sport item styles */
+        .sport-item {
             cursor: pointer;
             transition: color 0.3s;
-            margin-right: 10px;
-            display: inline-block;
+            display: inline-block; /* Display sports items in one line */
+            margin-right: 10px; /* Add spacing between sports items */
+            color: white; /* Body text color for sports */
         }
 
-        .sports-container .sport-item:hover {
+
+        .sport-item:hover {
             color: #47095a;
         }
 
@@ -122,29 +154,6 @@
             background-color: #45a049;
         }
 
-        .tournaments-container {
-            max-width: 400px; /* Adjust max-width for tournaments container */
-            width: 100%; /* Make it take the full width of the container */
-            text-align: center;
-        }
-
-        .tournaments-container h2 {
-            /* Tournaments header styles */
-            margin-bottom: 10px;
-        }
-
-        .tournament-item {
-            /* Tournament item styles */
-            cursor: pointer;
-            transition: color 0.3s;
-            list-style-type: none;
-            padding: 5px;
-        }
-
-        .tournament-item:hover {
-            color: #47095a;
-        }
-
         @keyframes fade-in {
             from {
                 opacity: 0;
@@ -171,20 +180,8 @@
 
     <!-- Sports -->
     <div id="sports-section" class="container">
-        <div class="sports-container">
-            <ul style="display: inline-block; padding: 0; list-style: none;">
-                <!-- Example sports data, replace this with your actual data -->
-                <li class="sport-item" onclick="window.location='/tournaments?sport_name=football';" style="text-decoration: none;">
-                    <h2>Football</h2>
-                </li>
-                <li class="sport-item" onclick="window.location='/tournaments?sport_name=basketball';" style="text-decoration: none;">
-                    <h2>Basketball</h2>
-                </li>
-                <li class="sport-item" onclick="window.location='/tournaments?sport_name=athletics';" style="text-decoration: none;">
-                    <h2>Athletics</h2>
-                </li>
-                <!-- Add more sports as needed -->
-            </ul>
+        <div class="sports-container" id="sportsContainer">
+            <ul style="display: inline-block; padding: 0; list-style: none;"></ul>
         </div>
     </div>
 
@@ -212,8 +209,36 @@
     <!-- Include JavaScript from the existing HTML files -->
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            
+        document.addEventListener("DOMContentLoaded", async function () {
+        try {
+            // Fetch sports data from the FastAPI endpoint
+            const sportsResponse = await fetch("/sports/");
+
+            if (!sportsResponse.ok) {
+                throw new Error(`Error fetching sports: ${sportsResponse.statusText}`);
+            }
+
+            const sportsData = await sportsResponse.json();
+
+            // Call function to dynamically generate and populate the sports container
+            generateSports(sportsData);
+
+            // Fetch tournaments data from the FastAPI endpoint
+            const tournamentsResponse = await fetch("/tournaments/");
+
+            if (!tournamentsResponse.ok) {
+                throw new Error(`Error fetching tournaments: ${tournamentsResponse.statusText}`);
+            }
+
+            const tournamentsData = await tournamentsResponse.json();
+
+            // Call function to dynamically generate and populate the tournaments container
+            generateTournaments(tournamentsData);
+            } catch (error) {
+                console.error(error);
+                // Handle the error gracefully, e.g., display an error message to the user
+            }
+    
             flatpickr("#match-calendar-dp-trigger", {
                 enableTime: false,
                 dateFormat: "Y-m-d",
@@ -221,7 +246,7 @@
                     generateDates(dateStr);
                 }
             });
-            
+    
             generateDates(new Date());
         });
     
@@ -268,89 +293,84 @@
             return monthNames[date.getMonth()];
         }
     
-        document.addEventListener("DOMContentLoaded", async function () {
-            try {
-                // Fetch tournaments data from the FastAPI endpoint
-                const tournamentsResponse = await fetch("/tournaments/");
-
-                if (!tournamentsResponse.ok) {
-                    throw new Error(`Error fetching tournaments: ${tournamentsResponse.statusText}`);
-                }
-
-                const tournamentsData = await tournamentsResponse.json();
-
-                // Call function to dynamically generate and populate the tournaments container
-                generateTournaments(tournamentsData);
-            } catch (error) {
-                console.error(error);
-                // Handle the error gracefully, e.g., display an error message to the user
-            }
-        });
-    
         function generateSports(sportsData) {
-            var sportsContainer = document.getElementById("sports-section"); // Change to "sports-section"
-    
+            var sportsContainer = document.getElementById("sports-section");
+
             sportsContainer.innerHTML = "<ul style='display: inline-block; padding: 0; list-style: none;'>";
-    
+
             // Loop through the sports data and create list items
             sportsData.forEach(function (sport) {
                 var sportItem = document.createElement("li");
                 sportItem.classList.add("sport-item");
-    
-                // Assuming sport has a "name" attribute
-                sportItem.onclick = function () {
-                    window.location = `/tournaments?sport_name=${sport.name}`;
-                };
-    
+
                 var h2 = document.createElement("h2");
                 h2.textContent = sport.name;
-    
+
+                // Assuming sport has a "sport_name" attribute
+                h2.onclick = function () {
+                    // Construct the URL for the tournaments endpoint
+                    var tournamentsURL = "/tournaments/?sport_name=" + encodeURIComponent(sport.sport_name);
+
+                    // Navigate to the tournaments endpoint
+                    window.location = tournamentsURL;
+                };
+
+                // Add hover effect
+                h2.addEventListener("mouseover", function () {
+                    h2.style.color = "#45a049";
+                });
+
+                h2.addEventListener("mouseout", function () {
+                    h2.style.color = "white";
+                });
+
                 sportItem.appendChild(h2);
                 sportsContainer.appendChild(sportItem);
             });
-    
+
             sportsContainer.innerHTML += "</ul>";
         }
     
         function generateTournaments(tournamentsData) {
             try {
                 var tournamentsContainer = document.getElementById("tournamentsContainer");
-
+    
                 if (!tournamentsContainer) {
                     console.error("Tournaments container not found.");
                     return;
                 }
-
+    
                 console.log("Received Tournaments Data:", tournamentsData);
-
+    
                 var ul = document.createElement("ul");
                 ul.style.display = "inline-block";
                 ul.style.padding = "0";
                 ul.style.listStyle = "none";
-
+    
                 // Loop through the tournaments data and create list items
                 tournamentsData.forEach(function (tournament) {
                     var li = document.createElement("li");
                     li.classList.add("tournament-item");
                     li.textContent = tournament.title;
-
+    
                     // Assuming tournament has an "id" attribute
                     li.onclick = function () {
                         window.location = `/matches/?tournament_id=${tournament.id}`;
                     };
-
+    
                     ul.appendChild(li);
                 });
-
+    
                 // Clear existing content and append the new list
                 tournamentsContainer.innerHTML = "";
                 tournamentsContainer.appendChild(ul);
-
+    
             } catch (error) {
                 console.error("Error generating tournaments:", error);
             }
         }
     </script>
+    
 
 </body>
 </html>
