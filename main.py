@@ -22,7 +22,7 @@ templates = Jinja2Templates(directory="templates")
 
 @app.get("/")
 def landing_page(request: Request):
-    return templates.TemplateResponse("test_landing_page.html", {"request": request})
+    return templates.TemplateResponse("new_test_landing_page.html", {"request": request})
 
 
 if __name__ == "__main__":
