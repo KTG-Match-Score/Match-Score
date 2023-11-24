@@ -307,13 +307,6 @@ async def get_create_single_player_template(
                         value=tokens["refresh_token"], httponly=True)
     return response
     
-@players_router.get('/user/clubmanager')
-async def move_to_multiple(
-    request: Request,
-    sports_club_id: int = Query(),
-    is_sports_club: int = Query()):
-    return templates.TemplateResponse("test_create_template.html", context={
-            "request": request})
 
 @players_router.post('/tournament')
 async def add_players_to_tornament(
@@ -364,7 +357,8 @@ async def return_player(
     sports_club_id: int = Form(...),
     is_sports_club: int = Form(...),
     player_sport: str = Form (...),
-    added_players: Optional[str] = Form(None)
+    added_players: Optional[str] = Form(None),
+    picture: Optional[str] = Form(None)
 ):
     access_token = request.cookies.get("access_token")
     refresh_token = request.cookies.get("refresh_token")
@@ -383,6 +377,30 @@ async def return_player(
     else:
         added_players_lst = []
     players = await players_services.find_player_for_club(player_name, player_sport, 0)
+    if not players:
+        templates = Jinja2Templates(directory="templates/users")
+        response = templates.TemplateResponse("add_players_club.html", context={
+        "request": request,
+        "player_name": player_name,
+        "sports_club_id": sports_club_id,
+        "is_sports_club":is_sports_club,
+        "player_sport": player_sport,
+        "no_player": "No such player",
+        "added_players":added_players_lst,
+        "image_data_url":picture,
+        "name": user.fullname,
+        "added_players": added_players_lst                
+    })
+        response.set_cookie(key="access_token",
+                            value=tokens["access_token"], httponly=True)
+        response.set_cookie(key="refresh_token",
+                            value=tokens["refresh_token"], httponly=True)
+        return response
+        
+    post_players =[]
+    for player in players:
+        modified_player = await players_services.modify_player(player)
+        post_players.append(modified_player)
     templates = Jinja2Templates(directory="templates/users")
     response = templates.TemplateResponse("add_players_club.html", context={
         "request": request,
@@ -390,9 +408,11 @@ async def return_player(
         "sports_club_id": sports_club_id,
         "is_sports_club":is_sports_club,
         "player_sport": player_sport,
-        "players": players,
-        "added_players":added_players_lst
-                
+        "players": post_players,
+        "added_players":added_players_lst,
+        "image_data_url":picture,
+        "name": user.fullname,
+        "added_players": added_players_lst                
     })
     response.set_cookie(key="access_token",
                         value=tokens["access_token"], httponly=True)
@@ -400,6 +420,104 @@ async def return_player(
                         value=tokens["refresh_token"], httponly=True)
     return response
     
+@players_router.post('/addplayerstoclub')
+async def return_player(
+    request: Request,
+    sports_club_id: int = Form(...),
+    is_sports_club: int = Form(...),
+    player_sport: str = Form (...),
+    added_players: Optional[str] = Form(None),
+    picture: Optional[str] = Form(None)
+):
+    access_token = request.cookies.get("access_token")
+    refresh_token = request.cookies.get("refresh_token")
+    tokens = {"access_token": access_token, "refresh_token": refresh_token}
+    try:
+        user = await auth.get_current_user(access_token)
+    except:
+        try:
+            user = auth.refresh_access_token(access_token, refresh_token)
+            tokens = auth.token_response(user)
+        except:
+            return RedirectResponse(url='/', status_code=303)
+    
+    if not added_players:
+        added_players_lst = []
+        templates = Jinja2Templates(directory="templates/users")
+        response = templates.TemplateResponse("add_players_club.html", context={
+        "request": request,
+        "sports_club_id": sports_club_id,
+        "is_sports_club":is_sports_club,
+        "player_sport": player_sport,
+        "no_player": "Please add players first!",
+        "image_data_url":picture,
+        "name": user.fullname,
+        "added_players": added_players_lst                
+    })
+        response.set_cookie(key="access_token",
+                            value=tokens["access_token"], httponly=True)
+        response.set_cookie(key="refresh_token",
+                            value=tokens["refresh_token"], httponly=True)
+        return response
+    
+    club_id = await users_services.check_has_club(user.id)
+    if not club_id:
+        templates = Jinja2Templates(directory="templates/users")
+        response = templates.TemplateResponse("add_players_club.html", context={
+        "request": request,
+        "sports_club_id": sports_club_id,
+        "is_sports_club":is_sports_club,
+        "player_sport": player_sport,
+        "no_player": "You are not managing any club",
+        "image_data_url":picture,
+        "name": user.fullname,
+        "added_players": added_players_lst                
+    })
+        response.set_cookie(key="access_token",
+                            value=tokens["access_token"], httponly=True)
+        response.set_cookie(key="refresh_token",
+                            value=tokens["refresh_token"], httponly=True)
+        return response    
+    
+    added_players_lst = json.loads(added_players)
+    for player in added_players_lst:
+        full_player = await players_services.find_player_for_club(player, player_sport, 0)
+        if not full_player:
+            templates = Jinja2Templates(directory="templates/users")
+            response = templates.TemplateResponse("add_players_club.html", context={
+            "request": request,
+            "sports_club_id": sports_club_id,
+            "is_sports_club":is_sports_club,
+            "player_sport": player_sport,
+            "no_player": "Player does not exist",
+            "image_data_url":picture,
+            "name": user.fullname,
+            "added_players": added_players_lst                
+        })
+            response.set_cookie(key="access_token",
+                                value=tokens["access_token"], httponly=True)
+            response.set_cookie(key="refresh_token",
+                                value=tokens["refresh_token"], httponly=True)
+            return response
+        player_id = full_player[0][0]
+        await players_services.post_players_to_club(player_id, club_id)
+    added_players_lst = []
+    templates = Jinja2Templates(directory="templates/users")
+    response = templates.TemplateResponse("add_players_club.html", context={
+    "request": request,
+    "sports_club_id": sports_club_id,
+    "is_sports_club":is_sports_club,
+    "player_sport": player_sport,
+    "no_player": "Players were added to your club",
+    "image_data_url":picture,
+    "name": user.fullname,
+    "added_players": added_players_lst                
+})
+    response.set_cookie(key="access_token",
+                        value=tokens["access_token"], httponly=True)
+    response.set_cookie(key="refresh_token",
+                        value=tokens["refresh_token"], httponly=True)
+    return response        
     
     
     

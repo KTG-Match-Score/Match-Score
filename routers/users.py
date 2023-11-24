@@ -200,7 +200,7 @@ async def show_userdashboard_form(
             user = auth.refresh_access_token(access_token, refresh_token)
             tokens = auth.token_response(user)
         except:
-            RedirectResponse(url='/', status_code=303)
+            return RedirectResponse(url='/', status_code=303)
     final_matches = []
     final_tournaments = []
     pending_requests = []
@@ -213,9 +213,9 @@ async def show_userdashboard_form(
             player_id = player.id
             is_sports_club = player.is_sports_club
             sport = player.sport
-            matches = await users_services.find_matches(user.id, user.role, player.id)
+            final_matches = await users_services.find_matches(user.id, user.role, player.id)
     if user.role == "director":
-        tournaments = await users_services.find_tournaments(user.id, user.role)
+        final_tournaments = await users_services.find_tournaments(user.id, user.role)
     if user.role == "admin":
         pending_requests = await users_services.find_requests()
     
@@ -243,6 +243,7 @@ async def show_userdashboard_form(
     response.set_cookie(key="refresh_token",
                         value=tokens["refresh_token"], httponly=True)
     return response
+
 @users_router.post("/addplayerstoclub")
 async def show_userdashboard_form(
     request: Request,
@@ -260,7 +261,7 @@ async def show_userdashboard_form(
             user = auth.refresh_access_token(access_token, refresh_token)
             tokens = auth.token_response(user)
         except:
-            RedirectResponse(url='/', status_code=303)
+            return RedirectResponse(url='/', status_code=303)
     if user.role == "player" or user.role == "club_manager":
         player = await users_services.find_player(user.id)
         if player:
@@ -286,6 +287,38 @@ async def show_userdashboard_form(
         "player_sport": player_sport
                 
     })
+    response.set_cookie(key="access_token",
+                        value=tokens["access_token"], httponly=True)
+    response.set_cookie(key="refresh_token",
+                        value=tokens["refresh_token"], httponly=True)
+    return response
+
+@users_router.post("/handlerequest")
+async def show_userdashboard_form(
+    request: Request,
+    request_id: int = Form(...),
+    is_approved: bool = Form(...)):
+    
+    access_token = request.cookies.get("access_token")
+    refresh_token = request.cookies.get("refresh_token")
+    tokens = {"access_token": access_token, "refresh_token": refresh_token}
+    try:
+        user = await auth.get_current_user(access_token)
+    except:
+        try:
+            user = auth.refresh_access_token(access_token, refresh_token)
+            tokens = auth.token_response(user)
+        except:
+            return RedirectResponse(url='/', status_code=303)
+    if user.role != "admin":
+        return RedirectResponse(url='/', status_code=303)
+    
+    if is_approved:
+        await users_services.approve_request(request_id)
+    else:
+        await users_services.deny_request(request_id)
+    
+    response = RedirectResponse(url='/users/dashboard', status_code=303)
     response.set_cookie(key="access_token",
                         value=tokens["access_token"], httponly=True)
     response.set_cookie(key="refresh_token",
