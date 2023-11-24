@@ -5,59 +5,75 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MatchScore Add Players to Club</title>
-</head>
-<style>
-    /* Style for the top bar */
-    #topBar {
-        display: flex;
-        justify-content: flex-end;
-        align-items: center; 
-        padding: 10px;
-        background-color: #f8f8f8; /* Example background color */
-        box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1); /* Example shadow for depth */
-    }
+    <style>
+        #topBar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center; 
+            padding: 10px;
+            background-color: #f8f8f8; 
+            box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1); 
+        }
 
-    /* Style for user details inside the top bar */
-    #userDetails {
-        display: flex;
-        align-items: center;
-    }
+        #userDetails {
+            display: flex;
+            align-items: center;
+        }
 
-    /* Style for the user image */
-    #userDetails img {
-        margin-left: 10px;
-        height: 50px;
-        width: 50px;
-        border-radius: 50%; /* Optional: makes the image circular */
-    }
+        #userDetails img {
+            margin-left: 10px;
+            height: 50px;
+            width: 50px;
+            border-radius: 50%; 
+        }
 
-    
-</style>
+        .buttons-container {
+            display: flex;
+            align-items: center;
+        }
+
+        .topbar-button {
+            height: 50px;
+            margin-right: 10px;
+        }
+    </style>
 </head>
 <body>
     <div id="topBar">
+        <!-- Buttons on the left -->
+        <div class="buttons-container">
+            <button class="topbar-button" onclick="location.href='/users/dashboard'">Back to Dashboard</button>
+            <button class="topbar-button" onclick="location.href='/'">Main Page (Logout)</button>
+        </div>
+
+        <!-- User details on the right -->
         <div id="userDetails">
             <span>{{ name }}</span>
             <img src="{{ image_data_url }}" alt="User Image">
-            
-        </div>
+        </div>  
     </div>
     <div id="dashboard">
         <h2 style="text-align: center;">Add Players to Club</h2>
             <div id="playerSearchForm">
                 <form method="post" action="/players/searchplayerforclub">
                     <label for="player_name">Player Name:</label>
-                    <input type="text" id="player_name" name="player_name" required>
-                    <input type="hidden" name="sports_club_id" value="{{ sports_club_id }}">
-                    <input type="hidden" name="is_sports_club" value={{1}}>
-                    <input type="hidden" name="player_sport" value="{{ player_sport }}">
-                    <button type="submit" class="dashboard-button">Search</button>
+                    <input type="text" id="player_name_input" name="player_name" required>
+                    <input type="hidden" name="max_players" id="max_players_input" value="{{ max_players if max_players is not none else '' }}">
+                    <input type="hidden" name="sports_club_id" id="sports_club_id_input" value="{{ sports_club_id }}">
+                    <input type="hidden" name="is_sports_club" id="is_sports_club" value={{1}}>
+                    <input type="hidden" name="player_sport" id="sport_input" value="{{ player_sport }}">
+                    <input type="hidden" name="picture" value="{{ image_data_url }}">
+                    <input type="hidden" id="added_players_input" name="added_players" value="">
+                    <button type="submit" class="dashboard-button">Search Player</button>
+                    <div class="buttons-container">
+                        <button type="button" class="button" id="createTournamentBtn">Add Players to Club</button>
+                        </div>
                 </form>
                 <div class="section">
                     <h3>Added Players</h3>
                     <ul id="added_players_list">
                         {% for player in added_players %}
-                            <li>{{ player }}
+                            <li>{{ player. }}
                             <button onclick="removePlayer(this)">Remove</button>
                             </li>
                         {% endfor %}
@@ -69,41 +85,54 @@
                     </ul>
                 </div>
             </div>
+            <div id="search_results" style="{{ 'display:block;' if post_players }}">
+                {% for player in players %}
+                    <div>
+                        <span onclick="addToAddedPlayers('{{ player.name }}')" style="cursor: pointer;">{{ player.name }}</span>
+                        <img src="{{ player.image_data_url }}" alt="{{ player.name }}" style="height: 50px; width: 50px;">
+                        <div><h5> Sport: {{ player.sport }} </h5></div>
+                        <div><h5> Club: {{ player.sport_club }}</h5></div>
+                    </div>
+                {% endfor %}
+                {% if no_player %}
+                    <p>{{ no_player }}</p>
+                {% endif %}
+            </div>
+        
     </div>
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Initially disable buttons
-           checkAndSetButtonStates(); 
-           setButtonsDisabled(true);// Then check for player count
-       });
-       
+    <script>       
        document.getElementById("player_name_input").addEventListener("input", function() {
            var player_name = this.value;
            var isAdded = isNameAdded(player_name)
            var isInputEmpty = player_name.trim() === '';
-           var maxPlayers = parseInt(document.getElementById("max_players_input").value, 10);
            var currentPlayersCount = document.getElementById("added_players_list").getElementsByTagName("li").length;
        
-           // Enable buttons if there's input, the player name hasn't been added, and max players limit isn't reached
-           setButtonsDisabled(isAdded || isInputEmpty || currentPlayersCount >= maxPlayers);
            if (isAdded) {
                alert("Player with this name was already added");
            }
-           checkAndSetButtonStates();
+           
        });
 
        document.getElementById("createTournamentBtn").addEventListener("click", submitTournamentData);
+       
+       function updateAddedPlayersInput() {
+        var addedPlayers = [];
+        var playerElements = document.getElementById("added_players_list").getElementsByTagName("li");
+        for (var i = 0; i < playerElements.length; i++) {
+            var textContent = '';
+            for (var j = 0; j < playerElements[i].childNodes.length; j++) {
+                var node = playerElements[i].childNodes[j];
+                if (node.nodeType === Node.TEXT_NODE) {
+                    textContent += node.textContent.trim();
+                }
+            }
+            addedPlayers.push(textContent);
+        }
+        document.getElementById("added_players_input").value = JSON.stringify(addedPlayers);
+    }
 
        function submitTournamentData() {
            var addedPlayers = document.getElementById("added_players_list").getElementsByTagName("li").length;
-           var maxPlayers = parseInt(document.getElementById("max_players_input").value, 10);
-           var warningMessageDiv = document.getElementById("warningMessage");
-           
-           if (addedPlayers !== maxPlayers) {
-               warningMessageDiv.style.display = 'block';
-               warningMessageDiv.textContent = "Not sufficient number of players added";
-               return;
-           }
        
            var addedPlayersData = [];
            var playerElements = document.getElementById("added_players_list").getElementsByTagName("li");
@@ -113,24 +142,24 @@
        
            var form = document.createElement("form");
            form.setAttribute("method", "post");
-           form.setAttribute("action", "tournament");
+           form.setAttribute("action", "/players/addplayerstoclub");
        
            var playersField = document.createElement("input");
            playersField.setAttribute("type", "hidden");
-           playersField.setAttribute("name", "players");
+           playersField.setAttribute("name", "added_players");
            playersField.setAttribute("value", JSON.stringify(addedPlayersData));
            form.appendChild(playersField);
-       
-           var tournamentIdField = document.createElement("input");
-           tournamentIdField.setAttribute("type", "hidden");
-           tournamentIdField.setAttribute("name", "tournament_id");
-           tournamentIdField.setAttribute("value", document.getElementById("tournament_id_input").value);
-           form.appendChild(tournamentIdField);
 
            var playerSportField = document.createElement("input");
            playerSportField.setAttribute("type", "hidden");
            playerSportField.setAttribute("name", "player_sport");
            playerSportField.setAttribute("value", document.getElementById("sport_input").value);
+           form.appendChild(playerSportField);
+
+           var playerSportField = document.createElement("input");
+           playerSportField.setAttribute("type", "hidden");
+           playerSportField.setAttribute("name", "sports_club_id");
+           playerSportField.setAttribute("value", document.getElementById("sports_club_id_input").value);
            form.appendChild(playerSportField);
 
            var playerSportField = document.createElement("input");
@@ -142,26 +171,6 @@
            document.body.appendChild(form);
            form.submit();
            
-       }
-       
-       function checkAndSetButtonStates() {
-           var maxPlayers = parseInt(document.getElementById("max_players_input").value, 10);
-           var currentPlayersCount = document.getElementById("added_players_list").getElementsByTagName("li").length;
-           var buttons = document.getElementsByClassName("button");
-           var createTournamentBtn = document.getElementById("createTournamentBtn");
-       
-           var shouldDisable = currentPlayersCount >= maxPlayers;
-           for (var i = 0; i < buttons.length; i++) {
-               if(buttons[i].id !== 'createTournamentBtn'){
-                   buttons[i].disabled = shouldDisable;
-               }
-           }
-       
-           if (currentPlayersCount === maxPlayers) {
-               createTournamentBtn.disabled = false;
-           } else {
-               createTournamentBtn.disabled = true;
-           }
        }
 
        function isNameAdded(name) {
@@ -175,21 +184,8 @@
            return false;
        }
    
-       function setButtonsDisabled(disabled) {
-           var buttons = document.getElementsByClassName("button");
-           for (var i = 0; i < buttons.length; i++) {
-               buttons[i].disabled = disabled;
-           }
-       }
        
        function addToAddedPlayers(playerName) {
-           var maxPlayers = parseInt(document.getElementById("max_players_input").value, 10);
-           var currentPlayersCount = document.getElementById("added_players_list").getElementsByTagName("li").length;
-       
-           if (currentPlayersCount >= maxPlayers) {
-               alert("Maximum number of participants has been reached");
-               return;
-           }
        
            if (!isNameAdded(playerName)) {
                var addedPlayersList = document.getElementById("added_players_list");
@@ -208,14 +204,11 @@
        
                addedPlayersList.appendChild(newListItem);
                
-               checkAndSetButtonStates();
-               setButtonsDisabled(true);
 
            } else {
                alert("This player has already been added.");
            }
-           setButtonsDisabled(true);
-           checkAndSetButtonStates();
+           updateAddedPlayersInput();
        }
        
        
@@ -240,10 +233,9 @@
        function removePlayer(button) {
            var listItem = button.parentElement;
            listItem.remove();
-           checkAndSetButtonStates();
+           updateAddedPlayersInput();
        }
    </script>   
-    </script>
 
 </body>
 </html>

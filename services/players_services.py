@@ -1,6 +1,7 @@
 from data.database import insert_query, update_query, read_query
 import common.picture_handler as ph
 from models.player import Player
+import base64
 
 async def register_player(fullname:str, sport:str, is_sports_club:int, sports_club_id:int=None, country:str=None):    
     existing_players = read_query('''select pl.full_name, is_sports_club  
@@ -57,10 +58,11 @@ async def find_player(player_name: str, player_sport: str, is_sports_club: int):
 
 async def find_player_for_club(player_name: str, player_sport: str, is_sports_club: int):
     search_name = f'%{player_name}%'
-    player = read_query('''select p.id, p.full_name, p.profile_picture, sp.name 
+    player = read_query('''select p.id, p.full_name, p.profile_picture, sp.name, pc.full_name 
                         from players p
                         join players_has_sports psp on p.id = psp.player_id
                         join sports sp on psp.sport_id = sp.id
+                        left join players pc on pc.id = p.sports_club_id
                         where p.full_name like ? and sp.name=? and p.is_sports_club = ? and p.sports_club_id is Null''',
                         (search_name, player_sport, is_sports_club))
     if player:
@@ -88,6 +90,23 @@ async def find_user(player_name: str, sport: str, is_sports_club: int):
                       join sports s on psp.sport_id = s.id
                       where p.full_name =? and s.name =? and p.is_sports_club=?''',
                       (player_name, sport, is_sports_club))
+
+async def modify_player(player: tuple):
+    id, name, picture, sport, sport_club = player
+    mime_type = "image/jpg"
+    base64_encoded_data = base64.b64encode(picture).decode('utf-8')
+    image_data_url = f"data:{mime_type};base64,{base64_encoded_data}" 
+    modified_player={
+        "name": name,
+        "sport": sport,
+        "sport_club": sport_club,
+        "image_data_url": image_data_url}
+    return modified_player
+    
+async def post_players_to_club(player_id: int, club_id: int):
+        update_query(''' update players set sports_club_id = ?
+                     where id=?''', (club_id, player_id))
+        
         
         
        

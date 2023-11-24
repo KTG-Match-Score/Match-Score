@@ -7,28 +7,35 @@
     <title>MatchScore Dashboard</title>
 </head>
 <style>
-    /* Style for the top bar */
     #topBar {
         display: flex;
-        justify-content: flex-end;
+        justify-content: space-between;
         align-items: center; 
         padding: 10px;
-        background-color: #f8f8f8; /* Example background color */
-        box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1); /* Example shadow for depth */
+        background-color: #f8f8f8; 
+        box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1); 
     }
 
-    /* Style for user details inside the top bar */
     #userDetails {
         display: flex;
         align-items: center;
     }
 
-    /* Style for the user image */
     #userDetails img {
         margin-left: 10px;
         height: 50px;
         width: 50px;
-        border-radius: 50%; /* Optional: makes the image circular */
+        border-radius: 50%; 
+    }
+
+    .buttons-container {
+        display: flex;
+        align-items: center;
+    }
+
+    .topbar-button {
+        height: 50px;
+        margin-right: 10px;
     }
 
     /* New container for main content */
@@ -39,15 +46,18 @@
     }
 
     /* Style for the dashboard section */
-    #dashboard {
-        width: calc(50% - 15px);
-        margin-right: 10px;
+    #dashboard, #focus {
+        flex: 1; /* Flexbox handles the width */
         padding: 10px;
-        overflow-y: auto; /* Enables scrolling for overflow content */
+        overflow-y: auto;
+    }
+
+    #dashboard {
+        margin-right: 10px; /* Right margin only for dashboard */
     }
 
     /* Style for the buttons in the dashboard */
-    .dashboard-button {
+    .dashboard-button, .dashboard-button:link, .dashboard-button:visited, .dashboard-form .dashboard-button {
         display: block;
         margin-bottom: 10px;
         padding: 8px 15px;
@@ -60,7 +70,7 @@
         justify-content: space-between;
     }
 
-    #dashboard h2 {
+    #dashboard h2, {
         margin-bottom: 20px; /* Add some space below the heading */
     }
 
@@ -82,19 +92,21 @@
     }
 
     /* Style for the right-hand content area */
-    #content {
-        flex: 1;
-        padding: 10px;
-    }
+    
 </style>
 </head>
 <body>
     <div id="topBar">
+        <!-- Buttons on the left -->
+        <div class="buttons-container">
+            <button class="topbar-button" onclick="location.href='/'">Main Page (Logout)</button>
+        </div>
+
+        <!-- User details on the right -->
         <div id="userDetails">
             <span>{{ name }}</span>
             <img src="{{ image_data_url }}" alt="User Image">
-            
-        </div>
+        </div>  
     </div>
     <div id="dashboard">
         <h2>Dashboard</h2>
@@ -127,31 +139,6 @@
                 <input type="hidden" name="player_sport" value="{{ sport }}">
                 <button type="submit" class="dashboard-button">Add players to club</button>
             </form>
-            <div id="playerSearchForm" style="display: none;">
-                <form method="post" action="/players/searchplayerforclub">
-                    <label for="player_name">Player Name:</label>
-                    <input type="text" id="player_name" name="player_name" required>
-                    <input type="hidden" name="sports_club_id" value="{{ sports_club_id }}">
-                    <input type="hidden" name="is_sports_club" value={{1}}>
-                    <input type="hidden" name="player_sport" value="{{ sport }}">
-                    <button type="submit" class="dashboard-button">Search</button>
-                </form>
-                <div class="section">
-                    <h3>Added Players</h3>
-                    <ul id="added_players_list">
-                        {% for player in added_players %}
-                            <li>{{ player }}
-                            <button onclick="removePlayer(this)">Remove</button>
-                            </li>
-                        {% endfor %}
-                        {% for player in player_names %}
-                            <li>{{ player }}
-                            <button onclick="removePlayer(this)">Remove</button>
-                            </li>
-                        {% endfor %}
-                    </ul>
-                </div>
-            </div>
         {% endif %}
 
         {% if user_role == 'admin' %}
@@ -159,6 +146,69 @@
             <a href="/get/users/manage" class="dashboard-button">Create a tournament</a>
         {% endif %}
     </div>
+    <div id="focus">
+        <h2>Your Events</h2>
+            {% if user_role == 'player' or user_role == 'club_manager' %}
+                {% if matches %}
+                    <ul id="matches">
+                        {% for match in matches%}
+                        <li>
+                            <h4>Tournament:{{ match[8] }}</h4>
+                            <h5>Opponent:{{ match[7] }}</h5>
+                            <h5>Scheduled:{{ match[2] }}</h5>
+                        </li>
+                        {% endfor %}  
+                    </ul>              
+                {% endif %}
+            {% endif %}
+
+            {% if user_role == 'director' %}
+                {% if tournaments %}
+                    <ul id="tournaments">
+                        {% for tournament in tournaments%}
+                        <li>
+                            <h4>Tournament:{{ tournament.title }}</h4>
+                            <h5>Start date:{{ tournament.start_date }}</h5>
+                            <h5>End date:{{ tournament.start_date }}</h5>
+                            <h5>Format:{{ tournament.format }}</h5>
+                        </li>
+                        {% endfor %}  
+                    </ul>              
+                {% endif %}
+            {% endif %}
+
+            {% if user_role == 'admin' %}
+                {% if pending_requests %}
+                    <ul id="pending_requests">
+                        {% for request in pending_requests%}
+                        <li>
+                            <h4>Requestor:{{ request[0] }}</h4>
+                            {% if request[2] is not None%}
+                            <h5>Request type: link player with id {{request[2]}}</h5>
+                            {% endif %}
+                            {% if request[3] != 0 %}
+                            <h5>Request type: elevate to director</h5>
+                            {% endif %}
+                            {% if request[4] != 0 %}
+                            <h5>Request type: elevate to club manager</h5>
+                            {% endif %}
+                            <h5>Request details:{{ request[6] }}</h5>
+                            <div>
+                                <form id="approveRequest" method="post" class="dashboard-form" action ="/users/handlerequest" >
+                                    <input type="hidden" name="request_id" value="{{ request[0] }}">
+                                    <input type="hidden" name="is_approved" value={{True}}>
+                                    <button type="submit" class="dashboard-button">Approve</button>
+                                </form>
+                                <form id="denyRequest" method="post" class="dashboard-form" action ="/users/handlerequest" >
+                                    <input type="hidden" name="request_id" value="{{ request[0] }}">
+                                    <input type="hidden" name="is_approved" value={{False}}>
+                                    <button type="submit" class="dashboard-button">Deny</button>
+                                </form>
+                        </li>
+                        {% endfor %}  
+                    </ul>              
+                {% endif %}
+            {% endif %}
     <script>
         function showPlayerSearchForm() {
             // Hide the original form
