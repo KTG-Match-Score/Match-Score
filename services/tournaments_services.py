@@ -16,6 +16,7 @@ def convert_form(data: bool):
     elif data == False:
         return 0
 
+
 def get_tournaments(sport_name: str = None, tournament_name: str = None):
     query = ""
     params = []
@@ -147,7 +148,6 @@ def get_tournaments_by_date(date: date):
     return JSONResponse(content=tournaments)
 
 
-
 def create_tournament(t: Tournament, user: User, sport: str):
     if isinstance(t.is_individuals, bool):
         is_individuals = convert_form(t.is_individuals)
@@ -203,6 +203,7 @@ def create_tournament(t: Tournament, user: User, sport: str):
     
     return t.id
 
+
 def generate_schema(t_id: int, participants_per_match: int, format: str, number_of_participants: int, sport: str):
     schema = []
     knockout_schema = {}
@@ -249,3 +250,7 @@ def generate_schema(t_id: int, participants_per_match: int, format: str, number_
         return knockout_schema
     
     return schema
+
+
+def add_prizes(id_tournament: int, type: str):
+    pass
