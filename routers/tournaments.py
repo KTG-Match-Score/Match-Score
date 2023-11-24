@@ -1,6 +1,7 @@
 from fastapi import APIRouter, status, Form, Request, Query
 from models.tournament import Tournament, MatchesInTournament
 import routers.players as players
+import routers.users as users
 import common.auth as auth
 from typing import Optional
 from services import tournaments_services
@@ -56,10 +57,6 @@ async def show_create_tournament_form(request: Request):
                         value=tokens["refresh_token"], httponly=True)
     
     return response
-
-# @tournaments_router.get("/add_players")
-# async def add_players_to_tournament(request: Request):
-#     return 
 
 @tournaments_router.get("/{date}", status_code=status.HTTP_200_OK, response_model=list[MatchesInTournament])
 async def view_tournaments_by_date(request: Request,
@@ -156,3 +153,33 @@ async def create_tournament_schema(request: Request):
     cookies = request.cookies
     async with httpx.AsyncClient() as client:
         response = await client.post("http://localhost:8000/matches/create", cookies=cookies, json={ "tournament_id":tournament_id, "format": format, "sport": sport, "schema": schema}) 
+
+@tournaments_router.post("/add_prizes")
+async def add_prizes_to_tournament(request: Request,
+                                   tournament_id: int = Form(),
+                                   tournament_prize_type: str = Form(None)):
+    
+    access_token = request.cookies.get("access_token")
+    refresh_token = request.cookies.get("refresh_token")
+    tokens = {"access_token": access_token, "refresh_token": refresh_token}
+    try:
+        user = await auth.get_current_user(access_token)
+    except:
+        try:
+            user = auth.refresh_access_token(access_token, refresh_token)
+            tokens = auth.token_response(user)
+        except:
+            RedirectResponse(url='/landing_page', status_code=303)
+
+    if user.role != "director":
+        RedirectResponse(url='/landing_page', status_code=303)
+
+    prizes = tournaments_services.add_prizes(tournament_id, tournament_prize_type)
+
+    response = users.templates.TemplateResponse("user_dashboard.html", {"request": request})
+    response.set_cookie(key="access_token",
+                        value=tokens["access_token"], httponly=True)
+    response.set_cookie(key="refresh_token",
+                        value=tokens["refresh_token"], httponly=True)
+    
+    return response
