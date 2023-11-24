@@ -99,18 +99,50 @@
     </div>
     <div class="container">
         <h2>Tournament Prizes</h2>
-        <form action="/tournaments/save_prizes" method="post">
+        <form id="prizesForm" action="/tournaments/add_prizes" method="post">
             <label for="num_of_places">Number of Places:</label>
             <input type="number" id="num_of_places" name="num_of_places" min="1" required>
-
+            <input type="hidden" id="tournament_id" name="tournament_id" value="" data-tournament-id="{{ tournament_id }}">
             <div id="prizes">
             </div>
 
-            <button type="submit">Save Prizes</button>
+            <button type="button" onclick="submitForm()">Save Prizes</button>
         </form>
     </div>
 
     <script>
+        function submitForm() {
+            var numOfPlaces = document.getElementById("num_of_places").value;
+            var prizesData = [];
+
+            for (var i = 1; i <= numOfPlaces; i++) {
+                var prizeType = document.getElementsByName("prize_for_place_" + i)[0].value;
+                var amount = document.getElementsByName("amount_for_place_" + i)[0].value;
+
+                prizesData.push({
+                    place: i,
+                    prizeType: prizeType,
+                    amount: amount
+                });
+            }
+
+            // Convert the data to JSON and submit the form
+            var jsonData = JSON.stringify({ prizes: prizesData });
+            var form = document.getElementById("prizesForm");
+
+            // Create a hidden input field for the JSON data
+            var jsonDataField = document.createElement("input");
+            jsonDataField.type = "hidden";
+            jsonDataField.name = "json_data";
+            jsonDataField.value = jsonData;
+
+            // Append the hidden input field to the form
+            form.appendChild(jsonDataField);
+
+            // Submit the form
+            form.submit();
+        }
+
         document.addEventListener("DOMContentLoaded", function () {
             var numOfPlacesInput = document.getElementById("num_of_places");
 
@@ -118,6 +150,10 @@
                 var numOfPlaces = parseInt(numOfPlacesInput.value);
                 generatePrizeInputs(numOfPlaces);
             });
+
+            // Assuming you are using a template engine like Jinja2
+            var tournamentId = document.getElementById("tournament_id").getAttribute("data-tournament-id");
+            document.getElementById("tournament_id").value = tournamentId;
         });
 
         function generatePrizeInputs(numOfPlaces) {
