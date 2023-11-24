@@ -410,32 +410,39 @@
                             li.style.marginBottom = "20px";
                             li.style.borderBottom = "1px solid #555555";
                             li.style.paddingBottom = "10px";
-                            
+
                             var pParticipants = document.createElement("p");
-                            pParticipants.textContent = "";
 
                             var participants = matchInfo["participants"];
 
                             for (var participant in participants) {
                                 if (participants.hasOwnProperty(participant)) {
                                     var participantInfo = participants[participant];
-                                    
-                                    // Assuming participantInfo has a property 'name'
-                                    pParticipants.textContent += participant;
+
+                                    // Assuming participantInfo has properties like 'name'
+                                    var img = document.createElement("img");
+                                    img.src = "data:image/jpeg;base64," + participantInfo.picture;
+                                    img.alt = "Participant Image";
+                                    img.width = 30; // Adjust the width as needed
+                                    img.height = 30; // Adjust the height as needed
+                                    img.style.borderRadius = "50%";
+                                    pParticipants.appendChild(img);
+
+                                    pParticipants.appendChild(document.createTextNode(" " + participant));
 
                                     // Check if this is the last participant
                                     if (participant !== Object.keys(participants)[Object.keys(participants).length - 1]) {
-                                        pParticipants.textContent += " vs ";
+                                        pParticipants.appendChild(document.createTextNode(" vs "));
                                     }
                                 }
                             }
-                            
+
                             var pTitle = document.createElement("p");
                             pTitle.textContent = "Location: " + matchInfo["location"];
-                            
+
                             var pStartTime = document.createElement("p");
                             pStartTime.textContent = "Start Time: " + matchInfo["played_on"];
-                            
+
                             var form = document.createElement("form");
                             form.action = "/matches/match/" + matchId;
                             form.method = "get";
@@ -443,14 +450,15 @@
                             // Create a button element
                             var button = document.createElement("button");
                             button.textContent = "View Match Details";
-  
+
                             function handleButtonHover() {
                                 button.style.backgroundColor = "#45a049";
                             }
+
                             function handleButtonMouseOut() {
                                 button.style.backgroundColor = "#47095a";
                             }
-                            
+
                             form.appendChild(button);
 
                             // Add other attributes as needed
