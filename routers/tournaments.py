@@ -117,7 +117,7 @@ async def create_tournament(request: Request,
 @tournaments_router.post("/create_tournament_schema")
 async def create_tournament_schema(request: Request,
                                    data: tuple[Tournament, int, str]):
-    tournament, participants, sport = data
+    tournamet, participants, sport = data
 
     access_token = request.cookies.get("access_token")
     refresh_token = request.cookies.get("refresh_token")
