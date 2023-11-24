@@ -7,7 +7,10 @@ from typing import Annotated, Optional
 from services import tournaments_services
 from fastapi.templating import Jinja2Templates
 from datetime import date, datetime
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, JSONResponse
+import json
+import httpx
+import base64
 
 
 tournaments_router = APIRouter(prefix="/tournaments")
@@ -25,7 +28,26 @@ async def view_tournaments(request: Request,
 
 @tournaments_router.get("/create_tournament_form")
 async def show_create_tournament_form(request: Request):
-    return templates.TemplateResponse("create_tournament_form.html", context={"request": request})
+    access_token = request.cookies.get("access_token")
+    refresh_token = request.cookies.get("refresh_token")
+    tokens = {"access_token": access_token, "refresh_token": refresh_token}
+    try:
+        user = await auth.get_current_user(access_token)
+    except:
+        try:
+            user = auth.refresh_access_token(access_token, refresh_token)
+            tokens = auth.token_response(user)
+        except:
+            RedirectResponse(url='/landing_page', status_code=303)
+
+    if user.role != "director":
+        RedirectResponse(url='/landing_page', status_code=303)
+
+    mime_type = "image/jpg"
+    base64_encoded_data = base64.b64encode(user.picture).decode('utf-8')
+    image_data_url = f"data:{mime_type};base64,{base64_encoded_data}" 
+
+    response = templates.TemplateResponse("create_tournament_form.html", context={"request": request, "name": user.fullname, "image_data_url": image_data_url})
 
 @tournaments_router.get("/add_players")
 async def add_players_to_tournament(request: Request):
@@ -112,12 +134,10 @@ async def create_tournament_schema(request: Request,
     if user.role != "director":
         RedirectResponse(url='/landing_page', status_code=303)
 
-    schema = tournaments_services.generate_schema(tournament, participants, sport)
+    schema = tournaments_services.generate_schema(tournament_id, participants_per_match, format, number_participants, sport)
 
-    response =  ... # players.templates.TemplateResponse("waiting_for_template.html", {"request": request, "schema": schema, "tournament": tournament})
-    response.set_cookie(key="access_token",
-                        value=tokens["access_token"], httponly=True)
-    response.set_cookie(key="refresh_token",
-                        value=tokens["refresh_token"], httponly=True)
+    cookies = request.cookies
+    async with httpx.AsyncClient() as client:
+        response = await client.post("http://localhost:8000/matches/create", cookies=cookies, json={ "tournament_id":tournament_id, "format":format, "sport": sport, "schema": schema}) 
     
     return response

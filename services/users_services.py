@@ -173,13 +173,13 @@ async def find_matches(user_id: int, user_role: str, player_id: int):
                                     join palyers p on p.id = ps.player_id
                                     where p.id= ?''',
                                     (player_id,))
-                    opponent = [read_query('''select p.full_name
+                    opponent = read_query('''select p.full_name
                                              from players p
                                              join matches_has_players mp on p.id = mp.players_id
                                              join matches m on m.id = mp.matches_id
                                              where m.id = ? and p.id != ?''',
-                                             (ii[0], player_id))[0][0]]
-                    match = Match.from_query(*ii, opponent, tournament.title, sport[0][0])
+                                             (ii[0], player_id))[0][0]
+                    match = (*ii, opponent, tournament.title, sport[0][0])
                     tournament_matches.append(tournament)
                     tournament_matches.append(match)
                     all_matches.append(tournament_matches)
@@ -191,13 +191,33 @@ async def find_matches(user_id: int, user_role: str, player_id: int):
         return
 
 async def find_requests():
-    pending_requests = read_query('''select * from requests where player_id is not Null and is_approved =?''', (0,))
+    pending_requests = read_query('''select r.id, u.fullname, r.player_id, r.to_director, r.to_club_manager, r.is_approved,  from requests where is_approved =?''', (0,))
     if pending_requests:
         return pending_requests
     return
+
+async def find_request(request_id: int):
+    request = read_query('''select * from requests where id=? and is_approved =?''', (request_id, 0))
+    if request:
+        return request[0]
+    return
     
-                
-            
+async def check_has_club(user_id:int):
+    is_manager = read_query('''select p.id, p.is_sports_club 
+                            from players p
+                            join users u on p.id = u.player_id 
+                            where u.id = ?''',
+                             ( user_id,))
+    if is_manager and is_manager[0][1] == 1:
+        return is_manager[0][0]
+    return                
+
+async def approve_request(request_id:int):
+    request = await find_request(request_id)
+    if request:
+        if request[2]:
+            update_query('''update users set player_id =? where id =?''', ())
+    return
             
     
     
