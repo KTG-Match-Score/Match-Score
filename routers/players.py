@@ -348,7 +348,10 @@ async def add_players_to_tornament(
                                 tournament_participation=tournament[1])
     cookies = request.cookies
     async with httpx.AsyncClient() as client:
-        response = await client.post("http://localhost:8000/tournaments/create_tournament_schema", cookies=cookies, json={ "tournament_id":tournament_model.id, "participants_per_match":tournament_model.participants_per_match, "format":tournament_model.format,"number_participants":len(players_lst), "sport":player_sport}) 
+        response = await client.post("http://localhost:8000/tournaments/create_tournament_schema", 
+                                     cookies=cookies,
+                                     timeout=3000.00, 
+                                     json={ "tournament_id":tournament_model.id, "participants_per_match":tournament_model.participants_per_match, "format":tournament_model.format,"number_participants":len(players_lst), "sport":player_sport}) 
 
 @players_router.post('/searchplayerforclub')
 async def return_player(

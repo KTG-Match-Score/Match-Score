@@ -9,14 +9,14 @@ from models.tournament import Tournament
 from models.user import User
 import services.users_services as users_services
 from services import matches_services as ms
-from typing import Annotated
+from typing import Annotated, Optional
 import common.auth as auth
 import common.responses as responses
-
+import logging
 
 matches_router = APIRouter(prefix="/matches")
 templates = Jinja2Templates(directory="templates/match_templates")
-
+logger = logging.getLogger(__name__)
 
 @matches_router.get("/", tags=["Matches"])
 def view_matches(
@@ -101,18 +101,14 @@ async def add_result(request: Request, id: int):
         return bad_request(request, "Error while calculating the score! Review your input")
     
     match = ms.add_match_result(match, new_result)
+    match.has_result = True
+
     return templates.TemplateResponse("view_match.html", {"request": request, "match": match}) 
 
 
 @matches_router.post("/create", tags=["Matches"])
-async def create_match(
-    request: Request,
-    format: Annotated[str, Form(...)], 
-    tournament: Tournament,
-    location: Annotated[str, Form(...)],
-    played_on_date: Annotated[datetime, Form(...)],
-    participants: list = []
-    ):
+async def create_match(request: Request):
+
     """ requires login and director/admin rights """
     # user, token and checks for admin, director
     # access_token = request.cookies.get("access_token")
@@ -127,23 +123,36 @@ async def create_match(
     #     except:
     #         RedirectResponse(url='/', status_code=303)
 
-    if played_on_date < tournament.start_date or played_on_date >= tournament.end_date: 
-        return bad_request(request, "The time of the match should be within the time of the tournament")
+    json_data = await request.json()
     
-    new_match = ms.create_new_match(
-        Match(
-        format = format, 
-        played_on = played_on_date, 
-        is_individuals = tournament.is_individuals, 
-        location = location,
-        tournament_id = tournament.id
-        ), 
-        participants
-        )
-    return templates.TemplateResponse("view_match.html", 
-                                      {"request": request, "new_match": new_match}, 
-                                      status_code=status.HTTP_201_CREATED)
+    schema = json_data.get("schema")
+    tournament_format = json_data.get("format")
+    tournament_id = json_data.get("tournament_id")
+    location: Optional[str] = "unknown location"
+    tournament: Tournament = await ms.get_tournament_by_id(tournament_id) # if tournament is not None
+    played_on_date: datetime = tournament.start_date
+    format = match_format_from_tournament_sport(json_data.get("sport"))
 
+    for play in schema:
+        participants = ms.create_players_from_ids(play)
+        
+        if played_on_date and (played_on_date < tournament.start_date) or (played_on_date >= tournament.end_date): 
+            return bad_request(request, "The time of the match should be within the time of the tournament")
+        
+        ms.create_new_match(
+            Match(
+            format = format, 
+            played_on = played_on_date, 
+            is_individuals = tournament.is_individuals, 
+            location = location,
+            tournament_id = tournament.id
+            ), participants)
+        
+
+    return templates.TemplateResponse("templates/users/new_test_landing_page.html", 
+                                    {"request": request}, 
+                                    status_code=status.HTTP_201_CREATED)
+    
 
 @matches_router.post("/edit/{id}", tags=["Matches"])
 async def edit_match(
@@ -274,3 +283,9 @@ def score_convertor(s):
     total_milliseconds = (hours * 60 * 60 * 1000) + (minutes * 60 * 1000) + (seconds * 1000) + milliseconds
     
     return timedelta(milliseconds=total_milliseconds)
+
+def match_format_from_tournament_sport(f: str):
+    match f:
+        case "football": return "time limited"
+        case "athletics": return "first finisher"
+        case "tennis": return "score limited"

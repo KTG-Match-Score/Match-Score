@@ -14,6 +14,7 @@ class Match(BaseModel):
     participants: list = []
     tournament_name: Optional[str | None] = None
     sport: Optional[str | None] = None
+    has_result: bool = False
 
     @classmethod
     def from_query(

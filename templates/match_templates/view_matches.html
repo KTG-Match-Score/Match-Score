@@ -54,18 +54,19 @@
 </head>
 <body>
     <div class="container">
-        <h2>Matches:</h2>
         {% if matches == [] %}
+        <h4>Matches:</h4>
         <h4>No matches</h4>
         <form action="/matches/create" method="get">
             <button type="submit">Create match</button>
         </form>
         {% else %}
+        <h2>{{ matches[0].tournament_name }}</h2>
+        <h4>Matches:</h4>
         <ul>
             {% for match in matches %}
                 {% if match.is_individuals == false %}    
                 <li>
-                    <h4>{{ match.tournament_name }}</h4>
                     <form action="/matches/match/{{ match.id }}" method="get">
                         <button style="background-color: rgb(38, 174, 192);" type="submit">
                             {{ match.participants[0].fullname }} - {{ match.participants[1].fullname }}</button>
@@ -82,7 +83,6 @@
                 </li>
                 {% else %}
                 <li>
-                    <h4>{{ match.tournament_name }}</h4>
                     <h4>{{ match.played_on.strftime("%Y-%m-%d  %H:%M") }}</h4>
                     <h4>{{ match.location }}</h4>
                     <p>Participants: {{ match.participants }}</p>
