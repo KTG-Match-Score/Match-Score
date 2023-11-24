@@ -1,6 +1,7 @@
 from data.database import read_query, insert_query
 from models.tournament import Tournament, MatchesInTournament
 from models.user import User
+import routers.tournaments as tournaments
 from datetime import date
 import base64
 import data.database as db
@@ -252,5 +253,33 @@ def generate_schema(t_id: int, participants_per_match: int, format: str, number_
     return schema
 
 
-def add_prizes(id_tournament: int, type: str):
-    pass
+def add_prizes(prizes_list: list[tuple], tournament_id, request, name, image_data_url, tokens):
+    
+    try:
+        with db._get_connection() as connection:
+            cursor = connection.cursor()
+
+            for prize in prizes_list:
+                if prize[-1] == None:
+                    query = '''INSERT INTO prize_allocation(tournament_id, place, format) VALUES ?'''
+                    params = prize[0:3]
+                else:
+                    query = '''INSERT INTO prize_allocation(tournament_id, place, format, amount) VALUES ?'''
+                cursor.execute(query, params)
+            
+            connection.commit()
+        
+    except Exception as e:
+        response =  tournaments.templates.TemplateResponse("add_prizes_to_tournament.html", context={
+                "request": request,
+                "tournament_id": tournament_id,
+                "name": name, 
+                "image_data_url": image_data_url
+            })
+        response.set_cookie(key="access_token",
+                    value=tokens["access_token"], httponly=True)
+        response.set_cookie(key="refresh_token",
+                            value=tokens["refresh_token"], httponly=True)
+        return response
+    
+    return True

@@ -156,8 +156,8 @@ async def create_tournament_schema(request: Request):
 
 @tournaments_router.post("/add_prizes")
 async def add_prizes_to_tournament(request: Request,
-                                   tournament_id: int = Form(),
-                                   tournament_prize_type: str = Form(None)):
+                                   tournament_id: int = Query(...),
+                                   data: dict = Form(...)):
     
     access_token = request.cookies.get("access_token")
     refresh_token = request.cookies.get("refresh_token")
@@ -169,12 +169,28 @@ async def add_prizes_to_tournament(request: Request,
             user = auth.refresh_access_token(access_token, refresh_token)
             tokens = auth.token_response(user)
         except:
-            RedirectResponse(url='/landing_page', status_code=303)
+            RedirectResponse(url= "/landing_page", status_code=303)
 
     if user.role != "director":
-        RedirectResponse(url='/landing_page', status_code=303)
+        RedirectResponse(url= "/landing_page", status_code=303)
 
-    prizes = tournaments_services.add_prizes(tournament_id, tournament_prize_type)
+    prizes_data: dict = data.get("prizes")
+
+    prizes_for_insert = []
+
+    for prize in prizes_data:
+        place = prize.get("place")
+        format = prize.get("prize_type")
+        amount = float(prize.get("amount"))
+        prizes_for_insert.append(tournament_id, place, format, amount)
+
+    mime_type = "image/jpg"
+    base64_encoded_data = base64.b64encode(user.picture).decode('utf-8')
+    image_data_url = f"data:{mime_type};base64,{base64_encoded_data}"
+    name = user.fullname
+    image_data_url = image_data_url
+
+    action = tournaments_services.add_prizes(prizes_for_insert, tournament_id, request, name, image_data_url, tokens)
 
     response = users.templates.TemplateResponse("user_dashboard.html", {"request": request})
     response.set_cookie(key="access_token",
