@@ -93,7 +93,7 @@
 
         .sports-container h2 {
             margin: 0;
-}
+        }
 
         .sports-container ul {
             display: inline-block;
@@ -107,6 +107,7 @@
             transition: color 0.3s;
             margin-right: 10px;
             text-decoration: none;
+            text-transform: capitalize;
         }
 
         .sport-item:hover {
@@ -480,11 +481,24 @@
 
             sportsContainer.innerHTML = "";
 
-            
             var sportsFlexContainer = document.createElement("ul");
             sportsFlexContainer.classList.add("sports-container");
 
-            
+            // Add "All" sport button
+            var allSportItem = document.createElement("li");
+            allSportItem.classList.add("sport-item");
+
+            var allSportH2 = document.createElement("h2");
+            allSportH2.textContent = "All";
+
+            allSportH2.addEventListener("click", function () {
+                fetchTournamentsBySport(null);  // Pass null for "All"
+            });
+
+            allSportItem.appendChild(allSportH2);
+            sportsFlexContainer.appendChild(allSportItem);
+
+            // Add other sports
             sportsData.forEach(function (sport) {
                 var sportItem = document.createElement("li");
                 sportItem.classList.add("sport-item");
@@ -492,11 +506,9 @@
                 var h2 = document.createElement("h2");
                 h2.textContent = sport.name;
 
-                
-                h2.onclick = function () {
-                   
+                h2.addEventListener("click", function () {
                     fetchTournamentsBySport(sport.name);
-                };
+                });
 
                 sportItem.appendChild(h2);
                 sportsFlexContainer.appendChild(sportItem);
@@ -507,7 +519,7 @@
 
         async function fetchTournamentsBySport(sportName) {
             try {
-                const tournamentsResponse = await fetch(`/tournaments/?sport_name=${sportName}`);
+                const tournamentsResponse = await fetch(sportName === null ? "/tournaments/" : `/tournaments/?sport_name=${sportName}`);
 
                 if (!tournamentsResponse.ok) {
                     throw new Error(`Error fetching tournaments: ${tournamentsResponse.statusText}`);
