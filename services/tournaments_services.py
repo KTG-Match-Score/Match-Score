@@ -143,7 +143,7 @@ def get_tournaments_by_date(date: date):
                 "result": result,
                 "picture": picture,
             }
-
+    print(tournaments)
     return JSONResponse(content=tournaments)
 
 

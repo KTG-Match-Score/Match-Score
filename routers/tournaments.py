@@ -9,7 +9,7 @@ from datetime import date, datetime
 from fastapi.responses import RedirectResponse, JSONResponse
 import json
 import httpx
-
+import base64
 
 
 tournaments_router = APIRouter(prefix="/tournaments")
@@ -44,7 +44,11 @@ async def show_create_tournament_form(request: Request):
     if user.role != "director":
         RedirectResponse(url='/landing_page', status_code=303)
 
-    response = templates.TemplateResponse("create_tournament_form.html", context={"request": request})
+    mime_type = "image/jpg"
+    base64_encoded_data = base64.b64encode(user.picture).decode('utf-8')
+    image_data_url = f"data:{mime_type};base64,{base64_encoded_data}" 
+
+    response = templates.TemplateResponse("create_tournament_form.html", context={"request": request, "name": user.fullname, "image_data_url": image_data_url})
 
     response.set_cookie(key="access_token",
                         value=tokens["access_token"], httponly=True)
