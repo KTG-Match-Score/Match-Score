@@ -233,10 +233,7 @@ def edit_match_details(match: Match, old_participants: list[Player]):
 
 def update_participants(old_participants: list[Player], match: Match):
     to_remove = tuple(el.id for el in old_participants)
-    
-    print(to_remove)
     query = f"""DELETE FROM matches_has_players WHERE matches_id={match.id} and players_id in {to_remove} """
-    print(query)
     _ = update_query(query)
     add_participants(match, match.participants)
     return match

@@ -30,7 +30,7 @@ def view_matches(
 
     return templates.TemplateResponse("view_matches.html", {"request":request, "matches": matches})
 
-# maybe create match should be called directly from the tournaments schema endpoint???
+
 @matches_router.get("/create", tags=["Matches redirect"]) 
 async def create_redirect(request: Request):
     """ requires login after redirection """
@@ -55,10 +55,22 @@ async def view_match_by_id(id: int, request: Request):
 
     if not match: return not_found(request)
 
-    return templates.TemplateResponse("view_match.html", {"request": request, "match": match})
+    access_token = request.cookies.get("access_token")
+    refresh_token = request.cookies.get("refresh_token")
+    tokens = {"access_token": access_token, "refresh_token": refresh_token}
+    try:
+        user = await auth.get_current_user(access_token)
+    except:
+        try:
+            user = auth.refresh_access_token(access_token, refresh_token)
+            tokens = auth.token_response(user)
+        except:
+            RedirectResponse(url='/', status_code=303)
+
+    return templates.TemplateResponse("view_match.html", {"request": request, "match": match, "user": user})
 
 
-@matches_router.get("/result/{id}", tags=["Matches redirect"])
+@matches_router.get("/match/result/{id}", tags=["Matches redirect"])
 async def add_result_redirect(id: int, request: Request):
 
     match = ms.view_single_match(id)
@@ -71,17 +83,17 @@ async def add_result_redirect(id: int, request: Request):
 @matches_router.post("/result/{id}", tags=["Matches"])
 async def add_result(request: Request, id: int):
     """update the result, update the places of the participants"""
-    # access_token = request.cookies.get("access_token")
-    # refresh_token = request.cookies.get("refresh_token")
-    # tokens = {"access_token": access_token, "refresh_token": refresh_token}
-    # try:
-    #     user = await auth.get_current_user(access_token)
-    # except:
-    #     try:
-    #         user = auth.refresh_access_token(access_token, refresh_token)
-    #         tokens = auth.token_response(user)
-    #     except:
-    #         RedirectResponse(url='/', status_code=303)
+    access_token = request.cookies.get("access_token")
+    refresh_token = request.cookies.get("refresh_token")
+    tokens = {"access_token": access_token, "refresh_token": refresh_token}
+    try:
+        user = await auth.get_current_user(access_token)
+    except:
+        try:
+            user = auth.refresh_access_token(access_token, refresh_token)
+            tokens = auth.token_response(user)
+        except:
+            RedirectResponse(url='/', status_code=303)
     try:
         result = convert_result_from_string(await request.json())
     except:
@@ -111,17 +123,17 @@ async def create_match(request: Request):
 
     """ requires login and director/admin rights """
     # user, token and checks for admin, director
-    # access_token = request.cookies.get("access_token")
-    # refresh_token = request.cookies.get("refresh_token")
-    # tokens = {"access_token": access_token, "refresh_token": refresh_token}
-    # try:
-    #     user = await auth.get_current_user(access_token)
-    # except:
-    #     try:
-    #         user = auth.refresh_access_token(access_token, refresh_token)
-    #         tokens = auth.token_response(user)
-    #     except:
-    #         RedirectResponse(url='/', status_code=303)
+    access_token = request.cookies.get("access_token")
+    refresh_token = request.cookies.get("refresh_token")
+    tokens = {"access_token": access_token, "refresh_token": refresh_token}
+    try:
+        user = await auth.get_current_user(access_token)
+    except:
+        try:
+            user = auth.refresh_access_token(access_token, refresh_token)
+            tokens = auth.token_response(user)
+        except:
+            RedirectResponse(url='/', status_code=303)
 
     json_data = await request.json()
     
