@@ -155,6 +155,6 @@ async def create_tournament_schema(request: Request):
 
     cookies = request.cookies
     async with httpx.AsyncClient() as client:
-        response = await client.post("http://localhost:8000/matches/create", cookies=cookies, json={ "tournament_id":tournament_id, "format":format, "schema": schema}) 
+        response = await client.post("http://localhost:8000/matches/create", cookies=cookies, json={ "tournament_id":tournament_id, "format":format, "sport": sport, "schema": schema}) 
     
     return response
