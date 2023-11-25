@@ -67,11 +67,17 @@
             {% for match in matches %}
                 {% if match.is_individuals == false %}    
                 <li>
+                    {% if match.participants == [] %}
+                    <form action="/matches/match/{{ match.id }}" method="get">
+                        <button style="background-color: rgb(38, 174, 192);" type="submit">
+                            No players yet</button>
+                    </form>
+                    {% else %}
                     <form action="/matches/match/{{ match.id }}" method="get">
                         <button style="background-color: rgb(38, 174, 192);" type="submit">
                             {{ match.participants[0].fullname }} - {{ match.participants[1].fullname }}</button>
                     </form>
-                    
+                    {% endif %}
                     
                     <h4>{{ match.played_on.strftime("%Y-%m-%d  %H:%M") }}</h4>
                     <h4>{{ match.location }}</h4>

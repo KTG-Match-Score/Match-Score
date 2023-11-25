@@ -9,6 +9,7 @@ from models.tournament import Tournament
 from models.user import User
 import services.users_services as users_services
 from services import matches_services as ms
+from services import tournaments_services as ts
 from typing import Annotated, Optional
 import common.auth as auth
 import common.responses as responses
@@ -16,7 +17,6 @@ import logging
 
 matches_router = APIRouter(prefix="/matches")
 templates = Jinja2Templates(directory="templates/match_templates")
-logger = logging.getLogger(__name__)
 
 @matches_router.get("/", tags=["Matches"])
 def view_matches(
@@ -137,34 +137,98 @@ async def create_match(request: Request):
 
     json_data = await request.json()
     
-    schema = json_data.get("schema")
+    schema: dict = json_data.get("schema")
     tournament_format = json_data.get("format")
     tournament_id = json_data.get("tournament_id")
     location: Optional[str] = "unknown location"
-    tournament: Tournament = await ms.get_tournament_by_id(tournament_id) # if tournament is not None
+    tournament: Tournament = await ms.get_tournament_by_id(tournament_id)
     played_on_date: datetime = tournament.start_date
     format = match_format_from_tournament_sport(json_data.get("sport"))
+    sport = json_data.get("sport")
 
-    for play in schema:
-        participants = ms.create_players_from_ids(play)
-        
-        if played_on_date and (played_on_date < tournament.start_date) or (played_on_date >= tournament.end_date): 
-            return bad_request(request, "The time of the match should be within the time of the tournament")
-        
-        ms.create_new_match(
-            Match(
-            format = format, 
-            played_on = played_on_date, 
-            is_individuals = tournament.is_individuals, 
-            location = location,
-            tournament_id = tournament.id
-            ), participants)
-        
+    ms.update_id_of_parent_tournament(tournament.id)
+    parent = tournament
+    if tournament_format == "knockout":
+        for subtournament, play in schema.items():
+            if isinstance(play, list):
+                for pl in play:
+                    participants = ms.create_players_from_ids(pl)
+                    
+                    if (played_on_date < tournament.start_date) or (played_on_date >= tournament.end_date): 
+                        return bad_request(request, "The time of the match should be within the time of the tournament")
+                    
+                    ms.create_new_match(
+                        Match(
+                        format = format, 
+                        played_on = played_on_date, 
+                        is_individuals = tournament.is_individuals, 
+                        location = location,
+                        tournament_id = tournament.id
+                        ), participants)
+            else:
+                new_tournament = create_subtournament(subtournament, parent, user, sport)
+                ms.update_tournament_child_id(new_tournament.id, parent.id)
+                for _ in range(play):
+                    ms.create_new_match(
+                        Match(
+                        format = format, 
+                        played_on = new_tournament.start_date, 
+                        is_individuals = new_tournament.is_individuals, 
+                        location = location,
+                        tournament_id = new_tournament.id
+                        ), participants=[])
+                parent = new_tournament
+    else:
+        new_tournament = None
+        for subtournament, play in schema.items():
+            if len(list(schema.keys())) > 1:
+                new_tournament = create_subtournament(subtournament, parent, user, sport)
+                ms.update_tournament_child_id(new_tournament.id, parent.id)
+            for pl in play:
+                if isinstance(pl, list):
+                    participants = ms.create_players_from_ids(pl)
+                if isinstance(pl, int):
+                    participants = ms.create_players_from_ids(play)
+                    ms.create_new_match(
+                    Match(
+                    format = format, 
+                    played_on = played_on_date, 
+                    is_individuals = tournament.is_individuals, 
+                    location = location,
+                    tournament_id = tournament.id
+                    ), participants)
+                    break
+                if (played_on_date < tournament.start_date) or (played_on_date >= tournament.end_date): 
+                    return bad_request(request, "The time of the match should be within the time of the tournament")
+                
+                ms.create_new_match(
+                    Match(
+                    format = format, 
+                    played_on = played_on_date, 
+                    is_individuals = tournament.is_individuals, 
+                    location = location,
+                    tournament_id = tournament.id
+                    ), participants)
+                
+            if new_tournament: parent = new_tournament
 
-    return templates.TemplateResponse("templates/users/new_test_landing_page.html", 
+    return templates.TemplateResponse("../users/new_test_landing_page.html", 
                                     {"request": request}, 
                                     status_code=status.HTTP_201_CREATED)
     
+
+def create_subtournament(subtournament: str, parent: Tournament, user, sport):
+    new_tournament = Tournament(title=subtournament,
+                                format=parent.format,
+                                start_date=parent.start_date,
+                                end_date=parent.end_date,
+                                parent_tournament_id=parent.id,
+                                participants_per_match=parent.participants_per_match,
+                                is_individuals=parent.is_individuals)
+
+    new_tournament.id = ts.create_tournament(new_tournament, user, sport)
+
+    return new_tournament
 
 @matches_router.post("/edit/{id}", tags=["Matches"])
 async def edit_match(
@@ -184,17 +248,17 @@ async def edit_match(
     requires login and director/admin rights
     change match time, change match format, change location
     update the list of participants"""
-    # access_token = request.cookies.get("access_token")
-    # refresh_token = request.cookies.get("refresh_token")
-    # tokens = {"access_token": access_token, "refresh_token": refresh_token}
-    # try:
-    #     user = await auth.get_current_user(access_token)
-    # except:
-    #     try:
-    #         user = auth.refresh_access_token(access_token, refresh_token)
-    #         tokens = auth.token_response(user)
-    #     except:
-    #         RedirectResponse(url='/', status_code=303)
+    access_token = request.cookies.get("access_token")
+    refresh_token = request.cookies.get("refresh_token")
+    tokens = {"access_token": access_token, "refresh_token": refresh_token}
+    try:
+        user = await auth.get_current_user(access_token)
+    except:
+        try:
+            user = auth.refresh_access_token(access_token, refresh_token)
+            tokens = auth.token_response(user)
+        except:
+            RedirectResponse(url='/', status_code=303)
     
     match = ms.view_single_match(id)
 

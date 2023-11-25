@@ -300,3 +300,10 @@ async def get_tournament_by_id(id):
     tournament_data = read_query("""SELECT * FROM tournaments WHERE id = ?""", (id,)) 
     
     return Tournament.from_query_result(*tournament_data[0])
+
+
+def update_id_of_parent_tournament(t_id: int):
+    _ = update_query(f"""UPDATE tournaments SET parent_tournament_id = {t_id} WHERE id = {t_id}""")
+
+def update_tournament_child_id(child_id: int, parent_id: int):
+    _ = update_query(f"""UPDATE tournaments SET child_tournament_id = {child_id} WHERE id = {parent_id}""")
