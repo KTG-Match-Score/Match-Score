@@ -26,8 +26,6 @@ async def view_tournaments(request: Request,
     
     return tournaments
 
-    # return templates.TemplateResponse("return_tournaments.html", context={"request": request, "tournaments": tournaments})
-
 @tournaments_router.get("/create_tournament_form")
 async def show_create_tournament_form(request: Request):
     access_token = request.cookies.get("access_token")
@@ -66,9 +64,6 @@ async def view_tournaments_by_date(request: Request,
     if tournaments_matches == {}:
         return JSONResponse(content="No events for the selected date.")
     return tournaments_matches
-    # if tournaments_matches == {}:
-    #     return templates.TemplateResponse("return_no_tournaments_by_date.html", context={"request": request})
-    # return templates.TemplateResponse("return_tournaments_by_date.html", context={"request": request, "tournaments_matches": tournaments_matches})
 
 @tournaments_router.post("/create_tournament")
 async def create_tournament(request: Request,
