@@ -35,7 +35,7 @@ async def show_create_tournament_form(request: Request):
         user = await auth.get_current_user(access_token)
     except:
         try:
-            user = auth.refresh_access_token(access_token, refresh_token)
+            user = await auth.refresh_access_token(access_token, refresh_token)
             tokens = auth.token_response(user)
         except:
             return RedirectResponse(url='/', status_code=303)
@@ -83,7 +83,7 @@ async def create_tournament(request: Request,
         user = await auth.get_current_user(access_token)
     except:
         try:
-            user = auth.refresh_access_token(access_token, refresh_token)
+            user = await auth.refresh_access_token(access_token, refresh_token)
             tokens = auth.token_response(user)
         except:
             return RedirectResponse(url='/', status_code=303)
@@ -133,7 +133,7 @@ async def create_tournament_schema(request: Request):
         user = await auth.get_current_user(access_token)
     except:
         try:
-            user = auth.refresh_access_token(access_token, refresh_token)
+            user = await auth.refresh_access_token(access_token, refresh_token)
             tokens = auth.token_response(user)
         except:
             return RedirectResponse(url='/', status_code=303)
@@ -159,7 +159,7 @@ async def add_prizes_to_tournament(request: Request,
         user = await auth.get_current_user(access_token)
     except:
         try:
-            user = auth.refresh_access_token(access_token, refresh_token)
+            user = await auth.refresh_access_token(access_token, refresh_token)
             tokens = auth.token_response(user)
         except:
             RedirectResponse(url= "/", status_code=303)
