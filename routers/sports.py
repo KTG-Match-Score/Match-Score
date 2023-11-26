@@ -12,5 +12,3 @@ async def view_all_sports(request: Request):
     sports = sports_services.get_all_sports()
     
     return sports
-
-    # return templates.TemplateResponse("sports.html", context={"request": request, "sports": sports})
