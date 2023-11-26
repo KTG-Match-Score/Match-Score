@@ -38,10 +38,10 @@ async def show_create_tournament_form(request: Request):
             user = auth.refresh_access_token(access_token, refresh_token)
             tokens = auth.token_response(user)
         except:
-            RedirectResponse(url='/landing_page', status_code=303)
+            return RedirectResponse(url='/', status_code=303)
 
-    if user.role != "director":
-        RedirectResponse(url='/landing_page', status_code=303)
+    if user.role != "director" or user.role != "admin":
+        return RedirectResponse(url='/users/dashboard', status_code=303)
 
     mime_type = "image/jpg"
     base64_encoded_data = base64.b64encode(user.picture).decode('utf-8')
@@ -61,9 +61,7 @@ async def view_tournaments_by_date(request: Request,
                                    date: date):
     tournaments_matches = tournaments_services.get_tournaments_by_date(date)
 
-    if tournaments_matches == {}:
-        return JSONResponse(content="No events for the selected date.")
-    return tournaments_matches
+    return JSONResponse(content=tournaments_matches)
 
 @tournaments_router.post("/create_tournament")
 async def create_tournament(request: Request,
@@ -88,10 +86,10 @@ async def create_tournament(request: Request,
             user = auth.refresh_access_token(access_token, refresh_token)
             tokens = auth.token_response(user)
         except:
-            RedirectResponse(url='/landing_page', status_code=303)
+            return RedirectResponse(url='/', status_code=303)
 
-    if user.role != "director":
-        RedirectResponse(url='/landing_page', status_code=303)
+    if user.role != "director" or user.role != "admin":
+        return RedirectResponse(url='/users/dashboard', status_code=303)
     
     new_tournament = Tournament(title=title,
                                 format=format,
@@ -138,10 +136,10 @@ async def create_tournament_schema(request: Request):
             user = auth.refresh_access_token(access_token, refresh_token)
             tokens = auth.token_response(user)
         except:
-            RedirectResponse(url='/landing_page', status_code=303)
+            return RedirectResponse(url='/', status_code=303)
 
-    if user.role != "director":
-        RedirectResponse(url='/landing_page', status_code=303)
+    if user.role != "director" or user.role != "admin":
+        return RedirectResponse(url='/users/dashboard', status_code=303)
 
     schema = tournaments_services.generate_schema(tournament_id, participants_per_match, format, number_participants, sport)
 
@@ -164,10 +162,10 @@ async def add_prizes_to_tournament(request: Request,
             user = auth.refresh_access_token(access_token, refresh_token)
             tokens = auth.token_response(user)
         except:
-            RedirectResponse(url= "/landing_page", status_code=303)
+            RedirectResponse(url= "/", status_code=303)
 
-    if user.role != "director":
-        RedirectResponse(url= "/landing_page", status_code=303)
+    if user.role != "director" or user.role != "admin":
+        RedirectResponse(url= "/users/dashboard", status_code=303)
 
     prizes_data: dict = data.get("prizes")
 
