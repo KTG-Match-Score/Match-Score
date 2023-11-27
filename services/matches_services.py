@@ -4,6 +4,7 @@ from typing import Optional
 from data.database import read_query, insert_query, update_query
 from models.match import Match
 from models.player import Player
+from models.tournament import Tournament
 
 def view_matches(by_date : str, by_location: str, tournament_id: int):
     query = ''
@@ -207,6 +208,20 @@ def create_players_from_names(participants: list[str]) -> list[Player]:
 
     return temp_participants
 
+def create_players_from_ids(participants: list[int]) -> list[Player]:
+    player_data = read_query(
+        f'''SELECT
+        p.id, p.full_name, p. profile_picture, p.country_code, is_sports_club, p.sports_club_id,  
+        (SELECT
+        s.name FROM sports s 
+        JOIN players_has_sports phs ON s.id = phs.sport_id 
+        WHERE phs.player_id=p.id) AS sport
+        FROM players p
+        WHERE p.id in {tuple(participants)} ''')
+    temp_participants = [Player.from_query(*p) for p in player_data]
+    
+    return temp_participants
+
 def edit_match_details(match: Match, old_participants: list[Player]): 
     _ = update_query(f"""
         UPDATE matches SET format = '{match.format}', played_on = '{match.played_on}', 
@@ -218,10 +233,7 @@ def edit_match_details(match: Match, old_participants: list[Player]):
 
 def update_participants(old_participants: list[Player], match: Match):
     to_remove = tuple(el.id for el in old_participants)
-    
-    print(to_remove)
     query = f"""DELETE FROM matches_has_players WHERE matches_id={match.id} and players_id in {to_remove} """
-    print(query)
     _ = update_query(query)
     add_participants(match, match.participants)
     return match
@@ -283,4 +295,8 @@ def change_match_to_finished(match: Match):
     match.finished = "finished"
     return match
     
+async def get_tournament_by_id(id):
 
+    tournament_data = read_query("""SELECT * FROM tournaments WHERE id = ?""", (id,)) 
+    
+    return Tournament.from_query_result(*tournament_data[0])

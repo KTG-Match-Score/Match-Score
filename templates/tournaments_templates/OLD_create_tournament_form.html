@@ -151,7 +151,7 @@
                 <input type="text" id="end_date" name="end_date" placeholder="Select End Date" required>
             </div>
 
-            <label for="parent_tournament_id">Parent Tournament ID (Optional):</label>
+            <label for="parent_tournament_id">Parent Tournament ID (Number):</label>
             <input type="number" id="parent_tournament_id" name="parent_tournament_id" min=0>
 
             <label for="number_of_participants">Number of Participants(Number):</label>
@@ -182,68 +182,19 @@
                 },
                 time_24hr: true,
             });
-    
+
             flatpickr("#end_date", {
                 enableTime: true,
                 dateFormat: "Y-m-d H:i:S",
                 minDate: "today",
                 time_24hr: true,
             });
-
-            var formatSelect = document.getElementById("format");
-            formatSelect.addEventListener("change", updateParticipantOptions);
-
-            updateParticipantOptions();
         });
-    
+
         function updateEndDateOptions(selectedStartDate) {
             var endDatePicker = document.getElementById("end_date")._flatpickr;
             endDatePicker.set("minDate", selectedStartDate);
-        }
-    
-        function updateParticipantOptions() {
-            var formatSelect = document.getElementById("format");
-            var numParticipantsInput = document.getElementById("number_of_participants");
-            var participantsPerMatchInput = document.getElementById("participants_per_match");
-    
-            if (formatSelect.value === "knockout") {
-                var dropdown = createParticipantDropdown();
-                numParticipantsInput.replaceWith(dropdown);
 
-                participantsPerMatchInput.value = "2";
-                participantsPerMatchInput.setAttribute("readonly", "true"); 
-            } else if (formatSelect.value === "league") {
-                participantsPerMatchInput.value = "2";
-                participantsPerMatchInput.setAttribute("readonly", "true");
-
-            } else {
-                numParticipantsInput.removeAttribute("readonly");
-                numParticipantsInput.removeAttribute("min");
-                numParticipantsInput.removeAttribute("max");
-                numParticipantsInput.removeAttribute("step");
-
-                participantsPerMatchInput.value = "";
-                participantsPerMatchInput.removeAttribute("readonly");
-            }
-        }
-    
-        function createParticipantDropdown() {
-            var dropdown = document.createElement("select");
-            dropdown.setAttribute("id", "number_of_participants");
-            dropdown.setAttribute("name", "number_of_participants");
-            dropdown.setAttribute("required", "true");
-
-            var options = [2, 8, 16, 32, 64, 128, 256];
-            options.forEach(function (option) {
-                var optionElement = document.createElement("option");
-                optionElement.value = option;
-                optionElement.text = option;
-                dropdown.add(optionElement);
-            });
-    
-            return dropdown;
-        }
-    
         function validateForm() {
             var requiredFields = document.querySelectorAll('[required]');
             for (var i = 0; i < requiredFields.length; i++) {
@@ -252,20 +203,8 @@
                     return false;
                 }
             }
-    
-            var formatSelect = document.getElementById("format");
-            var selectedFormat = formatSelect.value;
-
-            if (selectedFormat === "knockout") {
-                var participantsPerMatch = document.getElementById("participants_per_match").value;
-    
-                if ((selectedFormat === "knockout" || selectedFormat === "league") && document.getElementById("participants_per_match").value !== "2") {
-                    alert("For Knockout or League format, each match should have 2 participants.");
-                    return false;
-                }
-            }
-            
             return true;
+        }
         }
     </script>
 </body>

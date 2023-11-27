@@ -83,7 +83,7 @@
 <body>
     <div class="container">
         <h2>Add Result: {{ match.tournament_name }}</h2>
-        <form id="myForm" action="/matches/result/{{ match.id }}" method="POST">
+        <form id="myForm" action="/matches/match/result/{{ match.id }}" method="POST">
             {% if match.format == "time limited" %}
             <ul>
                 {% for player in match.participants %}

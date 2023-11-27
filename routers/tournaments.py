@@ -1,6 +1,7 @@
 from fastapi import APIRouter, status, Form, Request, Query
 from models.tournament import Tournament, MatchesInTournament
 import routers.players as players
+import routers.users as users
 import common.auth as auth
 from typing import Optional
 from services import tournaments_services
@@ -9,7 +10,7 @@ from datetime import date, datetime
 from fastapi.responses import RedirectResponse, JSONResponse
 import json
 import httpx
-
+import base64
 
 
 tournaments_router = APIRouter(prefix="/tournaments")
@@ -25,8 +26,6 @@ async def view_tournaments(request: Request,
     
     return tournaments
 
-    # return templates.TemplateResponse("return_tournaments.html", context={"request": request, "tournaments": tournaments})
-
 @tournaments_router.get("/create_tournament_form")
 async def show_create_tournament_form(request: Request):
     access_token = request.cookies.get("access_token")
@@ -36,15 +35,19 @@ async def show_create_tournament_form(request: Request):
         user = await auth.get_current_user(access_token)
     except:
         try:
-            user = auth.refresh_access_token(access_token, refresh_token)
+            user = await auth.refresh_access_token(access_token, refresh_token)
             tokens = auth.token_response(user)
         except:
-            RedirectResponse(url='/landing_page', status_code=303)
+            return RedirectResponse(url='/', status_code=303)
 
-    if user.role != "director":
-        RedirectResponse(url='/landing_page', status_code=303)
+    if user.role != "director" and user.role != "admin":
+        return RedirectResponse(url='/users/dashboard', status_code=303)
 
-    response = templates.TemplateResponse("create_tournament_form.html", context={"request": request})
+    mime_type = "image/jpg"
+    base64_encoded_data = base64.b64encode(user.picture).decode('utf-8')
+    image_data_url = f"data:{mime_type};base64,{base64_encoded_data}" 
+
+    response = templates.TemplateResponse("create_tournament_form.html", context={"request": request, "name": user.fullname, "image_data_url": image_data_url})
 
     response.set_cookie(key="access_token",
                         value=tokens["access_token"], httponly=True)
@@ -53,21 +56,12 @@ async def show_create_tournament_form(request: Request):
     
     return response
 
-# @tournaments_router.get("/add_players")
-# async def add_players_to_tournament(request: Request):
-#     return 
-
 @tournaments_router.get("/{date}", status_code=status.HTTP_200_OK, response_model=list[MatchesInTournament])
 async def view_tournaments_by_date(request: Request,
                                    date: date):
     tournaments_matches = tournaments_services.get_tournaments_by_date(date)
 
-    if tournaments_matches == {}:
-        return JSONResponse(content="No events for the selected date.")
-    return tournaments_matches
-    # if tournaments_matches == {}:
-    #     return templates.TemplateResponse("return_no_tournaments_by_date.html", context={"request": request})
-    # return templates.TemplateResponse("return_tournaments_by_date.html", context={"request": request, "tournaments_matches": tournaments_matches})
+    return JSONResponse(content=tournaments_matches)
 
 @tournaments_router.post("/create_tournament")
 async def create_tournament(request: Request,
@@ -89,13 +83,13 @@ async def create_tournament(request: Request,
         user = await auth.get_current_user(access_token)
     except:
         try:
-            user = auth.refresh_access_token(access_token, refresh_token)
+            user = await auth.refresh_access_token(access_token, refresh_token)
             tokens = auth.token_response(user)
         except:
-            RedirectResponse(url='/landing_page', status_code=303)
+            return RedirectResponse(url='/', status_code=303)
 
-    if user.role != "director":
-        RedirectResponse(url='/landing_page', status_code=303)
+    if user.role != "director" and user.role != "admin":
+        return RedirectResponse(url='/users/dashboard', status_code=303)
     
     new_tournament = Tournament(title=title,
                                 format=format,
@@ -139,18 +133,62 @@ async def create_tournament_schema(request: Request):
         user = await auth.get_current_user(access_token)
     except:
         try:
-            user = auth.refresh_access_token(access_token, refresh_token)
+            user = await auth.refresh_access_token(access_token, refresh_token)
             tokens = auth.token_response(user)
         except:
-            RedirectResponse(url='/landing_page', status_code=303)
+            return RedirectResponse(url='/', status_code=303)
 
-    if user.role != "director":
-        RedirectResponse(url='/landing_page', status_code=303)
+    if user.role != "director" and user.role != "admin":
+        return RedirectResponse(url='/users/dashboard', status_code=303)
 
     schema = tournaments_services.generate_schema(tournament_id, participants_per_match, format, number_participants, sport)
 
     cookies = request.cookies
     async with httpx.AsyncClient() as client:
-        response = await client.post("http://localhost:8000/matches/create", cookies=cookies, json={ "tournament_id":tournament_id, "format":format, "schema": schema}) 
+        response = await client.post("http://localhost:8000/matches/create", cookies=cookies, json={ "tournament_id":tournament_id, "format": format, "sport": sport, "schema": schema}) 
+
+@tournaments_router.post("/add_prizes")
+async def add_prizes_to_tournament(request: Request,
+                                   tournament_id: int = Query(...),
+                                   data: dict = Form(...)):
+    
+    access_token = request.cookies.get("access_token")
+    refresh_token = request.cookies.get("refresh_token")
+    tokens = {"access_token": access_token, "refresh_token": refresh_token}
+    try:
+        user = await auth.get_current_user(access_token)
+    except:
+        try:
+            user = await auth.refresh_access_token(access_token, refresh_token)
+            tokens = auth.token_response(user)
+        except:
+            RedirectResponse(url= "/", status_code=303)
+
+    if user.role != "director" and user.role != "admin":
+        RedirectResponse(url= "/users/dashboard", status_code=303)
+
+    prizes_data: dict = data.get("prizes")
+
+    prizes_for_insert = []
+
+    for prize in prizes_data:
+        place = prize.get("place")
+        format = prize.get("prize_type")
+        amount = float(prize.get("amount"))
+        prizes_for_insert.append(tournament_id, place, format, amount)
+
+    mime_type = "image/jpg"
+    base64_encoded_data = base64.b64encode(user.picture).decode('utf-8')
+    image_data_url = f"data:{mime_type};base64,{base64_encoded_data}"
+    name = user.fullname
+    image_data_url = image_data_url
+
+    action = tournaments_services.add_prizes(prizes_for_insert, tournament_id, request, name, image_data_url, tokens)
+
+    response = users.templates.TemplateResponse("user_dashboard.html", {"request": request})
+    response.set_cookie(key="access_token",
+                        value=tokens["access_token"], httponly=True)
+    response.set_cookie(key="refresh_token",
+                        value=tokens["refresh_token"], httponly=True)
     
     return response

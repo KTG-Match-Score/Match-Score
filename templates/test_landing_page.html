@@ -7,7 +7,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MatchScore Landing Page</title>
 
-    <!-- Stylesheets -->
     <style>
 
         body {
@@ -18,12 +17,13 @@
             padding: 0;
             min-height: 100vh;
         }
-
+        
         .page-container {
             display: flex;
-            max-width: 1200px; /* Adjust the maximum width as needed */
+            max-width: 1200px;
             margin: 0 auto;
             padding: 0;
+            justify-content: center;
         }
 
 
@@ -39,9 +39,7 @@
             animation: fade-in 1s ease-in-out;
             position: relative;
             max-width: 400px;
-            /* Adjust maximum width for the entire content */
             margin: 0 auto;
-            /* Center the content on the page */
         }
         
         .tournaments-container,
@@ -56,7 +54,7 @@
         }
 
         .right-container {
-            width: 40%; /* Adjust the width of the right container as needed */
+            width: 40%;
         }
         
         .tournaments-container {
@@ -68,7 +66,6 @@
         .tournaments-container h2 {
             margin-bottom: 10px;
             color: #45a049;
-            /* Body text color for tournaments */
         }
 
         .tournament-item {
@@ -77,34 +74,31 @@
             list-style-type: none;
             padding: 5px;
             color: white;
-            /* Body text color for tournaments */
         }
 
         .tournament-item:hover {
             color: #47095a;
         }
 
-        /* Styles for sports container */
         .sports-container {
             max-width: 800px;
             width: 100%;
             text-align: center;
             display: flex;
-            flex-wrap: wrap;  /* Allow items to wrap to the next line */
-            justify-content: center;  /* Center the items horizontally */
-            list-style-type: none; /* Remove list-style dots */
+            flex-wrap: wrap;
+            justify-content: center;
+            list-style-type: none;
         }
 
         .sports-container h2 {
-            margin: 0; /* Remove default margin to avoid spacing issues */
-}
+            margin: 0;
+        }
 
         .sports-container ul {
             display: inline-block;
             padding: 0;
             list-style: none;
             white-space: nowrap;
-            /* Prevent line breaks */
         }
 
         .sport-item {
@@ -112,6 +106,7 @@
             transition: color 0.3s;
             margin-right: 10px;
             text-decoration: none;
+            text-transform: capitalize;
         }
 
         .sport-item:hover {
@@ -120,16 +115,13 @@
 
         .timestamp-container {
             max-width: 600px;
-            /* Adjust max-width for timestamps container */
             width: 100%;
-            /* Make it take the full width of the container */
             display: flex;
             flex-wrap: wrap;
             justify-content: space-around;
         }
 
         .timestamp-container .small-box {
-            /* Timestamp styles */
             display: flex;
             align-items: center;
             justify-content: center;
@@ -151,8 +143,8 @@
         }
 
         #results-container {
-            max-width: 600px; /* Adjust max-width for the results container */
-            width: 100%; /* Make it take the full width of the container */
+            max-width: 600px;
+            width: 100%;
             display: flex;
             flex-wrap: wrap;
             align-items: center;
@@ -220,25 +212,20 @@
         }
     </style>
 
-    <!-- Include JavaScript libraries or other dependencies -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 </head>
 
 <body>
 
-    <h1 style="text-align: center;">MatchScore</h1>
-
+    <h1 style="text-align: center; font-size: 36px; color: white; margin-bottom: 20px;">MatchScore</h1>
     <div class="page-container">
-        <!-- Left Container: Sports and Tournaments -->
         <div class="left-container">
-            <!-- Sports -->
             <div id="sports-section" class="container">
                 <div class="sports-container" id="sportsContainer">
                     <ul style="display: inline-block; padding: 0; list-style: none;"></ul>
                 </div>
             </div>
 
-            <!-- Tournaments -->
             <div id="tournaments-section" class="container">
                 <div class="tournaments-container" id="tournamentsContainer">
                     <ul style="display: inline-block; padding: 0; list-style: none;"></ul>
@@ -246,9 +233,7 @@
             </div>
         </div>
 
-        <!-- Right Container: Timestamp Display -->
         <div class="right-container">
-            <!-- Timestamp Display Section -->
             <div id="timestamp-display-section" class="container">
                 <div class="timestamp-container" id="timestampContainer"></div>
                 <div class="calendar-trigger" id="match-calendar-dp-trigger">
@@ -258,8 +243,7 @@
                         style="color: transparent;">
                 </div>
             </div>
-        
-            <!-- Results Display Section -->
+
             <div id="results-display-section" class="container">
                 <div id="results-container"></div>
             </div>
@@ -273,12 +257,10 @@
         </a>
     </div>
 
-    <!-- Include JavaScript from the existing HTML files -->
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script>
         document.addEventListener("DOMContentLoaded", async function () {
             try {
-                // Fetch sports data from the FastAPI endpoint
                 const sportsResponse = await fetch("/sports/");
 
                 if (!sportsResponse.ok) {
@@ -287,10 +269,8 @@
 
                 const sportsData = await sportsResponse.json();
 
-                // Call function to dynamically generate and populate the sports container
                 generateSports(sportsData);
 
-                // Fetch tournaments data from the FastAPI endpoint
                 const tournamentsResponse = await fetch("/tournaments/");
 
                 if (!tournamentsResponse.ok) {
@@ -299,11 +279,9 @@
 
                 const tournamentsData = await tournamentsResponse.json();
 
-                // Call function to dynamically generate and populate the tournaments container
                 generateTournaments(tournamentsData);
             } catch (error) {
                 console.error(error);
-                // Handle the error gracefully, e.g., display an error message to the user
             }
 
             flatpickr("#match-calendar-dp-trigger", {
@@ -341,7 +319,7 @@
                 };
                 var span = document.createElement("span");
                 span.textContent = dayName + " " + day.getDate() + " " + getMonthName(day);
-                smallBox.setAttribute("data-date", formattedDate); // Set data-date attribute
+                smallBox.setAttribute("data-date", formattedDate);
 
                 smallBox.appendChild(span);
                 daysContainer.appendChild(smallBox);
@@ -351,7 +329,6 @@
 
         async function fetchResults(selectedDate) {
             try {
-                // Fetch results data for the selected date
                 const resultsResponse = await fetch(`/tournaments/${selectedDate}`);
 
                 if (!resultsResponse.ok) {
@@ -360,7 +337,6 @@
 
                 const resultsData = await resultsResponse.json();
 
-                // Call function to dynamically generate and populate the results container
                 generateResults(resultsData);
                 var daysContainer = document.getElementById("timestampContainer");
                 var selectedBox = daysContainer.querySelector(`[data-date="${selectedDate}"]`);
@@ -372,11 +348,9 @@
                 }
             } catch (error) {
                 console.error(error);
-                // Handle the error gracefully, e.g., display an error message to the user
             }
         }
 
-        // Generate and populate the results container
         function generateResults(resultsData) {
             try {
                 var resultsContainer = document.getElementById("results-container");
@@ -386,11 +360,9 @@
                     return;
                 }
 
-                // Clear existing content
                 resultsContainer.innerHTML = "";
 
                 if (resultsData && Object.keys(resultsData).length > 0) {
-                    // Results are available, generate HTML to display them
                     for (const tournamentId in resultsData) {
                         const tournamentInfo = resultsData[tournamentId];
                         const tournamentTitle = tournamentInfo["tournament_title"];
@@ -410,67 +382,70 @@
                             li.style.marginBottom = "20px";
                             li.style.borderBottom = "1px solid #555555";
                             li.style.paddingBottom = "10px";
-                            
+
                             var pParticipants = document.createElement("p");
-                            pParticipants.textContent = "";
 
                             var participants = matchInfo["participants"];
 
                             for (var participant in participants) {
                                 if (participants.hasOwnProperty(participant)) {
                                     var participantInfo = participants[participant];
-                                    
-                                    // Assuming participantInfo has a property 'name'
-                                    pParticipants.textContent += participant;
 
-                                    // Check if this is the last participant
+                                    var img = document.createElement("img");
+                                    img.src = "data:image/jpeg;base64," + participantInfo.picture;
+                                    img.alt = "Participant Image";
+                                    img.width = 30;
+                                    img.height = 30;
+                                    img.style.borderRadius = "50%";
+                                    pParticipants.appendChild(img);
+                                    pParticipants.appendChild(document.createTextNode(" " + participant));
+
                                     if (participant !== Object.keys(participants)[Object.keys(participants).length - 1]) {
-                                        pParticipants.textContent += " vs ";
+                                        pParticipants.appendChild(document.createTextNode(" vs "));
                                     }
                                 }
                             }
-                            
+
                             var pTitle = document.createElement("p");
                             pTitle.textContent = "Location: " + matchInfo["location"];
-                            
+
                             var pStartTime = document.createElement("p");
                             pStartTime.textContent = "Start Time: " + matchInfo["played_on"];
-                            
+
                             var form = document.createElement("form");
                             form.action = "/matches/match/" + matchId;
                             form.method = "get";
 
-                            // Create a button element
+                            
                             var button = document.createElement("button");
                             button.textContent = "View Match Details";
-  
+
                             function handleButtonHover() {
                                 button.style.backgroundColor = "#45a049";
                             }
+
                             function handleButtonMouseOut() {
                                 button.style.backgroundColor = "#47095a";
                             }
-                            
-                            form.appendChild(button);
 
-                            // Add other attributes as needed
+                            form.appendChild(button);
+                            
                             li.appendChild(pParticipants);
                             li.appendChild(pTitle);
                             li.appendChild(pStartTime);
                             li.appendChild(form);
-                            // Append other attributes
-
+                            
                             ul.appendChild(li);
                         }
 
-                        // Append the list to the results container
+                        
                         resultsContainer.appendChild(h2);
                         resultsContainer.appendChild(ul);
                     }
                 } else {
-                    // No tournaments for this date
+                    
                     var h2 = document.createElement("h2");
-                    h2.textContent = "No tournaments for this date.";
+                    h2.textContent = "No events for this date.";
 
                     resultsContainer.appendChild(h2);
                 }
@@ -504,11 +479,24 @@
 
             sportsContainer.innerHTML = "";
 
-            // Create a flex container for the sports
             var sportsFlexContainer = document.createElement("ul");
             sportsFlexContainer.classList.add("sports-container");
 
-            // Loop through the sports data and create list items
+            // Add "All" sport button
+            var allSportItem = document.createElement("li");
+            allSportItem.classList.add("sport-item");
+
+            var allSportH2 = document.createElement("h2");
+            allSportH2.textContent = "All";
+
+            allSportH2.addEventListener("click", function () {
+                fetchTournamentsBySport(null);  // Pass null for "All"
+            });
+
+            allSportItem.appendChild(allSportH2);
+            sportsFlexContainer.appendChild(allSportItem);
+
+            // Add other sports
             sportsData.forEach(function (sport) {
                 var sportItem = document.createElement("li");
                 sportItem.classList.add("sport-item");
@@ -516,24 +504,20 @@
                 var h2 = document.createElement("h2");
                 h2.textContent = sport.name;
 
-                // Assuming sport has a "sport_name" attribute
-                h2.onclick = function () {
-                    // Fetch tournaments for the selected sport
+                h2.addEventListener("click", function () {
                     fetchTournamentsBySport(sport.name);
-                };
+                });
 
                 sportItem.appendChild(h2);
                 sportsFlexContainer.appendChild(sportItem);
             });
 
-            // Append the flex container to the sports container
             sportsContainer.appendChild(sportsFlexContainer);
         }
 
         async function fetchTournamentsBySport(sportName) {
             try {
-                // Fetch tournaments data for the selected sport
-                const tournamentsResponse = await fetch(`/tournaments/?sport_name=${sportName}`);
+                const tournamentsResponse = await fetch(sportName === null ? "/tournaments/" : `/tournaments/?sport_name=${sportName}`);
 
                 if (!tournamentsResponse.ok) {
                     throw new Error(`Error fetching tournaments: ${tournamentsResponse.statusText}`);
@@ -541,11 +525,9 @@
 
                 const tournamentsData = await tournamentsResponse.json();
 
-                // Call function to dynamically generate and populate the tournaments container
                 generateTournaments(tournamentsData);
             } catch (error) {
                 console.error(error);
-                // Handle the error gracefully, e.g., display an error message to the user
             }
         }
 
@@ -565,15 +547,12 @@
                 ul.style.padding = "0";
                 ul.style.listStyle = "none";
 
-                // Loop through the tournaments data and create list items
                 tournamentsData.forEach(function (tournament) {
-                    // Check if a specific sport is selected
                     if (!sportName || tournament.sport_name === sportName) {
                         var li = document.createElement("li");
                         li.classList.add("tournament-item");
                         li.textContent = tournament.title;
 
-                        // Assuming tournament has an "id" attribute
                         li.onclick = function () {
                             window.location = `/matches/?tournament_id=${tournament.id}`;
                         };
@@ -582,7 +561,6 @@
                     }
                 });
 
-                // Clear existing content and append the new list
                 tournamentsContainer.innerHTML = "";
                 tournamentsContainer.appendChild(ul);
 
