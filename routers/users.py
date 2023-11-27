@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Header, status, Body, Form, Request, Response, Query
+from fastapi import APIRouter, Depends, HTTPException, Header, status, Body, Form, Request, Response, Query, File, UploadFile
 from fastapi.security import OAuth2PasswordRequestForm
 from models.user import User
 import services.users_services as users_services
@@ -9,6 +9,9 @@ from fastapi.templating import Jinja2Templates
 from fastapi.responses import RedirectResponse
 import common.send_email as send_email
 import base64
+import services.players_services as players_services
+
+
 
 
 users_router = APIRouter(prefix='/users')
@@ -66,14 +69,27 @@ async def validate_user(
     request: Request,
     validation_code: str = Form(...)
 ):
-    token = request.cookies.get("access_token")
-    user = await auth.get_current_user(token)
+    access_token = request.cookies.get("access_token")
+    refresh_token = request.cookies.get("refresh_token")
+    tokens = {"access_token": access_token, "refresh_token": refresh_token}
+    try:
+        user = await auth.get_current_user(access_token)
+    except:
+        try:
+            user = await auth.refresh_access_token(access_token, refresh_token)
+            tokens = auth.token_response(user)
+        except:
+            return RedirectResponse(url='/', status_code=303)
     validation = await users_services.validate(validation_code, user.id)
     if validation:
         response = RedirectResponse(url='/users/dashboard', status_code=303)
     else:
         response = templates.TemplateResponse("failed_validation.html", context={
             "request": request})
+        response.set_cookie(key="access_token",
+                        value=tokens["access_token"], httponly=True)
+        response.set_cookie(key="refresh_token",
+                        value=tokens["refresh_token"], httponly=True)
     return response
 
 
@@ -81,14 +97,27 @@ async def validate_user(
 async def regenrate_code(
     request: Request
 ):
-    token = request.cookies.get("access_token")
-    user = await auth.get_current_user(token)
+    access_token = request.cookies.get("access_token")
+    refresh_token = request.cookies.get("refresh_token")
+    tokens = {"access_token": access_token, "refresh_token": refresh_token}
+    try:
+        user = await auth.get_current_user(access_token)
+    except:
+        try:
+            user = await auth.refresh_access_token(access_token, refresh_token)
+            tokens = auth.token_response(user)
+        except:
+            return RedirectResponse(url='/', status_code=303)
     validation_code = auth.generate_six_digit_code()
     users_services.update_validation_code(user.id, validation_code)
     send_email.send_email(user.email, user.fullname,
                           validation_code=validation_code)
     response = templates.TemplateResponse("validation_form.html", context={
                                           "request": request})
+    response.set_cookie(key="access_token",
+                        value=tokens["access_token"], httponly=True)
+    response.set_cookie(key="refresh_token",
+                        value=tokens["refresh_token"], httponly=True)
     return response
 
 
@@ -197,7 +226,7 @@ async def show_userdashboard_form(
         user = await auth.get_current_user(access_token)
     except:
         try:
-            user = auth.refresh_access_token(access_token, refresh_token)
+            user = await auth.refresh_access_token(access_token, refresh_token)
             tokens = auth.token_response(user)
         except:
             return RedirectResponse(url='/', status_code=303)
@@ -225,6 +254,7 @@ async def show_userdashboard_form(
     image_data_url = f"data:{mime_type};base64,{base64_encoded_data}" 
     
     
+    
     response =  templates.TemplateResponse("user_dashboard.html", 
         context={
         "request": request,
@@ -245,9 +275,10 @@ async def show_userdashboard_form(
     return response
 
 @users_router.post("/addplayerstoclub")
-async def show_userdashboard_form(
+async def post_players_club(
     request: Request,
-    sports_club_id: int = Form(...),
+    sports_club_id: Optional[int] = Form(None),
+    player_name: Optional[str] = Form(None),
     is_sports_club: int = Form(...),
     player_sport: str = Form (...)):
     
@@ -258,40 +289,77 @@ async def show_userdashboard_form(
         user = await auth.get_current_user(access_token)
     except:
         try:
-            user = auth.refresh_access_token(access_token, refresh_token)
+            user = await auth.refresh_access_token(access_token, refresh_token)
             tokens = auth.token_response(user)
         except:
             return RedirectResponse(url='/', status_code=303)
-    if user.role == "player" or user.role == "club_manager":
+    if user.role == "club_manager":
         player = await users_services.find_player(user.id)
-        if player:
-            player_id = player.id
-            is_sports_club = player.is_sports_club
-            sport = player.sport
-            matches = await users_services.find_matches(user.id, user.role, player.id)
-        else:
-            player_id = None
-            sport = None
-            is_sports_club = None
-    mime_type = "image/jpg"
-    base64_encoded_data = base64.b64encode(user.picture).decode('utf-8')
-    image_data_url = f"data:{mime_type};base64,{base64_encoded_data}" 
-    response =  templates.TemplateResponse("add_players_club.html", context={
-        "request": request,
-        "name": user.fullname,
-        "image_data_url": image_data_url,
-        "user_role": user.role,
-        "player_id": player_id,
-        "sports_club_id": player_id,
-        "is_sports_club": is_sports_club,
-        "player_sport": player_sport
-                
-    })
-    response.set_cookie(key="access_token",
-                        value=tokens["access_token"], httponly=True)
-    response.set_cookie(key="refresh_token",
-                        value=tokens["refresh_token"], httponly=True)
-    return response
+        if not player or player.is_sports_club !=1 :
+            response = templates.TemplateResponse("user_dashboard.html", context={"request": request})
+            response.set_cookie(key="access_token",
+                            value=tokens["access_token"], httponly=True)
+            response.set_cookie(key="refresh_token",
+                            value=tokens["refresh_token"], httponly=True)
+            return response
+        player_id = sports_club_id
+        mime_type = "image/jpg"
+        base64_encoded_data = base64.b64encode(user.picture).decode('utf-8')
+        image_data_url = f"data:{mime_type};base64,{base64_encoded_data}" 
+        response =  templates.TemplateResponse("add_players_club.html", context={
+            "request": request,
+            "name": user.fullname,
+            "image_data_url": image_data_url,
+            "user_role": user.role,
+            "player_id": player_id,
+            "sports_club_id": player_id,
+            "is_sports_club": is_sports_club,
+            "player_sport": player_sport,
+                    
+        })
+        response.set_cookie(key="access_token",
+                            value=tokens["access_token"], httponly=True)
+        response.set_cookie(key="refresh_token",
+                            value=tokens["refresh_token"], httponly=True)
+        return response
+    if user.role == "admin":
+        player = await players_services.find_player_for_club(player_name, player_sport, is_sports_club)
+        if not player:
+            mime_type = "image/jpg"
+            base64_encoded_data = base64.b64encode(user.picture).decode('utf-8')
+            image_data_url = f"data:{mime_type};base64,{base64_encoded_data}" 
+            is_sports_club = 1
+            response =  templates.TemplateResponse("admin_find_club.html", context={
+            "request": request,
+            "name": user.fullname,
+            "image_data_url": image_data_url,
+            "success": True,
+            "is_sports_club": is_sports_club          
+        })
+            response.set_cookie(key="access_token",
+                                value=tokens["access_token"], httponly=True)
+            response.set_cookie(key="refresh_token",
+                                value=tokens["refresh_token"], httponly=True)
+            return response
+        mime_type = "image/jpg"
+        base64_encoded_data = base64.b64encode(user.picture).decode('utf-8')
+        image_data_url = f"data:{mime_type};base64,{base64_encoded_data}" 
+        response =  templates.TemplateResponse("add_players_club.html", context={
+            "request": request,
+            "name": user.fullname,
+            "image_data_url": image_data_url,
+            "user_role": user.role,
+            "player_id": player[0][0],
+            "sports_club_id": player[0][0],
+            "is_sports_club": is_sports_club,
+            "player_sport": player_sport,
+                    
+        })
+        response.set_cookie(key="access_token",
+                            value=tokens["access_token"], httponly=True)
+        response.set_cookie(key="refresh_token",
+                            value=tokens["refresh_token"], httponly=True)
+        return response
 
 @users_router.post("/handlerequest")
 async def show_userdashboard_form(
@@ -306,7 +374,7 @@ async def show_userdashboard_form(
         user = await auth.get_current_user(access_token)
     except:
         try:
-            user = auth.refresh_access_token(access_token, refresh_token)
+            user = await auth.refresh_access_token(access_token, refresh_token)
             tokens = auth.token_response(user)
         except:
             return RedirectResponse(url='/', status_code=303)
@@ -317,7 +385,6 @@ async def show_userdashboard_form(
         await users_services.approve_request(request_id)
     else:
         await users_services.deny_request(request_id)
-    
     response = RedirectResponse(url='/users/dashboard', status_code=303)
     response.set_cookie(key="access_token",
                         value=tokens["access_token"], httponly=True)
@@ -326,3 +393,316 @@ async def show_userdashboard_form(
     return response
     
     
+@users_router.get("/request")
+async def show_requests_form(
+    request: Request):
+    
+    access_token = request.cookies.get("access_token")
+    refresh_token = request.cookies.get("refresh_token")
+    tokens = {"access_token": access_token, "refresh_token": refresh_token}
+    try:
+        user = await auth.get_current_user(access_token)
+    except:
+        try:
+            user = await auth.refresh_access_token(access_token, refresh_token)
+            tokens = auth.token_response(user)
+        except:
+            return RedirectResponse(url='/', status_code=303)
+    mime_type = "image/jpg"
+    base64_encoded_data = base64.b64encode(user.picture).decode('utf-8')
+    image_data_url = f"data:{mime_type};base64,{base64_encoded_data}" 
+    response =  templates.TemplateResponse("create_request.html", context={
+        "request": request,
+        "name": user.fullname,
+        "image_data_url": image_data_url,
+        "user_role": user.role           
+    })
+    
+    
+    response.set_cookie(key="access_token",
+                        value=tokens["access_token"], httponly=True)
+    response.set_cookie(key="refresh_token",
+                        value=tokens["refresh_token"], httponly=True)
+    return response
+
+@users_router.post("/createrequest")
+async def create_request(
+    request: Request,
+    request_type: str = Form(...),
+    justification: str = Form (...),
+    player_name: Optional[str] = Form(None),
+    player_sport: Optional[str] = Form(None),
+    is_sports_club: Optional[int] = Form(None)  
+    ):
+    
+    access_token = request.cookies.get("access_token")
+    refresh_token = request.cookies.get("refresh_token")
+    tokens = {"access_token": access_token, "refresh_token": refresh_token}
+    try:
+        user = await auth.get_current_user(access_token)
+    except:
+        try:
+            user = await auth.refresh_access_token(access_token, refresh_token)
+            tokens = auth.token_response(user)
+        except:
+            return RedirectResponse(url='/', status_code=303)
+    
+    has_requests = await users_services.check_has_request(user.id)
+    if has_requests:
+        response = RedirectResponse(url='/users/dashboard', status_code=303)
+    else:
+        if request_type == "link_player":
+            player = await players_services.find_player(player_name, player_sport, is_sports_club)
+            if player:
+                player_available = await players_services.check_player_free(player[0][0])
+                if player_available:
+                    await users_services.post_request(user.id, player_id = player[0][0], request = justification)
+
+        if request_type == "elevate_director":
+            await users_services.post_request(user.id, to_director =1, request = justification)
+        
+        if request_type == "elevate_club_manager":
+            await users_services.post_request(user.id, to_club_manager = 1, request = justification)
+                
+    response =  RedirectResponse(url='/users/dashboard', status_code=303)
+    
+    response.set_cookie(key="access_token",
+                        value=tokens["access_token"], httponly=True)
+    response.set_cookie(key="refresh_token",
+                        value=tokens["refresh_token"], httponly=True)
+    return response
+    
+@users_router.get("/add_players")
+async def redirect_to_add_players(
+    request: Request):
+    
+    access_token = request.cookies.get("access_token")
+    refresh_token = request.cookies.get("refresh_token")
+    tokens = {"access_token": access_token, "refresh_token": refresh_token}
+    try:
+        user = await auth.get_current_user(access_token)
+    except:
+        try:
+            user = await auth.refresh_access_token(access_token, refresh_token)
+            tokens = auth.token_response(user)
+        except:
+            return RedirectResponse(url='/', status_code=303)
+    if user.role == "player" or user.role == "director":
+        response =  RedirectResponse(url='/users/dashboard', status_code=303)
+        response.set_cookie(key="access_token",
+                        value=tokens["access_token"], httponly=True)
+        response.set_cookie(key="refresh_token",
+                            value=tokens["refresh_token"], httponly=True)  
+        return response 
+    
+    if user.role == "club_manager":
+        if user.player_id is None:
+            response =  RedirectResponse(url='/users/dashboard', status_code=303)
+            response.set_cookie(key="access_token",
+                            value=tokens["access_token"], httponly=True)
+            response.set_cookie(key="refresh_token",
+                                value=tokens["refresh_token"], httponly=True)
+            return response
+        is_club = await players_services.check_player_sports_club(user.player_id)
+        if not is_club:
+            response =  RedirectResponse(url='/users/dashboard', status_code=303)
+            response.set_cookie(key="access_token",
+                            value=tokens["access_token"], httponly=True)
+            response.set_cookie(key="refresh_token",
+                                value=tokens["refresh_token"], httponly=True)
+            return response
+        else:
+            sports_club_id = user.player_id
+            is_sports_club = is_club[0]
+            player_sport = is_club[1]
+            sports_club_id_dep, is_sports_club_dep, player_sport_dep = users_services.mock_form_data(sports_club_id, is_sports_club, player_sport)
+            return await post_players_club(
+                request = request, 
+                sports_club_id=Depends(sports_club_id_dep),
+                is_sports_club=Depends(is_sports_club_dep),
+                player_sport = Depends(player_sport_dep))
+    if user.role == "admin":
+        mime_type = "image/jpg"
+        base64_encoded_data = base64.b64encode(user.picture).decode('utf-8')
+        image_data_url = f"data:{mime_type};base64,{base64_encoded_data}" 
+        is_sports_club = 1
+        response =  templates.TemplateResponse("admin_find_club.html", context={
+            "request": request,
+            "name": user.fullname,
+            "image_data_url": image_data_url,
+            "is_sports_club": is_sports_club          
+        })
+        response.set_cookie(key="access_token",
+                            value=tokens["access_token"], httponly=True)
+        response.set_cookie(key="refresh_token",
+                            value=tokens["refresh_token"], httponly=True)
+        return response
+@users_router.get("/remove")
+async def redirect_to_remove_user(
+    request: Request):
+    
+    access_token = request.cookies.get("access_token")
+    refresh_token = request.cookies.get("refresh_token")
+    tokens = {"access_token": access_token, "refresh_token": refresh_token}
+    try:
+        user = await auth.get_current_user(access_token)
+    except:
+        try:
+            user = auth.refresh_access_token(access_token, refresh_token)
+            tokens = auth.token_response(user)
+        except:
+            return RedirectResponse(url='/', status_code=303)  
+    if user.role != "admin":
+        response =  RedirectResponse(url='/users/dashboard', status_code=303)
+        response.set_cookie(key="access_token",
+                        value=tokens["access_token"], httponly=True)
+        response.set_cookie(key="refresh_token",
+                            value=tokens["refresh_token"], httponly=True)
+        return response     
+    mime_type = "image/jpg"
+    base64_encoded_data = base64.b64encode(user.picture).decode('utf-8')
+    image_data_url = f"data:{mime_type};base64,{base64_encoded_data}" 
+    response =  templates.TemplateResponse("admin_find_club.html", context={
+        "request": request,
+        "name": user.fullname,
+        "image_data_url": image_data_url,
+        "delete_user": True          
+    })
+    response.set_cookie(key="access_token",
+                        value=tokens["access_token"], httponly=True)
+    response.set_cookie(key="refresh_token",
+                        value=tokens["refresh_token"], httponly=True)
+    return response  
+
+@users_router.post("/deletion")
+async def remove_user(
+    request: Request,
+    email: str = Form(None)
+    ):
+    
+    access_token = request.cookies.get("access_token")
+    refresh_token = request.cookies.get("refresh_token")
+    tokens = {"access_token": access_token, "refresh_token": refresh_token}
+    try:
+        user = await auth.get_current_user(access_token)
+    except:
+        try:
+            user = await auth.refresh_access_token(access_token, refresh_token)
+            tokens = auth.token_response(user)
+        except:
+            return RedirectResponse(url='/', status_code=303)  
+    if user.role != "admin":
+        response =  RedirectResponse(url='/users/dashboard', status_code=303)
+        response.set_cookie(key="access_token",
+                        value=tokens["access_token"], httponly=True)
+        response.set_cookie(key="refresh_token",
+                            value=tokens["refresh_token"], httponly=True)
+        return response  
+    templates = Jinja2Templates(directory="templates/users")   
+    user_to_delete = await users_services.user_exists(email)
+    if not user_to_delete:
+        mime_type = "image/jpg"
+        base64_encoded_data = base64.b64encode(user.picture).decode('utf-8')
+        image_data_url = f"data:{mime_type};base64,{base64_encoded_data}" 
+        response =  templates.TemplateResponse("admin_find_club.html", context={
+        "request": request,
+        "name": user.fullname,
+        "image_data_url": image_data_url,
+        "success": True,
+        "delete_user": True          
+    })
+        response.set_cookie(key="access_token",
+                            value=tokens["access_token"], httponly=True)
+        response.set_cookie(key="refresh_token",
+                            value=tokens["refresh_token"], httponly=True)
+        return response  
+    
+    deleted = await users_services.delete_user(user_to_delete[0][0])
+    mime_type = "image/jpg"
+    base64_encoded_data = base64.b64encode(user.picture).decode('utf-8')
+    image_data_url = f"data:{mime_type};base64,{base64_encoded_data}" 
+    response =  templates.TemplateResponse("admin_find_club.html", context={
+    "request": request,
+    "name": user.fullname,
+    "image_data_url": image_data_url,
+    "success": False,
+    "delete_user": True,  
+    "deleted": deleted        
+})
+    response.set_cookie(key="access_token",
+                        value=tokens["access_token"], httponly=True)
+    response.set_cookie(key="refresh_token",
+                        value=tokens["refresh_token"], httponly=True)
+    return response 
+    
+@users_router.get("/accountmanagement")
+async def redirect_to_accountmanagement(
+    request: Request):
+    
+    access_token = request.cookies.get("access_token")
+    refresh_token = request.cookies.get("refresh_token")
+    tokens = {"access_token": access_token, "refresh_token": refresh_token}
+    try:
+        user = await auth.get_current_user(access_token)
+    except:
+        try:
+            user = await auth.refresh_access_token(access_token, refresh_token)
+            tokens = auth.token_response(user)
+        except:
+            return RedirectResponse(url='/', status_code=303)  
+       
+    mime_type = "image/jpg"
+    base64_encoded_data = base64.b64encode(user.picture).decode('utf-8')
+    image_data_url = f"data:{mime_type};base64,{base64_encoded_data}" 
+    response =  templates.TemplateResponse("manage_profile.html", context={
+        "request": request,
+        "name": user.fullname,
+        "image_data_url": image_data_url,
+        "account_management": True,
+        "current_name": user.fullname,         
+    })
+    response.set_cookie(key="access_token",
+                        value=tokens["access_token"], httponly=True)
+    response.set_cookie(key="refresh_token",
+                        value=tokens["refresh_token"], httponly=True)
+    return response   
+    
+@users_router.post("/manageaccount")
+async def manage_account(
+    request: Request,
+    file: Optional[UploadFile] = File(None),
+    changed_name: Optional[str] = Form(None)):
+    
+    access_token = request.cookies.get("access_token")
+    refresh_token = request.cookies.get("refresh_token")
+    tokens = {"access_token": access_token, "refresh_token": refresh_token}
+    try:
+        user = await auth.get_current_user(access_token)
+    except:
+        try:
+            user = await auth.refresh_access_token(access_token, refresh_token)
+            tokens = auth.token_response(user)
+        except:
+            return RedirectResponse(url='/', status_code=303)  
+    if file:
+        valid_image = await users_services.is_valid_image(file)
+        if file.content_type == "image/jpeg" and (file.filename.lower().endswith(".jpg") or file.filename.lower().endswith(".jpeg")) and valid_image:
+            await users_services.update_picture(file, user.id)
+    if changed_name and len(changed_name)>=4:
+        await users_services.update_name(changed_name, user.id)
+    
+    response =  RedirectResponse(url='/users/dashboard', status_code=303)
+    response.set_cookie(key="access_token",
+                    value=tokens["access_token"], httponly=True)
+    response.set_cookie(key="refresh_token",
+                        value=tokens["refresh_token"], httponly=True)
+    return response
+       
+             
+    
+    
+        
+
+
+
+

@@ -7,6 +7,11 @@ import common.picture_handler as ph
 from models.player import Player
 from models.tournament import Tournament
 from models.match import Match
+from fastapi import Depends
+from services.players_services import delete_player
+from PIL import Image
+import io
+from fastapi import UploadFile
 
 
 async def register (email:str, password: str, fullname:str):
@@ -191,7 +196,10 @@ async def find_matches(user_id: int, user_role: str, player_id: int):
         return
 
 async def find_requests():
-    pending_requests = read_query('''select r.id, u.fullname, r.player_id, r.to_director, r.to_club_manager, r.is_approved,  from requests where is_approved =?''', (0,))
+    pending_requests = read_query('''select r.id, u.fullname, r.player_id, r.to_director, r.to_club_manager, r.is_approved, r.request
+                                  from requests r
+                                  join users u on r.requestor = u.id
+                                  where is_approved =?''', (0,))
     if pending_requests:
         return pending_requests
     return
@@ -200,6 +208,12 @@ async def find_request(request_id: int):
     request = read_query('''select * from requests where id=? and is_approved =?''', (request_id, 0))
     if request:
         return request[0]
+    return
+
+async def check_has_request(user_id: int):
+    request = read_query( '''select * from requests where requestor =? and is_approved = ?''', (user_id, 0))
+    if request:  
+        return True                   
     return
     
 async def check_has_club(user_id:int):
@@ -216,14 +230,65 @@ async def approve_request(request_id:int):
     request = await find_request(request_id)
     if request:
         if request[2]:
-            update_query('''update users set player_id =? where id =?''', ())
+            update_query('''update users set player_id =? where id =?''', (request[2],request[1]))
+        elif request[3] == 1:
+            update_query('''update users set role=? where id =?''', ("director",request[1]))
+        elif request[4] == 1:
+            update_query('''update users set role=? where id =?''', ("club_manager",request[1]))  
+        update_query('''update requests set is_approved =? where id =?''', (1,request[0]))                   
     return
-            
-    
-    
-    
-    
 
-
-
+async def deny_request(request_id:int):
+    request = await find_request(request_id)
+    if request:  
+        update_query('''update requests set is_approved =? where id =?''', (1,request[0]))                   
+    return
     
+async def post_request(requestor: int, player_id: int = None, to_director=0, to_club_manager=0, is_approved = 0, request:str = None):
+    insert_query('''insert into requests (requestor, player_id, to_director, to_club_manager, is_approved, request)
+                 values (?, ?, ?, ?, ?, ?)''',
+                 (requestor, player_id, to_director, to_club_manager, is_approved, request))   
+    
+def mock_form_data(sports_club_id: int, is_sports_club:int, player_sport:str):
+    def form_dependency_id(_=Depends()):
+        return sports_club_id
+    def form_dependency_is(_=Depends()):
+        return is_sports_club
+    def form_dependency_sport(_=Depends()):
+        return player_sport
+    return form_dependency_id, form_dependency_is, form_dependency_sport  
+
+async def user_exists(email:str):
+    user = read_query('''select id from users where email = ?''',(email,))   
+    return user 
+
+async def delete_user(user_id: int):
+    user_has_player = read_query('''select player_id from users where id = ?''', (user_id,))
+    if user_has_player:
+        await delete_player(user_has_player[0][0])
+        update_query('''update users set player_id = NULL where id =?''', (user_id,)) 
+        update_query('''delete from tournaments_has_directors where users_id =?''', (user_id,))
+        update_query('''update requests set player_id = Null where requestor =?''', (user_id,))
+        update_query('''delete from requests where requestor =?''', (user_id,))
+    update_query('''delete from users where id = ?''',(user_id,))
+    return "deleted"
+
+async def is_valid_image(file: UploadFile):
+    binary_data = await file.read()
+    try:
+        image = Image.open(io.BytesIO(binary_data))
+        image.verify()  # Verify that it's an image
+        return True
+    except Exception:
+        return False
+
+async def update_picture(file: UploadFile, user_id: int):
+    file_name = file.filename
+    directory = "pictures/users"
+    await ph.add_picture(file, directory, file_name)
+    binary_data = ph.convert_binary(directory,  file_name)
+    update_query('''update users set picture = ? where id = ?''', (binary_data, user_id))
+    ph.remove_picture(directory, file_name)
+
+async def update_name(name: str, user_id: int):
+    update_query('''update users set fullname = ? where id = ?''', (name, user_id))
