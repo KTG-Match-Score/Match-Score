@@ -40,7 +40,7 @@ async def show_create_tournament_form(request: Request):
         except:
             return RedirectResponse(url='/', status_code=303)
 
-    if user.role != "director" or user.role != "admin":
+    if user.role != "director" and user.role != "admin":
         return RedirectResponse(url='/users/dashboard', status_code=303)
 
     mime_type = "image/jpg"
@@ -88,7 +88,7 @@ async def create_tournament(request: Request,
         except:
             return RedirectResponse(url='/', status_code=303)
 
-    if user.role != "director" or user.role != "admin":
+    if user.role != "director" and user.role != "admin":
         return RedirectResponse(url='/users/dashboard', status_code=303)
     
     new_tournament = Tournament(title=title,
@@ -138,7 +138,7 @@ async def create_tournament_schema(request: Request):
         except:
             return RedirectResponse(url='/', status_code=303)
 
-    if user.role != "director" or user.role != "admin":
+    if user.role != "director" and user.role != "admin":
         return RedirectResponse(url='/users/dashboard', status_code=303)
 
     schema = tournaments_services.generate_schema(tournament_id, participants_per_match, format, number_participants, sport)
@@ -164,7 +164,7 @@ async def add_prizes_to_tournament(request: Request,
         except:
             RedirectResponse(url= "/", status_code=303)
 
-    if user.role != "director" or user.role != "admin":
+    if user.role != "director" and user.role != "admin":
         RedirectResponse(url= "/users/dashboard", status_code=303)
 
     prizes_data: dict = data.get("prizes")
