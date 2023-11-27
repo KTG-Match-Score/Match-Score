@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MatchScore Manage Profile</title>
+    <style>
+        #topBar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center; 
+            padding: 10px;
+            background-color: #f8f8f8; 
+            box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1); 
+        }
+
+        #userDetails {
+            display: flex;
+            align-items: center;
+        }
+
+        #userDetails img {
+            margin-left: 10px;
+            height: 50px;
+            width: 50px;
+            border-radius: 50%; 
+        }
+
+        .buttons-container {
+            display: flex;
+            align-items: center;
+        }
+
+        .topbar-button {
+            height: 50px;
+            margin-right: 10px;
+        }
+
+        #file-upload-container {
+            margin: 20px;
+            padding: 10px;
+            border: 2px dashed #cccccc;
+            border-radius: 5px;
+            text-align: center;
+            height: 150px;
+        }
+
+        #drop-area {
+            cursor: pointer;
+        }
+
+        #drop-area p {
+            margin: 10px 0;
+        }
+
+        #fileElem {
+            width: 0.1px;
+            height: 0.1px;
+            opacity: 0;
+            overflow: hidden;
+            position: absolute;
+            z-index: -1;
+        }
+
+        #file-upload-container .topbar-button {
+            align-items: center;
+            height: 50px;
+            border: 1px solid black;
+        }
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="topBar">
+        <div class="buttons-container">
+            <button class="topbar-button" onclick="location.href='/users/dashboard'">Back to Dashboard</button>
+            <button class="topbar-button" onclick="location.href='/'">Main Page</button>
+        </div>
+        <h1 style="text-align: center;"> MatchScore Manage A Player's Profile</h1>
+
+        <div id="userDetails">
+            <span>{{ name }}</span>
+            <img src="{{ image_data_url }}" alt="User Image">
+        </div>  
+    </div>
+    <div id="dashboard">
+        {% if account_management %}
+        <h4 style="text-align: center;"> Change your player's profile picture in MatchScore:</h4>
+        <form id="uploadForm" method="post" enctype="multipart/form-data" action="/players/manageaccount">
+            <div id="file-upload-container">
+                <div id="drop-area">
+                    <p>Drag and drop a a picture here (only jpg/jpeg files up to 1MB)</p>
+                    <input type="file" id="fileElem" accept="image/jpeg" class="hidden" onchange="handleFiles(this.files)">
+                    <label for="fileElem" class="topbar-button">Select file</label>
+                    <span id="file-upload-name"></span> 
+                    <input type="hidden" id="player_id" name="player_id" value={{ player_id }}>
+                    <br>
+                    <br>
+                    <button id="uploadButton" class="topbar-button">Change profile picture</button> 
+                </div>
+                
+            </div>
+        </form>
+        <h4 style="text-align: center;"> Fill a country name if you want to set it/change it in MatchScore</h4> 
+        <div id="form1" >
+            <form id="changeCountry" method="post" action ="/players/manageaccount" >
+                <label for="current_country">Current player's country in MatchScore:</label>
+                <input type="text" name="current_country" value ="{{current_country if current_country else 'None'}}" disabled>
+                <input type="hidden" name="player_id" value ={{player_id}} ></input>
+                <label for="changed_name">Change country to:</label>
+                <input type="text" name="changed_country" minlength="1"></input>
+                <br><br>
+                <button type="submit" class="dashboard-button">Change country name</button>
+            </form>
+
+        {% endif %}
+    </div>
+
+    <script>
+        let selectedFile = null; // Initialize the selected file variable
+
+    document.getElementById('uploadButton').addEventListener('click', function(event) {
+        event.preventDefault();
+        if(selectedFile) {
+            validateAndUploadFile(selectedFile);
+        } else {
+            alert("Please select a file first.");
+        }
+    });
+        let dropArea = document.getElementById('drop-area');
+
+        ;['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, preventDefaults, false)
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ;['dragenter', 'dragover'].forEach(eventName => {
+            dropArea.addEventListener(eventName, highlight, false)
+        });
+
+        ;['dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, unhighlight, false)
+        });
+
+        function highlight(e) {
+            dropArea.classList.add('highlight')
+        }
+
+        function unhighlight(e) {
+            dropArea.classList.remove('highlight')
+        }
+
+        dropArea.addEventListener('drop', handleDrop, false);
+
+        function handleDrop(e) {
+            let dt = e.dataTransfer;
+            let files = dt.files;
+            handleFiles(files);
+        }
+
+        function handleFiles(files) {
+            if(files.length > 0) {
+                selectedFile = files[0];
+                document.getElementById('file-upload-name').textContent = selectedFile.name; 
+            }
+        }
+
+        function validateAndUploadFile(file) {
+            if (file.type !== 'image/jpeg') {
+                alert("Only JPEG files are allowed.");
+                clearSelection();
+                return;
+            }
+        
+            const maxFileSize = 1 * 1024 * 1024; // 1MB
+            if (file.size > maxFileSize) {
+                alert("File size should be 1MB or less.");
+                clearSelection();
+                return;
+            }
+        
+            uploadFile(file); // Proceed to upload the file
+        }
+    
+        function clearSelection() {
+            selectedFile = null;
+            document.getElementById('file-upload-name').textContent = '';
+            document.getElementById('fileElem').value = '';
+        }
+    
+        function uploadFile(file) {
+            let formData = new FormData();
+            formData.append('file', file); 
+            formData.append('player_id', document.getElementById('player_id').value);  // Append player_id to FormData
+            
+            fetch('/players/manageaccount', { // Ensure the correct endpoint is used here
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if(response.redirected) {
+                    window.location.href = response.url; // Redirect to the new URL
+                } else {
+                    // Handle non-redirect responses
+                    return response.text();
+                }
+            })
+            .then(data => {
+                if(data) {
+                    console.log('Response:', data);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        }
+    </script>
+</body>
+</html>
