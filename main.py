@@ -18,11 +18,11 @@ app.include_router(matches_router)
 app.include_router(players_router)
 
 
-templates = Jinja2Templates(directory="templates")
+templates = Jinja2Templates(directory="templates/tournaments_templates")
 
 @app.get("/")
 def landing_page(request: Request):
-    return templates.TemplateResponse("landing_page.html", {"request": request})
+    return templates.TemplateResponse("add_prizes_to_tournament_form.html", {"request": request})
 
 
 if __name__ == "__main__":
