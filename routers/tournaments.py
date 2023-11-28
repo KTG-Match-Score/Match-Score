@@ -24,7 +24,7 @@ async def view_tournaments(request: Request,
 
     tournaments = tournaments_services.get_tournaments(sport_name, tournament_name)
     
-    return tournaments
+    # return tournaments
 
 @tournaments_router.get("/create_tournament_form")
 async def show_create_tournament_form(request: Request):

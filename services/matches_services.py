@@ -194,40 +194,44 @@ def add_participants(match: Match, participants: list[Player]):
 
 def create_players_from_names(participants: list[str]) -> list[Player]:
     temp_participants = []
-    for pl in participants:
-        temp_participants.append(next(Player.from_query_with_results(*p) for p in read_query(
+    if participants != []:
+        for pl in participants:
+            temp_participants.append(next(Player.from_query_with_results(*p) for p in read_query(
+                f'''SELECT
+                p.id, p.full_name, p. profile_picture, p.country_code, is_sports_club, p.sports_club_id,  
+                (SELECT
+                s.name FROM sports s 
+                JOIN players_has_sports phs ON s.id = phs.sport_id 
+                WHERE phs.player_id=p.id) AS sport,
+                mp.result, mp. place
+                FROM players p
+                JOIN matches_has_players mp ON p.id = mp.players_id WHERE p.full_name LIKE "%{pl}%" ''')))
+
+    return temp_participants
+
+def create_players_from_ids(participants: list[int]) -> list[Player]:
+    if participants != []:
+        player_data = read_query(
             f'''SELECT
             p.id, p.full_name, p. profile_picture, p.country_code, is_sports_club, p.sports_club_id,  
             (SELECT
             s.name FROM sports s 
             JOIN players_has_sports phs ON s.id = phs.sport_id 
-            WHERE phs.player_id=p.id) AS sport,
-            mp.result, mp. place
+            WHERE phs.player_id=p.id) AS sport
             FROM players p
-            JOIN matches_has_players mp ON p.id = mp.players_id WHERE p.full_name LIKE "%{pl}%" ''')))
-
-    return temp_participants
-
-def create_players_from_ids(participants: list[int]) -> list[Player]:
-    player_data = read_query(
-        f'''SELECT
-        p.id, p.full_name, p. profile_picture, p.country_code, is_sports_club, p.sports_club_id,  
-        (SELECT
-        s.name FROM sports s 
-        JOIN players_has_sports phs ON s.id = phs.sport_id 
-        WHERE phs.player_id=p.id) AS sport
-        FROM players p
-        WHERE p.id in {tuple(participants)} ''')
-    temp_participants = [Player.from_query(*p) for p in player_data]
+            WHERE p.id in {tuple(participants)} ''')
+        temp_participants = [Player.from_query(*p) for p in player_data]
     
-    return temp_participants
+        return temp_participants
+    return participants
 
 def edit_match_details(match: Match, old_participants: list[Player]): 
     _ = update_query(f"""
         UPDATE matches SET format = '{match.format}', played_on = '{match.played_on}', 
         location = '{match.location}' WHERE (id = '{match.id}');""")
     
-    update_participants(old_participants, match)
+    if sorted(match.participants, key=lambda p:p.id) != sorted(old_participants, key=lambda p:p.id):
+        update_participants(old_participants, match)
 
     return match
 
@@ -300,3 +304,24 @@ async def get_tournament_by_id(id):
     tournament_data = read_query("""SELECT * FROM tournaments WHERE id = ?""", (id,)) 
     
     return Tournament.from_query_result(*tournament_data[0])
+
+
+def update_id_of_parent_tournament(t_id: int):
+    _ = update_query(f"""UPDATE tournaments SET parent_tournament_id = {t_id} WHERE id = {t_id}""")
+
+def update_tournament_child_id(child_id: int, parent_id: int):
+    _ = update_query(f"""UPDATE tournaments SET child_tournament_id = {child_id} WHERE id = {parent_id}""")
+
+def count_matches_in_tournament(tournament: Tournament):
+    data = read_query("""SELECT id FROM matches WHERE tournament_id = ?""", (tournament.id,))
+    flatten_data = [el[0] for el in data]
+
+    return flatten_data
+
+def assign_player_to_next_match(next_match: int, player: dict):
+    player_id = list(player.keys())[0]
+    result = insert_query(f"""
+                          INSERT INTO matches_has_players (matches_id, players_id, result, place)
+                          VALUES({next_match}, {player_id}, NULL, 0)""")
+    
+    return result == 0

@@ -24,6 +24,20 @@
             background-color: rgba(0, 0, 0, 0.8);
             animation: fade-in 1s ease-in-out;
         }
+        button {
+            background-color: #47095a;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        button:hover {
+            background-color: #45a049;
+            color: white;
+        }
         ul {
             list-style-type: none;
             padding: 0;
@@ -67,34 +81,52 @@
             {% for match in matches %}
                 {% if match.is_individuals == false %}    
                 <li>
+                    {% if match.participants == [] %}
                     <form action="/matches/match/{{ match.id }}" method="get">
-                        <button style="background-color: rgb(38, 174, 192);" type="submit">
-                            {{ match.participants[0].fullname }} - {{ match.participants[1].fullname }}</button>
+                        <button type="submit">No players yet</button>
                     </form>
-                    
-                    
-                    <h4>{{ match.played_on.strftime("%Y-%m-%d  %H:%M") }}</h4>
-                    <h4>{{ match.location }}</h4>
-                    {% if match.finished == "finished" %}
-                    <h4 style="color: green;">{{ match.finished }}</h4>
                     {% else %}
-                    <h4 style="color: red;">{{ match.finished }}</h4>
+                        {% for player in match.participants %}
+                            <li>
+                                {{ player.fullname }} 
+                            </li>    
+                        {% endfor %}
                     {% endif %}
+                    
+                    <h4>Played in: {{ match.location }} - {{ match.played_on.strftime("%Y-%m-%d  %H:%M") }} </h4>
+                    <div style="display:flex; justify-content: space-between; text-align: center;">
+                        {% if match.finished == "finished" %}
+                        <form action="/matches/match/{{ match.id }}" method="get">
+                            <button type="submit">Match Details</button>
+                        </form>
+                        <h4 style="color: green;">{{ match.finished }}</h4>
+                        {% else %}
+                        <form style="align-content: right;" action="/matches/match/{{ match.id }}" method="get">
+                            <button type="submit">Match Details</button>
+                        </form>
+                        <h4 style="color: red;">{{ match.finished }}</h4>
+                    {% endif %}
+                    </div>
                 </li>
                 {% else %}
-                <li>
                     <h4>{{ match.played_on.strftime("%Y-%m-%d  %H:%M") }}</h4>
                     <h4>{{ match.location }}</h4>
-                    <p>Participants: {{ match.participants }}</p>
-                    {% if match.finished == "finished" %}
-                    <h4 style="color: green;">{{ match.finished }}</h4>
-                    {% else %}
-                    <h4 style="color: red;">{{ match.finished }}</h4>
-                    {% endif %}
-                    <form action="/matches/match/{{ match.id }}" method="get">
-                        <button style="background-color: rgb(38, 174, 192);" type="submit">Match Details</button>
-                    </form>
-                </li>
+                    <div style="display: flex; justify-content: space-between; text-align: center;">
+                        {% if match.finished == "finished" %}
+                        <form action="/matches/match/{{ match.id }}" method="get">
+                            <button type="submit">Match Details</button>
+                        </form>
+                        <h4 style="color: green;">{{ match.finished }}</h4>
+                        {% else %}
+                        <form action="/matches/match/{{ match.id }}" method="get">
+                            <button type="submit">Match Details</button>
+                        </form>
+                        <h4 style="color: red;">{{ match.finished }}</h4>
+                        {% endif %}
+                    </div>
+                    <li>
+                        <p>Participants: {{ match.participants }}</p>
+                    </li>
                 {% endif %}
             {% endfor %}
         </ul>
