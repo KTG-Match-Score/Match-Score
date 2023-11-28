@@ -98,7 +98,7 @@ def get_tournaments_by_date(date: date):
                 WHERE tp.parent_tournament_id IS NULL"""
 
     params = [date]
-
+    
     matches = [
         MatchesInTournament.from_query(*row) for row in read_query(query, tuple(params))
     ]
@@ -145,9 +145,8 @@ def get_tournaments_by_date(date: date):
                 "result": result,
                 "picture": picture,
             }
-    print(tournaments)
-    return JSONResponse(content=tournaments)
-
+    
+    return tournaments
 
 def create_tournament(t: Tournament, user: User, sport: str):
     if isinstance(t.is_individuals, bool):

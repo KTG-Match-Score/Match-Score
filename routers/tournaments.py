@@ -26,8 +26,6 @@ async def view_tournaments(request: Request,
     
     # return tournaments
 
-    return templates.TemplateResponse("return_tournaments.html", context={"request": request, "tournaments": tournaments})
-
 @tournaments_router.get("/create_tournament_form")
 async def show_create_tournament_form(request: Request):
     access_token = request.cookies.get("access_token")
@@ -37,13 +35,13 @@ async def show_create_tournament_form(request: Request):
         user = await auth.get_current_user(access_token)
     except:
         try:
-            user = auth.refresh_access_token(access_token, refresh_token)
+            user = await auth.refresh_access_token(access_token, refresh_token)
             tokens = auth.token_response(user)
         except:
-            RedirectResponse(url='/landing_page', status_code=303)
+            return RedirectResponse(url='/', status_code=303)
 
-    if user.role != "director":
-        RedirectResponse(url='/landing_page', status_code=303)
+    if user.role != "director" and user.role != "admin":
+        return RedirectResponse(url='/users/dashboard', status_code=303)
 
     mime_type = "image/jpg"
     base64_encoded_data = base64.b64encode(user.picture).decode('utf-8')
@@ -58,17 +56,44 @@ async def show_create_tournament_form(request: Request):
     
     return response
 
+@tournaments_router.get("/add_prizes_to_tournament_form")
+async def show_add_prizes_to_tournament_form(request: Request,
+                                             tournament_id: int = Query(...)):
+    access_token = request.cookies.get("access_token")
+    refresh_token = request.cookies.get("refresh_token")
+    tokens = {"access_token": access_token, "refresh_token": refresh_token}
+    try:
+        user = await auth.get_current_user(access_token)
+    except:
+        try:
+            user = await auth.refresh_access_token(access_token, refresh_token)
+            tokens = auth.token_response(user)
+        except:
+            return RedirectResponse(url='/', status_code=303)
+
+    if user.role != "director" and user.role != "admin":
+        return RedirectResponse(url='/users/dashboard', status_code=303)
+
+    mime_type = "image/jpg"
+    base64_encoded_data = base64.b64encode(user.picture).decode('utf-8')
+    image_data_url = f"data:{mime_type};base64,{base64_encoded_data}" 
+
+    response = templates.TemplateResponse("add_prizes_to_tournament_form.html", context={"request": request, "name": user.fullname, "image_data_url": image_data_url, "tournament_id": tournament_id})
+
+    response.set_cookie(key="access_token",
+                        value=tokens["access_token"], httponly=True)
+    response.set_cookie(key="refresh_token",
+                        value=tokens["refresh_token"], httponly=True)
+    
+    return response
+
+
 @tournaments_router.get("/{date}", status_code=status.HTTP_200_OK, response_model=list[MatchesInTournament])
 async def view_tournaments_by_date(request: Request,
                                    date: date):
     tournaments_matches = tournaments_services.get_tournaments_by_date(date)
 
-    if tournaments_matches == {}:
-        return JSONResponse(content="No events for the selected date.")
-    return tournaments_matches
-    # if tournaments_matches == {}:
-    #     return templates.TemplateResponse("return_no_tournaments_by_date.html", context={"request": request})
-    # return templates.TemplateResponse("return_tournaments_by_date.html", context={"request": request, "tournaments_matches": tournaments_matches})
+    return JSONResponse(content=tournaments_matches)
 
 @tournaments_router.post("/create_tournament")
 async def create_tournament(request: Request,
@@ -90,13 +115,13 @@ async def create_tournament(request: Request,
         user = await auth.get_current_user(access_token)
     except:
         try:
-            user = auth.refresh_access_token(access_token, refresh_token)
+            user = await auth.refresh_access_token(access_token, refresh_token)
             tokens = auth.token_response(user)
         except:
-            RedirectResponse(url='/landing_page', status_code=303)
+            return RedirectResponse(url='/', status_code=303)
 
-    if user.role != "director":
-        RedirectResponse(url='/landing_page', status_code=303)
+    if user.role != "director" and user.role != "admin":
+        return RedirectResponse(url='/users/dashboard', status_code=303)
     
     new_tournament = Tournament(title=title,
                                 format=format,
@@ -140,13 +165,13 @@ async def create_tournament_schema(request: Request):
         user = await auth.get_current_user(access_token)
     except:
         try:
-            user = auth.refresh_access_token(access_token, refresh_token)
+            user = await auth.refresh_access_token(access_token, refresh_token)
             tokens = auth.token_response(user)
         except:
-            RedirectResponse(url='/landing_page', status_code=303)
+            return RedirectResponse(url='/', status_code=303)
 
-    if user.role != "director":
-        RedirectResponse(url='/landing_page', status_code=303)
+    if user.role != "director" and user.role != "admin":
+        return RedirectResponse(url='/users/dashboard', status_code=303)
 
     schema = tournaments_services.generate_schema(tournament_id, participants_per_match, format, number_participants, sport)
 
@@ -166,13 +191,13 @@ async def add_prizes_to_tournament(request: Request,
         user = await auth.get_current_user(access_token)
     except:
         try:
-            user = auth.refresh_access_token(access_token, refresh_token)
+            user = await auth.refresh_access_token(access_token, refresh_token)
             tokens = auth.token_response(user)
         except:
-            RedirectResponse(url= "/landing_page", status_code=303)
+            RedirectResponse(url= "/", status_code=303)
 
-    if user.role != "director":
-        RedirectResponse(url= "/landing_page", status_code=303)
+    if user.role != "director" and user.role != "admin":
+        RedirectResponse(url= "/users/dashboard", status_code=303)
 
     prizes_data: dict = data.get("prizes")
 

@@ -111,28 +111,30 @@
     <div id="dashboard">
         <h2>Dashboard</h2>
         {% if user_role == 'player' %}
-            <a href="/get/users/accountmanagement" class="dashboard-button">Manage your account</a>
-            <a href="/get/users/playerrequest" class="dashboard-button">Request to link a player profile</a>
-            {% if invalid_request %}
-                <div class="warning-message">You have other requests, which need to be processed before you can post a new request!</div>
+            <a href="/users/accountmanagement" class="dashboard-button">Manage your profile</a>
+            {% if player_id %}
+            <a href="/players/accountmanagement" class="dashboard-button">Manage player profile</a>
             {% endif %}
-            <a href="/get/users/directorrequest" class="dashboard-button">Request to get elevated to tournament director</a>
-            {% if invalid_request %}
-                <div class="warning-message">You have other requests, which need to be processed before you can post a new request!</div>
-            {% endif %}
-            <a href="/get/users/clubmanagerrequest" class="dashboard-button">Request to get elevated to club manager</a>
-            {% if invalid_request %}
-                <div class="warning-message">You have other requests, which need to be processed before you can post a new request!</div>
+            <a href="/users/request" class="dashboard-button">Make  a request</a>
+            {% if request_response %}
+                {{ request_response}}
             {% endif %}
         {% endif %}
 
         {% if user_role == 'director' %}
-            <a href="/get/users/accountmanagement" class="dashboard-button">Manage your account</a>
+            <a href="/users/accountmanagement" class="dashboard-button">Manage your profile</a>
+            <a href="/users/request" class="dashboard-button">Make  a request</a>
             <a href="/tournaments/create_tournament_form" class="dashboard-button">Create a tournament</a>
         {% endif %}
 
         {% if user_role == 'club_manager' %}
-            <a href="/get/users/accountmanagement" class="dashboard-button">Manage your account</a>
+            <a href="/users/accountmanagement" class="dashboard-button">Manage your profile</a>
+            {% if player_id %}
+            <a href="/players/accountmanagement" class="dashboard-button">Manage player profile</a>
+            {% endif %}
+            <a href="/users/request" class="dashboard-button">Make  a request</a>
+            <a href="/users/add_players" class="dashboard-button">Add players to club</a>
+            <a href="/players/createsingletemplate" class="dashboard-button">Create player</a>
             <form id="addPlayersForm" method="post" class="dashboard-form" action ="/users/addplayerstoclub" >
                 <input type="hidden" name="sports_club_id" value="{{ sports_club_id }}">
                 <input type="hidden" name="is_sports_club" value={{1}}>
@@ -142,8 +144,13 @@
         {% endif %}
 
         {% if user_role == 'admin' %}
-            <a href="/get/accountmanagement" class="dashboard-button">Manage your account</a>
-            <a href="/get/users/manage" class="dashboard-button">Create a tournament</a>
+            <a href="/users/accountmanagement" class="dashboard-button">Manage your profile</a>
+            <a href="/players/accountmanagement" class="dashboard-button">Manage player profile</a>
+            <a href="/tournaments/create_tournament_form" class="dashboard-button">Create a tournament</a>
+            <a href="/users/add_players" class="dashboard-button">Add players to club</a>
+            <a href="/players/createsingletemplate" class="dashboard-button">Create player</a>
+            <a href="/players/remove" class="dashboard-button">Remove player</a>
+            <a href="/users/remove" class="dashboard-button">Delete user</a>
         {% endif %}
     </div>
     <div id="focus">
@@ -182,8 +189,8 @@
                     <ul id="pending_requests">
                         {% for request in pending_requests%}
                         <li>
-                            <h4>Requestor:{{ request[0] }}</h4>
-                            {% if request[2] is not None%}
+                            <h4>Requestor:{{ request[1] }}</h4>
+                            {% if request[2] is not none%}
                             <h5>Request type: link player with id {{request[2]}}</h5>
                             {% endif %}
                             {% if request[3] != 0 %}
