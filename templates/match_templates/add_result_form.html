@@ -83,7 +83,7 @@
 <body>
     <div class="container">
         <h2>Add Result: {{ match.tournament_name }}</h2>
-        <form id="myForm" action="/matches/match/result/{{ match.id }}" method="POST">
+        <form id="myForm" action="/matches/match/result/{{match.id}}" method="POST">
             {% if match.format == "time limited" %}
             <ul>
                 {% for player in match.participants %}
@@ -114,12 +114,13 @@
                 </li>
                 {% endfor %}                
                 {% endif%}
-                <button type="button" onclick="submitData()">Submit</button>
+                <button onclick="submitData()">Submit</button>
             </ul>
         </form>
     </div>
     <script>
     function submitData() {
+        event.preventDefault();
         const formData = new FormData(document.getElementById('myForm'));
         const data = {};
 
@@ -141,7 +142,7 @@
         });
 
         // Perform an AJAX request using Fetch API
-        fetch('/matches/result/{{ match.id }}', {
+        fetch('/matches/match/result/{{match.id}}', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -157,7 +158,8 @@
         .then(result => {
             // Handle response from the server
             console.log('Success:', result);
-            window.history.back();
+            // window.history.back();
+            window.location.href = '/matches/match/{{match.id}}';
         })
         .catch(error => {
             // Handle errors

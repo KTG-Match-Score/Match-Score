@@ -206,37 +206,40 @@ def create_tournament(t: Tournament, user: User, sport: str):
 
 
 def generate_schema(t_id: int, participants_per_match: int, format: str, number_of_participants: int, sport: str):
+    knock_out_rounds = {0: "Third place play-off", 
+                        1: "Final", 
+                        2: "Semi-finals", 
+                        4: "Quarter-finals", 
+                        8: "Round of 16"}
     schema = {}
-    knockout_schema = {}
     participants = [(part[0]) for part in read_query('SELECT players_id FROM tournaments_has_players WHERE tournaments_id = ?', (t_id, ))]
-    random.shuffle(participants)
+    # random.shuffle(participants)
     
     if participants_per_match == number_of_participants or sport == "athletics":
         schema["Race"] = participants
 
     elif participants_per_match < number_of_participants and format == "league":
-        random.shuffle(participants)
-        schema = list(combinations(participants, 2))
-        temp = {}
-        for i in range(1, len(participants)):
-            temp[f"Round {i}"] = [schema[i-1], schema[-i]]
-        schema = temp
-        
+        temp = list(combinations(participants, 2))
+        random.shuffle(temp)
+        schema["League"] = temp
+
     elif participants_per_match < number_of_participants and format == "knockout":
         first_round = list(zip(participants[0::2], participants[1::2]))
         
         round_number = 1
         while len(first_round) > 1:
-            if knockout_schema == {}:
-                knockout_schema[f"Round {round_number}"] = first_round
+            if schema == {}:
+                stage = knock_out_rounds[len(first_round)]
+                schema[stage] = first_round
                 round_number += 1
             else:
                 first_round = first_round[:int(len(first_round)/2)]
+                stage = knock_out_rounds[len(first_round)]
                 next_round = len(first_round)
-                knockout_schema[f"Round {round_number}"] = next_round
+                schema[stage] = next_round
                 round_number += 1
         
-        return knockout_schema
+        return schema
     
     return schema
 

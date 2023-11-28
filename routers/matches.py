@@ -13,7 +13,7 @@ from services import tournaments_services as ts
 from typing import Annotated, Optional
 import common.auth as auth
 import common.responses as responses
-import logging
+from math import ceil
 
 matches_router = APIRouter(prefix="/matches")
 templates = Jinja2Templates(directory="templates/match_templates")
@@ -62,7 +62,7 @@ async def view_match_by_id(id: int, request: Request):
         user = await auth.get_current_user(access_token)
     except:
         try:
-            user = auth.refresh_access_token(access_token, refresh_token)
+            user = await auth.refresh_access_token(access_token, refresh_token)
             tokens = auth.token_response(user)
         except:
             RedirectResponse(url='/', status_code=303)
@@ -79,50 +79,10 @@ async def add_result_redirect(id: int, request: Request):
     
     return templates.TemplateResponse("add_result_form.html", {"request": request, "id": id, "match": match})
 
-
-@matches_router.post("/result/{id}", tags=["Matches"])
-async def add_result(request: Request, id: int):
-    """update the result, update the places of the participants"""
-    access_token = request.cookies.get("access_token")
-    refresh_token = request.cookies.get("refresh_token")
-    tokens = {"access_token": access_token, "refresh_token": refresh_token}
-    try:
-        user = await auth.get_current_user(access_token)
-    except:
-        try:
-            user = auth.refresh_access_token(access_token, refresh_token)
-            tokens = auth.token_response(user)
-        except:
-            RedirectResponse(url='/', status_code=303)
-    try:
-        result = convert_result_from_string(await request.json())
-    except:
-        return bad_request(request, "Error while converting the score! Review your input")
-    
-    match = ms.view_single_match(id)
-
-    if not match: return not_found(request)
-    if match.played_on < datetime.utcnow() and match.finished == "not finished":
-        ms.change_match_to_finished(match)
-    if match.finished == "not finished":
-        return bad_request(request, "Match not finished")
-    
-    try:
-        new_result, winner = calculate_result_and_get_winner(match, result)
-    except:
-        return bad_request(request, "Error while calculating the score! Review your input")
-    
-    match = ms.add_match_result(match, new_result)
-    match.has_result = True
-
-    return templates.TemplateResponse("view_match.html", {"request": request, "match": match}) 
-
-
 @matches_router.post("/create", tags=["Matches"])
 async def create_match(request: Request):
 
     """ requires login and director/admin rights """
-    # user, token and checks for admin, director
     access_token = request.cookies.get("access_token")
     refresh_token = request.cookies.get("refresh_token")
     tokens = {"access_token": access_token, "refresh_token": refresh_token}
@@ -130,7 +90,7 @@ async def create_match(request: Request):
         user = await auth.get_current_user(access_token)
     except:
         try:
-            user = auth.refresh_access_token(access_token, refresh_token)
+            user = await auth.refresh_access_token(access_token, refresh_token)
             tokens = auth.token_response(user)
         except:
             RedirectResponse(url='/', status_code=303)
@@ -146,8 +106,9 @@ async def create_match(request: Request):
     format = match_format_from_tournament_sport(json_data.get("sport"))
     sport = json_data.get("sport")
 
-    ms.update_id_of_parent_tournament(tournament.id)
+    # ms.update_id_of_parent_tournament(tournament.id)
     parent = tournament
+    tournament_title = tournament.title
     if tournament_format == "knockout":
         for subtournament, play in schema.items():
             if isinstance(play, list):
@@ -166,7 +127,7 @@ async def create_match(request: Request):
                         tournament_id = tournament.id
                         ), participants)
             else:
-                new_tournament = create_subtournament(subtournament, parent, user, sport)
+                new_tournament = create_subtournament(f"{tournament_title} {subtournament}", parent, user, sport)
                 ms.update_tournament_child_id(new_tournament.id, parent.id)
                 for _ in range(play):
                     ms.create_new_match(
@@ -177,58 +138,88 @@ async def create_match(request: Request):
                         location = location,
                         tournament_id = new_tournament.id
                         ), participants=[])
+                    # create the Third place play-off match at the end of the tournament
+                    if play == 1:
+                        ms.create_new_match(
+                        Match(
+                        format = format, 
+                        played_on = new_tournament.start_date, 
+                        is_individuals = new_tournament.is_individuals, 
+                        location = location,
+                        tournament_id = new_tournament.id
+                        ), participants=[])
                 parent = new_tournament
     else:
-        new_tournament = None
         for subtournament, play in schema.items():
-            if len(list(schema.keys())) > 1:
-                new_tournament = create_subtournament(subtournament, parent, user, sport)
-                ms.update_tournament_child_id(new_tournament.id, parent.id)
             for pl in play:
                 if isinstance(pl, list):
                     participants = ms.create_players_from_ids(pl)
                 if isinstance(pl, int):
                     participants = ms.create_players_from_ids(play)
                     ms.create_new_match(
-                    Match(
-                    format = format, 
-                    played_on = played_on_date, 
-                    is_individuals = tournament.is_individuals, 
-                    location = location,
-                    tournament_id = tournament.id
-                    ), participants)
-                    break
+                        Match(
+                        format = format, 
+                        played_on = played_on_date, 
+                        is_individuals = tournament.is_individuals, 
+                        location = location,
+                        tournament_id = tournament.id
+                        ), participants)
+                
                 if (played_on_date < tournament.start_date) or (played_on_date >= tournament.end_date): 
                     return bad_request(request, "The time of the match should be within the time of the tournament")
-                
-                ms.create_new_match(
-                    Match(
-                    format = format, 
-                    played_on = played_on_date, 
-                    is_individuals = tournament.is_individuals, 
-                    location = location,
-                    tournament_id = tournament.id
-                    ), participants)
-                
-            if new_tournament: parent = new_tournament
-
-    return templates.TemplateResponse("../users/new_test_landing_page.html", 
+                if subtournament == "Race":
+                    break
+    templates = Jinja2Templates(directory="templates/users")
+    return templates.TemplateResponse("user_dashboard.html", 
                                     {"request": request}, 
                                     status_code=status.HTTP_201_CREATED)
+
+@matches_router.post("/match/result/{id}", tags=["Matches"])
+async def add_result(request: Request, id: int):
+    """update the result, update the places of the participants"""
+    access_token = request.cookies.get("access_token")
+    refresh_token = request.cookies.get("refresh_token")
+    tokens = {"access_token": access_token, "refresh_token": refresh_token}
+    try:
+        user = await auth.get_current_user(access_token)
+    except:
+        try:
+            user = await auth.refresh_access_token(access_token, refresh_token)
+            tokens = auth.token_response(user)
+        except:
+            RedirectResponse(url='/', status_code=303)
+
+    try:
+        result = convert_result_from_string(await request.json())
+
+    except Exception as e:
+        print(str(e))
+        return bad_request(request, "Error while converting the score! Review your input")
     
+    match = ms.view_single_match(id)
 
-def create_subtournament(subtournament: str, parent: Tournament, user, sport):
-    new_tournament = Tournament(title=subtournament,
-                                format=parent.format,
-                                start_date=parent.start_date,
-                                end_date=parent.end_date,
-                                parent_tournament_id=parent.id,
-                                participants_per_match=parent.participants_per_match,
-                                is_individuals=parent.is_individuals)
+    if not match: return not_found(request)
+    if match.played_on < datetime.utcnow() and match.finished == "not finished":
+        ms.change_match_to_finished(match)
+    if match.finished == "not finished":
+        return bad_request(request, "Match not finished")
+    
+    try:
+        new_result = calculate_result_and_get_winner(match, result)
+    except:
+        return bad_request(request, "Error while calculating the score! Review your input")
+    
+    match = ms.add_match_result(match, new_result)
+    match.has_result = True # added for a check in the view_match.html
 
-    new_tournament.id = ts.create_tournament(new_tournament, user, sport)
-
-    return new_tournament
+    tournament = await ms.get_tournament_by_id(match.tournament_id)
+    if tournament.format == "knockout":
+        try:
+            await assign_to_next_match(match, new_result)
+        except Exception as e:
+            return bad_request(request, str(e))
+    
+    return templates.TemplateResponse("view_match.html", {"request": request, "match": match, "user": user}) 
 
 @matches_router.post("/edit/{id}", tags=["Matches"])
 async def edit_match(
@@ -239,10 +230,11 @@ async def edit_match(
     new_day: Annotated[int, Form(...)],
     new_hour: Annotated[int, Form(...)],
     new_minute: Annotated[int, Form(...)],
+
     new_format: Annotated[str, Form(...)], 
     new_is_individuals: Annotated[bool, Form(...)], 
     new_location: Annotated[str, Form(pattern="[A-z]{3}")],
-    new_participants: Annotated[list, Form(min_length=2)]  # should be list[Player | SportClub]
+    new_participants: Annotated[list, Form(min_length=2)]
     ):
     """ 
     requires login and director/admin rights
@@ -255,7 +247,7 @@ async def edit_match(
         user = await auth.get_current_user(access_token)
     except:
         try:
-            user = auth.refresh_access_token(access_token, refresh_token)
+            user = await auth.refresh_access_token(access_token, refresh_token)
             tokens = auth.token_response(user)
         except:
             RedirectResponse(url='/', status_code=303)
@@ -278,10 +270,49 @@ async def edit_match(
         match.participants = new_participants
     
     result = ms.edit_match_details(match, old_participants)
-    if result: return templates.TemplateResponse("view_match.html", {"request": request, "match": match})
+    if result: return templates.TemplateResponse("view_match.html", {"request": request, "match": match, "user": user})
 
     return responses.InternalServerError
 
+async def assign_to_next_match(match: Match, players: dict):
+    winner, loser = players[1], players[2]
+    child = None
+    tournament = await ms.get_tournament_by_id(match.tournament_id)
+    if not tournament.format == "knockout":
+        return tournament
+    parent_matches = ms.count_matches_in_tournament(tournament)
+
+    if tournament.child_tournament_id:
+        child = await ms.get_tournament_by_id(tournament.child_tournament_id)
+        child_matches = ms.count_matches_in_tournament(child)
+        for i in range(len(parent_matches)):
+            if parent_matches[i] == match.id:
+                next_match_index = ceil((i+1)/2)
+                next_match_id = child_matches[next_match_index - 1]
+                break
+        
+        ms.assign_player_to_next_match(next_match_id, winner)
+        # check if next tournament is the final round
+    if child:
+        if child.child_tournament_id is None:
+            next_match_index = 1
+            next_match_id = child_matches[next_match_index]
+            ms.assign_player_to_next_match(next_match_id, loser)
+
+    return tournament
+
+def create_subtournament(subtournament: str, parent: Tournament, user, sport):
+    new_tournament = Tournament(title=subtournament,
+                                format=parent.format,
+                                start_date=parent.start_date,
+                                end_date=parent.end_date,
+                                parent_tournament_id=parent.id,
+                                participants_per_match=parent.participants_per_match,
+                                is_individuals=parent.is_individuals)
+
+    new_tournament.id = ts.create_tournament(new_tournament, user, sport)
+
+    return new_tournament
 
 def not_found(request: Request): 
     return templates.TemplateResponse(
@@ -344,7 +375,7 @@ def calculate_result_and_get_winner(match: Match, result: dict):
             final[sc] = final.get(sc, []) + [pl]
         score = dict(enumerate(final.items(),1))
 
-    return score, score[1]
+    return score
 
 def convert_result_from_string(result):
     temp_result = {}

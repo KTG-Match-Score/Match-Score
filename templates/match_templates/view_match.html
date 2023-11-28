@@ -33,6 +33,7 @@
         button {
             background-color: #47095a;
             color: white;
+            display: flex;
             padding: 10px 20px;
             border: none;
             border-radius: 4px;
@@ -90,8 +91,8 @@
                         {{ player.fullname }}, {{ player.country_code }}</h4>
                     {% endif %}
                 {% endfor %}
-                <h3>Will be played in {{ match.location }}: 
-                    {{ match.played_on.strftime("%Y-%m-%d  %H:%M") }}</h3>
+                <h3>Played in {{ match.location }}: 
+                        {{ match.played_on.strftime("%Y-%m-%d  %H:%M") }}</h3>
         {% else %}
                 <h4>{{ match.tournament_name }}</h4>
                 <h4>{{ match.played_on.strftime("%Y-%m-%d  %H:%M") }}</h4>
@@ -104,12 +105,13 @@
                         style="height: 30px; width: 30px; border-radius: 50%;">
                         {{ player.fullname }}, {{ player.country_code }} <br>Place:
                         <strong>{{ player.place}}</strong>, Score: <strong>{{ player.result }}</strong></p>
+                        {{ player.result['type'] }}
                     {% else %}
                         <p><img src="{{ player.picture }}" alt="{{ player.fullname }}" 
                         style="height: 30px; width: 30px; border-radius: 50%;">
                         {{ player.fullname }}, {{ player.country_code }}</p>
-                        {% endif %}
-                    </li>
+                    {% endif %}
+                </li>
                     {% endfor %}
                     {% if match.finished == "finished" %}
                     <h4 style="color: green;">{{ match.finished }}</h4>
@@ -117,19 +119,20 @@
                     <h4 style="color: red;">{{ match.finished }}</h4>
                     {% endif %}
         {% endif %}
-        <div>
-
-        {% if match.has_result == false and user.role == "director" %}
+            
+        {% if user and user.role == "director" and match.finished == "not finished" %}
+         <li style="display: inline-block;">
             <form action="/matches/match/result/{{ match.id }}" method="get">
                 <button type="submit">Add result</button>
             </form>
+        </li>
+        <li style="display: inline-block;">
+            <form action="/matches/edit/{{ match.id }}" method="get">
+                <button type="submit">Edit match</button>
+            </form>
+        </li>
         {% endif %}
-        {% if user and user.role == "director" %}
-        <form action="/matches/edit/{{ match.id }}" method="get">
-            <button type="submit">Edit match</button>
-        </form>    
-        {% endif %}
-        </div>
+            
         </ul>
     </div>
 </body>
