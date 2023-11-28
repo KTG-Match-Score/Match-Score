@@ -56,6 +56,38 @@ async def show_create_tournament_form(request: Request):
     
     return response
 
+@tournaments_router.get("/add_prizes_to_tournament_form")
+async def show_add_prizes_to_tournament_form(request: Request,
+                                             tournament_id: int = Query(...)):
+    access_token = request.cookies.get("access_token")
+    refresh_token = request.cookies.get("refresh_token")
+    tokens = {"access_token": access_token, "refresh_token": refresh_token}
+    try:
+        user = await auth.get_current_user(access_token)
+    except:
+        try:
+            user = await auth.refresh_access_token(access_token, refresh_token)
+            tokens = auth.token_response(user)
+        except:
+            return RedirectResponse(url='/', status_code=303)
+
+    if user.role != "director" and user.role != "admin":
+        return RedirectResponse(url='/users/dashboard', status_code=303)
+
+    mime_type = "image/jpg"
+    base64_encoded_data = base64.b64encode(user.picture).decode('utf-8')
+    image_data_url = f"data:{mime_type};base64,{base64_encoded_data}" 
+
+    response = templates.TemplateResponse("add_prizes_to_tournament_form.html", context={"request": request, "name": user.fullname, "image_data_url": image_data_url, "tournament_id": tournament_id})
+
+    response.set_cookie(key="access_token",
+                        value=tokens["access_token"], httponly=True)
+    response.set_cookie(key="refresh_token",
+                        value=tokens["refresh_token"], httponly=True)
+    
+    return response
+
+
 @tournaments_router.get("/{date}", status_code=status.HTTP_200_OK, response_model=list[MatchesInTournament])
 async def view_tournaments_by_date(request: Request,
                                    date: date):
