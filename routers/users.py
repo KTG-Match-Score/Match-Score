@@ -191,7 +191,7 @@ async def change_password(
     if user is None:
         return templates.TemplateResponse("password_reset_form.html", context={"request": request, "invalid_email": True})
     await users_services.update_password(user.id, new_password)
-    user = auth.authenticate_user(email, current_password)
+    user = auth.authenticate_user(email, new_password)
     tokens = auth.token_response(user)
     response = RedirectResponse(url='/users/dashboard', status_code=303)
     response.set_cookie(key="access_token",

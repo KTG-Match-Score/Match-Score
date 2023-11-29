@@ -5,74 +5,120 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MatchScore Manage Profile</title>
-    <style>
-        #topBar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center; 
-            padding: 10px;
-            background-color: #f8f8f8; 
-            box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1); 
-        }
-
-        #userDetails {
-            display: flex;
-            align-items: center;
-        }
-
-        #userDetails img {
-            margin-left: 10px;
-            height: 50px;
-            width: 50px;
-            border-radius: 50%; 
-        }
-
-        .buttons-container {
-            display: flex;
-            align-items: center;
-        }
-
-        .topbar-button {
-            height: 50px;
-            margin-right: 10px;
-        }
-
-        #file-upload-container {
-            margin: 20px;
-            padding: 10px;
-            border: 2px dashed #cccccc;
-            border-radius: 5px;
-            text-align: center;
-            height: 150px;
-        }
-
-        #drop-area {
-            cursor: pointer;
-        }
-
-        #drop-area p {
-            margin: 10px 0;
-        }
-
-        #fileElem {
-            width: 0.1px;
-            height: 0.1px;
-            opacity: 0;
-            overflow: hidden;
-            position: absolute;
-            z-index: -1;
-        }
-
-        #file-upload-container .topbar-button {
-            align-items: center;
-            height: 50px;
-            border: 1px solid black;
-        }
-        .hidden {
-            display: none;
-        }
-    </style>
 </head>
+<style>
+    body {
+        background-color: #888888;
+        color: #ffffff;
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+    }
+
+    #topBar {
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+        align-items: center; 
+        padding: 10px;
+        background-color: rgba(0, 0, 0, 0.8); 
+        box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1); 
+    }
+
+    .outercontainer{
+        display: flex;
+        flex-direction: column;
+        align-items: center; 
+        justify-content: center; 
+        width: 100%; 
+        height: 100%; 
+    }
+
+    .container {
+        max-width: 1200px;
+        width: 100%;
+        padding: 10px;
+        border-radius: 8px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+        background-color: rgba(0, 0, 0, 0.8);
+        animation: fade-in 1s ease-in-out;
+        margin-top: 10px;
+    }
+    .subcontainer{
+        display: flex;
+        flex-direction: column;
+        align-items: center; 
+        justify-content: center; 
+        width: 100%; 
+        height: 100%; 
+    }
+    .list_items{
+        border-width: 2px;      
+        border-style: dashed;   
+        border-color: #47095a;
+        padding-left: 5px;
+        padding-right: 5px;
+    }
+
+    label {
+        display: block;
+        margin: 10px 0;
+    }
+
+    input,
+    select {
+        width: 100%;
+        padding: 5px;
+        margin-bottom: 10px;
+        box-sizing: border-box;
+    }
+
+    button {
+        background-color: #47095a;
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: background-color 0.3s;
+    }
+
+    button:hover {
+        background-color: #45a049;
+    }
+
+    .topbar-button, a.topbar-button {
+        height: 50px;
+        margin-right: 10px;
+    }
+    #tournaments, 
+    #tournaments ul,
+    #matches,
+    #matches ul,
+    #pending_requests,
+    #pending_requests ul
+     {
+    padding-left: 0;
+    margin-left: 5px;
+    margin-right: 5px;
+    }
+    #fileElem {
+        display: none; /* Hide the default file input */
+    }
+
+    @keyframes fade-in {
+        from {
+            opacity: 0;
+        }
+
+        to {
+            opacity: 1;
+        }
+    }
+</style>
 <body>
     <div id="topBar">
         <div class="buttons-container">
@@ -83,29 +129,30 @@
 
         <div id="userDetails">
             <span>{{ name }}</span>
-            <img src="{{ image_data_url }}" alt="User Image">
+            <img src="{{ image_data_url }}" alt="User Image" style="height: 50px; width: 50px;">
         </div>  
     </div>
-    <div id="dashboard">
+    <div class="outercontainer">
+    <div id="dashboard" class="container">
         {% if account_management %}
         <h4 style="text-align: center;"> Change your player's profile picture in MatchScore:</h4>
-        <form id="uploadForm" method="post" enctype="multipart/form-data" action="/players/manageaccount">
-            <div id="file-upload-container">
-                <div id="drop-area">
-                    <p>Drag and drop a a picture here (only jpg/jpeg files up to 1MB)</p>
-                    <input type="file" id="fileElem" accept="image/jpeg" class="hidden" onchange="handleFiles(this.files)">
-                    <label for="fileElem" class="topbar-button">Select file</label>
-                    <span id="file-upload-name"></span> 
-                    <input type="hidden" id="player_id" name="player_id" value={{ player_id }}>
+        <div id="file-upload-container">
+            <form id="uploadForm" method="post" enctype="multipart/form-data" action="/players/manageaccount">
+                    <div id="drop-area" class= "list_items">
+                        <p>Drag and drop a picture here (or click to open file system): only jpg/jpeg files up to 1MB</p>
+                        <input type="file" id="fileElem" accept="image/jpeg" class="hidden" onchange="handleFiles(this.files)">
+                        <label for="fileElem" class="topbar-button"></label>
+                        <span id="file-upload-name"></span> 
+                        <input type="hidden" id="player_id" name="player_id" value={{ player_id }}>
+                    </div>
                     <br>
-                    <br>
-                    <button id="uploadButton" class="topbar-button">Change profile picture</button> 
-                </div>
-                
-            </div>
-        </form>
-        <h4 style="text-align: center;"> Fill a country name if you want to set it/change it in MatchScore</h4> 
-        <div id="form1" >
+                    <button id="uploadButton" class="topbar-button">Change profile picture</button>
+            </form>
+        </div>
+    </div>
+         
+        <div id="form1" class="container">
+            <h4 style="text-align: center;"> Fill a country name if you want to set it/change it in MatchScore</h4>
             <form id="changeCountry" method="post" action ="/players/manageaccount" >
                 <label for="current_country">Current player's country in MatchScore:</label>
                 <input type="text" name="current_country" value ="{{current_country if current_country else 'None'}}" disabled>
@@ -113,12 +160,12 @@
                 <label for="changed_name">Change country to:</label>
                 <input type="text" name="changed_country" minlength="1"></input>
                 <br><br>
-                <button type="submit" class="dashboard-button">Change country name</button>
+                <button type="submit" class="topbar-button">Change country name</button>
             </form>
 
         {% endif %}
     </div>
-
+    </div>
     <script>
         let selectedFile = null; // Initialize the selected file variable
 
