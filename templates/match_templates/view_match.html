@@ -119,8 +119,8 @@
                     <h4 style="color: red;">{{ match.finished }}</h4>
                     {% endif %}
         {% endif %}
-            
-        {% if user and user.role == "director" and match.finished == "not finished" %}
+            <!-- check if the tournament belongs to that director -->
+        {% if user and ((user.role == "director" and owner == true) or user.role == "admin") and match.finished == "not finished" %}
          <li style="display: inline-block;">
             <form action="/matches/match/result/{{ match.id }}" method="get">
                 <button type="submit">Add result</button>
