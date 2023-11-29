@@ -228,12 +228,18 @@ def generate_schema(t_id: int, participants_per_match: int, format: str, number_
         round_number = 1
         while len(first_round) > 1:
             if schema == {}:
-                stage = knock_out_rounds[len(first_round)]
+                if len(first_round) not in knock_out_rounds:
+                    stage = f"Round of {len(first_round)*2}"
+                else:
+                    stage = knock_out_rounds[len(first_round)]
                 schema[stage] = first_round
                 round_number += 1
             else:
                 first_round = first_round[:int(len(first_round)/2)]
-                stage = knock_out_rounds[len(first_round)]
+                if len(first_round) not in knock_out_rounds:
+                    stage = f"Round of {len(first_round)*2}"
+                else:
+                    stage = knock_out_rounds[len(first_round)]
                 next_round = len(first_round)
                 schema[stage] = next_round
                 round_number += 1
