@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime
 from fastapi import APIRouter, Body, Depends, Form, HTTPException, Header, Path, Query, Request, status
 from fastapi.responses import RedirectResponse
 from fastapi.security import OAuth2PasswordRequestForm
@@ -9,11 +9,9 @@ from models.tournament import Tournament
 from models.user import User
 import services.users_services as users_services
 from services import matches_services as ms
-from services import tournaments_services as ts
 from typing import Annotated, Optional
 import common.auth as auth
 import common.responses as responses
-from math import ceil
 
 matches_router = APIRouter(prefix="/matches")
 templates = Jinja2Templates(directory="templates/match_templates")
@@ -27,7 +25,7 @@ def view_matches(
     ):
     """ no login endpoint"""
     matches = ms.view_matches(by_date, by_location, tournament_id)
-
+    # check user credentials
     return templates.TemplateResponse("view_matches.html", {"request":request, "matches": matches})
 
 
@@ -35,7 +33,8 @@ def view_matches(
 async def create_redirect(request: Request):
     """ requires login after redirection """
     return templates.TemplateResponse("create_match.html", 
-                                      {"request": request})
+                                     {"request": request},
+                                     status_code=status.HTTP_303_SEE_OTHER)
 
 
 @matches_router.get("/edit/{id}", tags=["Matches redirect"])
@@ -43,9 +42,11 @@ async def edit_match_redirect(id: int, request: Request):
     """ requires login after redirection """
     match = ms.view_single_match(id)
 
-    if not match: return not_found(request)
+    if not match: return ms.not_found(request)
     
-    return templates.TemplateResponse("edit_match.html", {"request": request, "id": id, "match": match})
+    return templates.TemplateResponse("edit_match.html", 
+                                     {"request": request, "id": id, "match": match},
+                                     status_code=status.HTTP_303_SEE_OTHER)
 
 
 @matches_router.get("/match/{id}", tags=["Matches"])
@@ -53,7 +54,7 @@ async def view_match_by_id(id: int, request: Request):
     """ no login endpoint"""
     match = ms.view_single_match(id)
 
-    if not match: return not_found(request)
+    if not match: return ms.not_found(request)
 
     access_token = request.cookies.get("access_token")
     refresh_token = request.cookies.get("refresh_token")
@@ -72,107 +73,15 @@ async def view_match_by_id(id: int, request: Request):
 
 @matches_router.get("/match/result/{id}", tags=["Matches redirect"])
 async def add_result_redirect(id: int, request: Request):
-
+    """ requires login after redirection """
     match = ms.view_single_match(id)
 
-    if not match: return not_found(request)
+    if not match: return ms.not_found(request)
     
-    return templates.TemplateResponse("add_result_form.html", {"request": request, "id": id, "match": match})
+    return templates.TemplateResponse("add_result_form.html", 
+                                     {"request": request, "id": id, "match": match},
+                                     status_code=status.HTTP_303_SEE_OTHER)
 
-@matches_router.post("/create", tags=["Matches"])
-async def create_match(request: Request):
-
-    """ requires login and director/admin rights """
-    access_token = request.cookies.get("access_token")
-    refresh_token = request.cookies.get("refresh_token")
-    tokens = {"access_token": access_token, "refresh_token": refresh_token}
-    try:
-        user = await auth.get_current_user(access_token)
-    except:
-        try:
-            user = await auth.refresh_access_token(access_token, refresh_token)
-            tokens = auth.token_response(user)
-        except:
-            RedirectResponse(url='/', status_code=303)
-
-    json_data = await request.json()
-    
-    schema: dict = json_data.get("schema")
-    tournament_format = json_data.get("format")
-    tournament_id = json_data.get("tournament_id")
-    location: Optional[str] = "unknown location"
-    tournament: Tournament = await ms.get_tournament_by_id(tournament_id)
-    played_on_date: datetime = tournament.start_date
-    format = match_format_from_tournament_sport(json_data.get("sport"))
-    sport = json_data.get("sport")
-
-    # ms.update_id_of_parent_tournament(tournament.id)
-    parent = tournament
-    tournament_title = tournament.title
-    if tournament_format == "knockout":
-        for subtournament, play in schema.items():
-            if isinstance(play, list):
-                for pl in play:
-                    participants = ms.create_players_from_ids(pl)
-                    
-                    if (played_on_date < tournament.start_date) or (played_on_date >= tournament.end_date): 
-                        return bad_request(request, "The time of the match should be within the time of the tournament")
-                    
-                    ms.create_new_match(
-                        Match(
-                        format = format, 
-                        played_on = played_on_date, 
-                        is_individuals = tournament.is_individuals, 
-                        location = location,
-                        tournament_id = tournament.id
-                        ), participants)
-            else:
-                new_tournament = create_subtournament(f"{tournament_title} {subtournament}", parent, user, sport)
-                ms.update_tournament_child_id(new_tournament.id, parent.id)
-                for _ in range(play):
-                    ms.create_new_match(
-                        Match(
-                        format = format, 
-                        played_on = new_tournament.start_date, 
-                        is_individuals = new_tournament.is_individuals, 
-                        location = location,
-                        tournament_id = new_tournament.id
-                        ), participants=[])
-                    # create the Third place play-off match at the end of the tournament
-                    if play == 1:
-                        ms.create_new_match(
-                        Match(
-                        format = format, 
-                        played_on = new_tournament.start_date, 
-                        is_individuals = new_tournament.is_individuals, 
-                        location = location,
-                        tournament_id = new_tournament.id
-                        ), participants=[])
-                parent = new_tournament
-    else:
-        for subtournament, play in schema.items():
-            for pl in play:
-                if isinstance(pl, list):
-                    participants = ms.create_players_from_ids(pl)
-                if isinstance(pl, int):
-                    participants = ms.create_players_from_ids(play)
-                    ms.create_new_match(
-                        Match(
-                        format = format, 
-                        played_on = played_on_date, 
-                        is_individuals = tournament.is_individuals, 
-                        location = location,
-                        tournament_id = tournament.id
-                        ), participants)
-                
-                if (played_on_date < tournament.start_date) or (played_on_date >= tournament.end_date): 
-                    return bad_request(request, "The time of the match should be within the time of the tournament")
-                if subtournament == "Race":
-                    break
-    templates = Jinja2Templates(directory="templates/users")
-    return templates.TemplateResponse("user_dashboard.html", 
-                                    {"request": request}, 
-                                    status_code=status.HTTP_201_CREATED)
 
 @matches_router.post("/match/result/{id}", tags=["Matches"])
 async def add_result(request: Request, id: int):
@@ -190,24 +99,24 @@ async def add_result(request: Request, id: int):
             RedirectResponse(url='/', status_code=303)
 
     try:
-        result = convert_result_from_string(await request.json())
+        result = ms.convert_result_from_string(await request.json())
 
     except Exception as e:
         print(str(e))
-        return bad_request(request, "Error while converting the score! Review your input")
+        return ms.bad_request(request, "Error while converting the score! Review your input")
     
     match = ms.view_single_match(id)
 
-    if not match: return not_found(request)
+    if not match: return ms.not_found(request)
     if match.played_on < datetime.utcnow() and match.finished == "not finished":
         ms.change_match_to_finished(match)
     if match.finished == "not finished":
-        return bad_request(request, "Match not finished")
+        return ms.bad_request(request, "Match not finished")
     
     try:
-        new_result = calculate_result_and_get_winner(match, result)
+        new_result = ms.calculate_result_and_get_winner(match, result)
     except:
-        return bad_request(request, "Error while calculating the score! Review your input")
+        return ms.bad_request(request, "Error while calculating the score! Review your input")
     
     match = ms.add_match_result(match, new_result)
     match.has_result = True # added for a check in the view_match.html
@@ -215,11 +124,13 @@ async def add_result(request: Request, id: int):
     tournament = await ms.get_tournament_by_id(match.tournament_id)
     if tournament.format == "knockout":
         try:
-            await assign_to_next_match(match, new_result)
+            await ms.assign_to_next_match(match, new_result)
         except Exception as e:
-            return bad_request(request, str(e))
+            return ms.bad_request(request, str(e))
     
-    return templates.TemplateResponse("view_match.html", {"request": request, "match": match, "user": user}) 
+    return templates.TemplateResponse("view_match.html", 
+                                     {"request": request, "match": match, "user": user},
+                                     status_code=status.HTTP_202_ACCEPTED) 
 
 @matches_router.post("/edit/{id}", tags=["Matches"])
 async def edit_match(
@@ -230,7 +141,6 @@ async def edit_match(
     new_day: Annotated[int, Form(...)],
     new_hour: Annotated[int, Form(...)],
     new_minute: Annotated[int, Form(...)],
-
     new_format: Annotated[str, Form(...)], 
     new_is_individuals: Annotated[bool, Form(...)], 
     new_location: Annotated[str, Form(pattern="[A-z]{3}")],
@@ -251,14 +161,18 @@ async def edit_match(
             tokens = auth.token_response(user)
         except:
             RedirectResponse(url='/', status_code=303)
+    # check if the user is director or admin
+    if user.role != "director" or user.role != "admin":
+        return
     
     match = ms.view_single_match(id)
 
-    if not match: return not_found(request)
+    if not match: return ms.not_found(request)
     new_date = datetime(new_year, new_month, new_day, new_hour, new_minute)
-    
-    if new_date < datetime.utcnow(): 
-        return bad_request(request, "You can't create an event in the past")
+    tournament = await ms.get_tournament_by_id(match.id)
+        
+    if (new_date < tournament.start_date) or (new_date >= tournament.end_date): 
+        return ms.bad_request(request, "The time of the match should be within the time of the tournament")
 
     match.played_on = new_date
     if new_format: match.format = new_format
@@ -270,129 +184,8 @@ async def edit_match(
         match.participants = new_participants
     
     result = ms.edit_match_details(match, old_participants)
-    if result: return templates.TemplateResponse("view_match.html", {"request": request, "match": match, "user": user})
+    if result: return templates.TemplateResponse("view_match.html", 
+                                                {"request": request, "match": match, "user": user},
+                                                status_code=status.HTTP_202_ACCEPTED)
 
     return responses.InternalServerError
-
-async def assign_to_next_match(match: Match, players: dict):
-    winner, loser = players[1], players[2]
-    child = None
-    tournament = await ms.get_tournament_by_id(match.tournament_id)
-    if not tournament.format == "knockout":
-        return tournament
-    parent_matches = ms.count_matches_in_tournament(tournament)
-
-    if tournament.child_tournament_id:
-        child = await ms.get_tournament_by_id(tournament.child_tournament_id)
-        child_matches = ms.count_matches_in_tournament(child)
-        for i in range(len(parent_matches)):
-            if parent_matches[i] == match.id:
-                next_match_index = ceil((i+1)/2)
-                next_match_id = child_matches[next_match_index - 1]
-                break
-        
-        ms.assign_player_to_next_match(next_match_id, winner)
-        # check if next tournament is the final round
-    if child:
-        if child.child_tournament_id is None:
-            next_match_index = 1
-            next_match_id = child_matches[next_match_index]
-            ms.assign_player_to_next_match(next_match_id, loser)
-
-    return tournament
-
-def create_subtournament(subtournament: str, parent: Tournament, user, sport):
-    new_tournament = Tournament(title=subtournament,
-                                format=parent.format,
-                                start_date=parent.start_date,
-                                end_date=parent.end_date,
-                                parent_tournament_id=parent.id,
-                                participants_per_match=parent.participants_per_match,
-                                is_individuals=parent.is_individuals)
-
-    new_tournament.id = ts.create_tournament(new_tournament, user, sport)
-
-    return new_tournament
-
-def not_found(request: Request): 
-    return templates.TemplateResponse(
-        "return_not_found.html", 
-        {
-        "request": request,
-        "content": "Not Found"
-        },
-        status_code=status.HTTP_404_NOT_FOUND)
-
-def bad_request(request: Request, content: str):
-    return templates.TemplateResponse(
-        "return_bad_request.html", 
-        {
-        "request": request,
-        "content": content
-        },
-        status_code=status.HTTP_400_BAD_REQUEST)
-
-def calculate_result_and_get_winner(match: Match, result: dict):
-    if match.format == "time limited":
-        score = {1: 0, 2: 0}
-        team1 = list(result.keys())[0]
-        team2 = list (result.keys())[1]
-        if int(result[team1]) > int(result[team2]):
-            score[1] = {team1: result[team1]}
-            score[2] = {team2: result[team2]}
-        elif int(result[team1]) < int(result[team2]):
-            score[1] = {team2: result[team2]}
-            score[2] = {team1: result[team1]}
-        else:
-            score["draw"] = {team1: result[team1],
-                                team2: result[team2]} 
-
-    elif match.format == "score limited":
-        score = {1: 0, 2: 0}
-        p1, p2 = 0, 0
-        team1, team2 = list(result.keys())[0], list (result.keys())[1]
-        result[team1] = list(map(int, result[team1].split(',')))
-        result[team2] = list(map(int, result[team2].split(',')))
-        for pl, sett in result.items():
-            for i in range(len(sett)):
-                if int(result[team1][i]) > int(result[team2][i]):
-                    p1 += 1
-                else: p2 += 1
-            break
-        if p1 > p2:
-            score[1] = {team1: result[team1]}
-            score[2] = {team2: result[team2]}
-        elif p1 < p2:
-            score[1] = {team2: result[team2]}
-            score[2] = {team1: result[team1]}
-            
-    elif match.format == "first finisher":
-        for p, s in result.items():
-            result[p] = score_convertor(s)
-        score = sorted(result.items(), key=lambda x: x[1])
-        final = {}
-        for pl, sc in score:
-            final[sc] = final.get(sc, []) + [pl]
-        score = dict(enumerate(final.items(),1))
-
-    return score
-
-def convert_result_from_string(result):
-    temp_result = {}
-    for el in result:
-        for k, v in el.items():
-            temp_result[k] = temp_result.get(k, v)
-
-    return temp_result
-
-def score_convertor(s):
-    hours, minutes, seconds, milliseconds = list(map(int, s.split(',')))
-    total_milliseconds = (hours * 60 * 60 * 1000) + (minutes * 60 * 1000) + (seconds * 1000) + milliseconds
-    
-    return timedelta(milliseconds=total_milliseconds)
-
-def match_format_from_tournament_sport(f: str):
-    match f:
-        case "football": return "time limited"
-        case "athletics": return "first finisher"
-        case "tennis": return "score limited"
