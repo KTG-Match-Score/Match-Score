@@ -15,6 +15,7 @@ from models.tournament import Tournament
 import httpx
 from models.tournament import Tournament
 from models.player import Player
+import services.tournaments_services as ts
 
 
 players_router = APIRouter(prefix='/players')
@@ -392,12 +393,7 @@ async def add_players_to_tornament(
             email, name = contact_details[0]
             await send_email.send_email(email, name,
                                 tournament_participation=tournament[1])
-    cookies = request.cookies
-    async with httpx.AsyncClient() as client:
-        response = await client.post("http://localhost:8000/tournaments/create_tournament_schema", 
-                                     cookies=cookies,
-                                     timeout=3000.00, 
-                                     json={ "tournament_id":tournament_model.id, "participants_per_match":tournament_model.participants_per_match, "format":tournament_model.format,"number_participants":len(players_lst), "sport":player_sport}) 
+    await ts.generate_schema(tournament_model.id, tournament_model.participants_per_match, tournament_model.format, len(players_lst), player_sport) 
 
 @players_router.post('/searchplayerforclub')
 async def return_player(
