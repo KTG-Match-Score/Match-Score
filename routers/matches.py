@@ -44,8 +44,20 @@ async def edit_match_redirect(id: int, request: Request):
 
     if not match: return ms.not_found(request)
     
+    access_token = request.cookies.get("access_token")
+    refresh_token = request.cookies.get("refresh_token")
+    tokens = {"access_token": access_token, "refresh_token": refresh_token}
+    try:
+        user = await auth.get_current_user(access_token)
+    except:
+        try:
+            user = await auth.refresh_access_token(access_token, refresh_token)
+            tokens = auth.token_response(user)
+        except:
+            RedirectResponse(url='/', status_code=303)
+
     return templates.TemplateResponse("edit_match.html", 
-                                     {"request": request, "id": id, "match": match},
+                                     {"request": request, "id": id, "match": match, "user": user},
                                      status_code=status.HTTP_303_SEE_OTHER)
 
 
@@ -78,8 +90,20 @@ async def add_result_redirect(id: int, request: Request):
 
     if not match: return ms.not_found(request)
     
+    access_token = request.cookies.get("access_token")
+    refresh_token = request.cookies.get("refresh_token")
+    tokens = {"access_token": access_token, "refresh_token": refresh_token}
+    try:
+        user = await auth.get_current_user(access_token)
+    except:
+        try:
+            user = await auth.refresh_access_token(access_token, refresh_token)
+            tokens = auth.token_response(user)
+        except:
+            RedirectResponse(url='/', status_code=303)
+
     return templates.TemplateResponse("add_result_form.html", 
-                                     {"request": request, "id": id, "match": match},
+                                     {"request": request, "id": id, "match": match, "user": user},
                                      status_code=status.HTTP_303_SEE_OTHER)
 
 
@@ -128,9 +152,16 @@ async def add_result(request: Request, id: int):
         except Exception as e:
             return ms.bad_request(request, str(e))
     
-    return templates.TemplateResponse("view_match.html", 
-                                     {"request": request, "match": match, "user": user},
-                                     status_code=status.HTTP_202_ACCEPTED) 
+    # return templates.TemplateResponse("view_match.html", 
+    #                                  {"request": request, "match": match, "user": user},
+    #                                  status_code=status.HTTP_202_ACCEPTED)
+    template = Jinja2Templates(directory="/")
+    response = RedirectResponse(url = f"matches/match/{match.id}", status_code=303)
+    response.set_cookie(key="access_token",
+                        value=tokens["access_token"], httponly=True)
+    response.set_cookie(key="refresh_token",
+                        value=tokens["refresh_token"], httponly=True)
+    return response 
 
 @matches_router.post("/edit/{id}", tags=["Matches"])
 async def edit_match(
@@ -161,15 +192,15 @@ async def edit_match(
             tokens = auth.token_response(user)
         except:
             RedirectResponse(url='/', status_code=303)
-    # check if the user is director or admin
-    if user.role != "director" or user.role != "admin":
-        return
+
+    if user.role != "director" and user.role != "admin":
+        return RedirectResponse(url='/users/dashboard', status_code=303)
     
     match = ms.view_single_match(id)
 
     if not match: return ms.not_found(request)
     new_date = datetime(new_year, new_month, new_day, new_hour, new_minute)
-    tournament = await ms.get_tournament_by_id(match.id)
+    tournament = await ms.get_tournament_by_id(match.tournament_id)
         
     if (new_date < tournament.start_date) or (new_date >= tournament.end_date): 
         return ms.bad_request(request, "The time of the match should be within the time of the tournament")

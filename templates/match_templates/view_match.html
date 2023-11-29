@@ -12,28 +12,42 @@
             margin: 0;
             padding: 0;
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
             min-height: 100vh;
         }
         .container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 20px;
+            max-width: 600px;
+            width: 100%;
             padding: 20px;
             border-radius: 8px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
             background-color: rgba(0, 0, 0, 0.8);
             animation: fade-in 1s ease-in-out;
-            position: relative;
-            max-width: 400px;
-            margin: 0 auto;
+            margin-top: 20px;
+        }
+
+        .topbar-button {
+            height: 50px;
+            margin-right: 10px;
+        }
+        #topBar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background-color: rgba(0, 0, 0, 0.8);
+            box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
+            z-index: 999;
         }
         button {
             background-color: #47095a;
             color: white;
-            display: flex;
             padding: 10px 20px;
             border: none;
             border-radius: 4px;
@@ -43,9 +57,7 @@
 
         button:hover {
             background-color: #45a049;
-            color: white;
         }
-
         ul {
             list-style-type: none;
             padding: 0;
@@ -75,6 +87,17 @@
     </style>
 </head>
 <body>
+    <div id="topBar">
+        <div class="buttons-container">
+            <button class="topbar-button" onclick="location.href='/users/dashboard'">Back to Dashboard</button>
+            <button class="topbar-button" onclick="location.href='/'">Main Page</button>
+        </div>
+
+        <div id="userDetails">
+            <span>{{ user.fullname }}</span>
+            <img src="{{ image_data_url }}" alt="User Image" style="height: 50px; width: 50px;">
+        </div>  
+    </div>
     <div class="container">
         <ul>
         {% if match.is_individuals == false %}
@@ -120,7 +143,7 @@
                     {% endif %}
         {% endif %}
             <!-- check if the tournament belongs to that director -->
-        {% if user and ((user.role == "director" and owner == true) or user.role == "admin") and match.finished == "not finished" %}
+        {% if user and (user.role == "director" or user.role == "admin") and match.finished == "not finished" %}
          <li style="display: inline-block;">
             <form action="/matches/match/result/{{ match.id }}" method="get">
                 <button type="submit">Add result</button>
