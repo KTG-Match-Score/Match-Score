@@ -1,10 +1,18 @@
 import base64
-from datetime import datetime
+from datetime import datetime, timedelta
+from math import ceil
 from typing import Optional
 from data.database import read_query, insert_query, update_query
 from models.match import Match
 from models.player import Player
 from models.tournament import Tournament
+from services import tournaments_services as ts
+import common.auth as auth
+from fastapi import APIRouter, Body, Depends, Form, HTTPException, Header, Path, Query, Request, status
+from fastapi.responses import RedirectResponse
+from fastapi.templating import Jinja2Templates
+
+templates = Jinja2Templates(directory="templates/match_templates")
 
 def view_matches(by_date : str, by_location: str, tournament_id: int):
     query = ''
@@ -149,6 +157,101 @@ def get_match_participants(match: Match):
         player.picture = image_data_url
 
     return match
+
+async def create_match(request: Request, data: dict):
+
+    """ requires login and director/admin rights """
+    access_token = request.cookies.get("access_token")
+    refresh_token = request.cookies.get("refresh_token")
+    tokens = {"access_token": access_token, "refresh_token": refresh_token}
+    try:
+        user = await auth.get_current_user(access_token)
+    except:
+        try:
+            user = await auth.refresh_access_token(access_token, refresh_token)
+            tokens = auth.token_response(user)
+        except:
+            RedirectResponse(url='/', status_code=303)
+
+    # json_data = await request.json()
+    
+    schema: dict = data["schema"]
+    tournament_format = data["format"]
+    tournament_id = data["tournament_id"]
+    location: Optional[str] = "unknown location"
+    tournament: Tournament = await get_tournament_by_id(tournament_id)
+    played_on_date: datetime = tournament.start_date
+    format = match_format_from_tournament_sport(data["sport"])
+    sport = data["sport"]
+
+    # ms.update_id_of_parent_tournament(tournament.id)
+    parent = tournament
+    tournament_title = tournament.title
+    if tournament_format == "knockout":
+        for subtournament, play in schema.items():
+            if isinstance(play, list):
+                for pl in play:
+                    participants = create_players_from_ids(pl)
+                    
+                    if (played_on_date < tournament.start_date) or (played_on_date >= tournament.end_date): 
+                        return bad_request(request, "The time of the match should be within the time of the tournament")
+                    
+                    create_new_match(
+                        Match(
+                        format = format, 
+                        played_on = played_on_date, 
+                        is_individuals = tournament.is_individuals, 
+                        location = location,
+                        tournament_id = tournament.id
+                        ), participants)
+            else:
+                new_tournament = create_subtournament(f"{tournament_title} {subtournament}", parent, user, sport)
+                update_tournament_child_id(new_tournament.id, parent.id)
+                for _ in range(play):
+                    create_new_match(
+                        Match(
+                        format = format, 
+                        played_on = new_tournament.start_date, 
+                        is_individuals = new_tournament.is_individuals, 
+                        location = location,
+                        tournament_id = new_tournament.id
+                        ), participants=[])
+                    # create the Third place play-off match at the end of the tournament
+                    if play == 1:
+                        create_new_match(
+                        Match(
+                        format = format, 
+                        played_on = new_tournament.start_date, 
+                        is_individuals = new_tournament.is_individuals, 
+                        location = location,
+                        tournament_id = new_tournament.id
+                        ), participants=[])
+                parent = new_tournament
+    else:
+        for subtournament, play in schema.items():
+            for pl in play:
+                if isinstance(pl, list):
+                    participants = create_players_from_ids(pl)
+                if isinstance(pl, int):
+                    participants = create_players_from_ids(play)
+                    create_new_match(
+                        Match(
+                        format = format, 
+                        played_on = played_on_date, 
+                        is_individuals = tournament.is_individuals, 
+                        location = location,
+                        tournament_id = tournament.id
+                        ), participants)
+                
+                if (played_on_date < tournament.start_date) or (played_on_date >= tournament.end_date): 
+                    return bad_request(request, "The time of the match should be within the time of the tournament")
+                if subtournament == "Race":
+                    break
+    
+    # the user should be returned as owner of the tournament
+    return templates.TemplateResponse(f"matches/?tournament_id={tournament.id}", 
+                                    {"request": request, "user": user}, 
+                                    status_code=status.HTTP_201_CREATED)
 
 def create_new_match(
         match: Match,
@@ -305,7 +408,6 @@ async def get_tournament_by_id(id):
     
     return Tournament.from_query_result(*tournament_data[0])
 
-
 def update_id_of_parent_tournament(t_id: int):
     _ = update_query(f"""UPDATE tournaments SET parent_tournament_id = {t_id} WHERE id = {t_id}""")
 
@@ -325,3 +427,126 @@ def assign_player_to_next_match(next_match: int, player: dict):
                           VALUES({next_match}, {player_id}, NULL, 0)""")
     
     return result == 0
+
+async def assign_to_next_match(match: Match, players: dict):
+    winner, loser = players[1], players[2]
+    child = None
+    tournament = await get_tournament_by_id(match.tournament_id)
+    if not tournament.format == "knockout":
+        return tournament
+    parent_matches = count_matches_in_tournament(tournament)
+
+    if tournament.child_tournament_id:
+        child = await get_tournament_by_id(tournament.child_tournament_id)
+        child_matches = count_matches_in_tournament(child)
+        for i in range(len(parent_matches)):
+            if parent_matches[i] == match.id:
+                next_match_index = ceil((i+1)/2)
+                next_match_id = child_matches[next_match_index - 1]
+                break
+        
+        assign_player_to_next_match(next_match_id, winner)
+        # check if next tournament is the final round
+    if child:
+        if child.child_tournament_id is None:
+            next_match_index = 1
+            next_match_id = child_matches[next_match_index]
+            assign_player_to_next_match(next_match_id, loser)
+
+    return tournament
+
+def create_subtournament(subtournament: str, parent: Tournament, user, sport):
+    new_tournament = Tournament(title=subtournament,
+                                format=parent.format,
+                                start_date=parent.start_date,
+                                end_date=parent.end_date,
+                                parent_tournament_id=parent.id,
+                                participants_per_match=parent.participants_per_match,
+                                is_individuals=parent.is_individuals)
+
+    new_tournament.id = ts.create_tournament(new_tournament, user, sport)
+
+    return new_tournament
+
+def not_found(request: Request): 
+    return templates.TemplateResponse(
+        "return_not_found.html", 
+        {
+        "request": request,
+        "content": "Not Found"
+        },
+        status_code=status.HTTP_404_NOT_FOUND)
+
+def bad_request(request: Request, content: str):
+    return templates.TemplateResponse(
+        "return_bad_request.html", 
+        {
+        "request": request,
+        "content": content
+        },
+        status_code=status.HTTP_400_BAD_REQUEST)
+
+def calculate_result_and_get_winner(match: Match, result: dict):
+    if match.format == "time limited":
+        score = {1: 0, 2: 0}
+        team1 = list(result.keys())[0]
+        team2 = list (result.keys())[1]
+        if int(result[team1]) > int(result[team2]):
+            score[1] = {team1: result[team1]}
+            score[2] = {team2: result[team2]}
+        elif int(result[team1]) < int(result[team2]):
+            score[1] = {team2: result[team2]}
+            score[2] = {team1: result[team1]}
+        else:
+            score["draw"] = {team1: result[team1],
+                                team2: result[team2]} 
+
+    elif match.format == "score limited":
+        score = {1: 0, 2: 0}
+        p1, p2 = 0, 0
+        team1, team2 = list(result.keys())[0], list (result.keys())[1]
+        result[team1] = list(map(int, result[team1].split(',')))
+        result[team2] = list(map(int, result[team2].split(',')))
+        for pl, sett in result.items():
+            for i in range(len(sett)):
+                if int(result[team1][i]) > int(result[team2][i]):
+                    p1 += 1
+                else: p2 += 1
+            break
+        if p1 > p2:
+            score[1] = {team1: result[team1]}
+            score[2] = {team2: result[team2]}
+        elif p1 < p2:
+            score[1] = {team2: result[team2]}
+            score[2] = {team1: result[team1]}
+            
+    elif match.format == "first finisher":
+        for p, s in result.items():
+            result[p] = score_convertor(s)
+        score = sorted(result.items(), key=lambda x: x[1])
+        final = {}
+        for pl, sc in score:
+            final[sc] = final.get(sc, []) + [pl]
+        score = dict(enumerate(final.items(),1))
+
+    return score
+
+def convert_result_from_string(result):
+    temp_result = {}
+    for el in result:
+        for k, v in el.items():
+            temp_result[k] = temp_result.get(k, v)
+
+    return temp_result
+
+def score_convertor(s):
+    hours, minutes, seconds, milliseconds = list(map(int, s.split(',')))
+    total_milliseconds = (hours * 60 * 60 * 1000) + (minutes * 60 * 1000) + (seconds * 1000) + milliseconds
+    
+    return timedelta(milliseconds=total_milliseconds)
+
+def match_format_from_tournament_sport(f: str):
+    match f:
+        case "football": return "time limited"
+        case "athletics": return "first finisher"
+        case "tennis": return "score limited"
