@@ -5,39 +5,120 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MatchScore Add Players to Club</title>
-    <style>
-        #topBar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center; 
-            padding: 10px;
-            background-color: #f8f8f8; 
-            box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1); 
-        }
-
-        #userDetails {
-            display: flex;
-            align-items: center;
-        }
-
-        #userDetails img {
-            margin-left: 10px;
-            height: 50px;
-            width: 50px;
-            border-radius: 50%; 
-        }
-
-        .buttons-container {
-            display: flex;
-            align-items: center;
-        }
-
-        .topbar-button {
-            height: 50px;
-            margin-right: 10px;
-        }
-    </style>
 </head>
+<style>
+    body {
+        background-color: #888888;
+        color: #ffffff;
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+    }
+
+    #topBar {
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+        align-items: center; 
+        padding: 10px;
+        background-color: rgba(0, 0, 0, 0.8); 
+        box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1); 
+    }
+
+    .outercontainer{
+        display: flex;
+        flex-direction: column;
+        align-items: center; 
+        justify-content: center; 
+        width: 100%; 
+        height: 100%; 
+    }
+
+    .container {
+        max-width: 1200px;
+        width: 100%;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+        background-color: rgba(0, 0, 0, 0.8);
+        animation: fade-in 1s ease-in-out;
+        margin-top: 20px;
+    }
+    .subcontainer{
+        display: flex;
+        flex-direction: column;
+        align-items: center; 
+        justify-content: center; 
+        width: 100%; 
+        height: 100%; 
+    }
+    .list_items{
+        border-width: 2px;      
+        border-style: dashed;   
+        border-color: #47095a;
+        padding-left: 5px;
+        padding-right: 5px;
+        margin-bottom: 10px;
+    }
+
+    label {
+        display: block;
+        margin: 10px 0;
+    }
+
+    input,
+    select {
+        width: 100%;
+        padding: 10px;
+        margin-bottom: 20px;
+        box-sizing: border-box;
+    }
+
+    button {
+        background-color: #47095a;
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: background-color 0.3s;
+    }
+
+    button:hover {
+        background-color: #45a049;
+    }
+
+    .topbar-button, a.topbar-button {
+        height: 50px;
+        margin-right: 10px;
+    }
+    #tournaments, 
+    #tournaments ul,
+    #matches,
+    #matches ul,
+    #pending_requests,
+    #pending_requests ul
+     {
+    padding-left: 0;
+    margin-left: 5px;
+    margin-right: 5px;
+}
+    .hidden {
+        display: none;
+    }
+    @keyframes fade-in {
+        from {
+            opacity: 0;
+        }
+
+        to {
+            opacity: 1;
+        }
+    }
+</style>
 <body>
     <div id="topBar">
         <!-- Buttons on the left -->
@@ -49,10 +130,11 @@
         <!-- User details on the right -->
         <div id="userDetails">
             <span>{{ name }}</span>
-            <img src="{{ image_data_url }}" alt="User Image">
+            <img src="{{ image_data_url }}" alt="User Image" style="height: 50px; width: 50px;">
         </div>  
     </div>
-    <div id="dashboard">
+    <div class="outercontainer">
+    <div id="dashboard" class ="container">
         <h2 style="text-align: center;">Add Players to Club</h2>
             <div id="playerSearchForm">
                 <form method="post" action="/players/searchplayerforclub">
@@ -64,41 +146,51 @@
                     <input type="hidden" name="player_sport" id="sport_input" value="{{ player_sport }}">
                     <input type="hidden" name="picture" value="{{ image_data_url }}">
                     <input type="hidden" id="added_players_input" name="added_players" value="">
-                    <button type="submit" class="dashboard-button">Search Player</button>
+                    <button type="submit" class="topbar-button">Search Player</button>
+                    <br>
+                    <br>
                     <div class="buttons-container">
-                        <button type="button" class="button" id="createTournamentBtn">Add Players to Club</button>
-                        </div>
+                        <button type="button" class="topbar-button" id="createTournamentBtn">Add Players to Club</button>
+                    </div>
                 </form>
-                <div class="section">
-                    <h3>Added Players</h3>
-                    <ul id="added_players_list">
-                        {% for player in added_players %}
-                            <li>{{ player }}
-                            <button onclick="removePlayer(this)">Remove</button>
-                            </li>
-                        {% endfor %}
-                        {% for player in player_names %}
-                            <li>{{ player }}
-                            <button onclick="removePlayer(this)">Remove</button>
-                            </li>
-                        {% endfor %}
-                    </ul>
+                <br>
+                <div class="section" >
+                    <div class= "list_items">
+                        <h4>Added Players</h4>
+                        <ul id="added_players_list">
+                            {% for player in added_players %}
+                                <li>{{ player }}
+                                <button onclick="removePlayer(this)">Remove</button>
+                                </li>
+                            {% endfor %}
+                            {% for player in player_names %}
+                                <li>{{ player }}
+                                <button onclick="removePlayer(this)">Remove</button>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
                 </div>
             </div>
-            <div id="search_results" style="{{ 'display:block;' if post_players }}">
-                {% for player in players %}
-                    <div>
-                        <span onclick="addToAddedPlayers('{{ player.name }}')" style="cursor: pointer;">{{ player.name }}</span>
-                        <img src="{{ player.image_data_url }}" alt="{{ player.name }}" style="height: 50px; width: 50px;">
-                        <div><h5> Sport: {{ player.sport }} </h5></div>
-                        <div><h5> Club: {{ player.sport_club }}</h5></div>
+            <br>
+            <div class="subcontainer">
+                <div id="search_results" style="{{ 'display:block;' if post_players }}">
+                    {% for player in players %}
+                    <div class = "list_items">
+                        <div>
+                            <span onclick="addToAddedPlayers('{{ player.name }}')" style="cursor: pointer;">{{ player.name }}</span>
+                            <img src="{{ player.image_data_url }}" alt="{{ player.name }}" style="height: 50px; width: 50px;">
+                            <div><h5> Sport: {{ player.sport }} </h5></div>
+                            <div><h5> Club: {{ player.sport_club }}</h5></div>
+                        </div>
                     </div>
-                {% endfor %}
-                {% if no_player %}
-                    <p>{{ no_player }}</p>
-                {% endif %}
+                    {% endfor %}
+                    {% if no_player %}
+                        <p>{{ no_player }}</p>
+                    {% endif %}
+                </div>
             </div>
-        
+        </div>    
     </div>
     <script>       
        document.getElementById("player_name_input").addEventListener("input", function() {

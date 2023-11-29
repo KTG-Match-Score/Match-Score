@@ -6,38 +6,131 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MatchScore Registration</title>
 </head>
-<body>
-    <h1 style="text-align: center;">MatchScore Registration Form</h1>
-{% if improper_email%}
-<h3 style="text-align: left;">Please input a proper e-mail!</h3>
-{%endif%}
-{% if improper_fullname%}
-<h3 style="text-align: left;">Full name should be at least 4 symbols and not more than 100 symbols!</h3>
-{%endif%}
-{% if email_exists%}
-<h3 style="text-align: left;">The provided email is already registered! Please, provide another e-mail!</h3>
-{%endif%}
-<div id="register-section">
-    <h2>Register</h2>
-    <form action="/users" method="post">
-        <label for="username">Email:</label>
-        <input type="text" name="username" required>
-        <br>
-        <label for="fullname">Full name:</label>
-        <input type="text" name="fullname" required>
-        <br>
-        <label for="password">Password:</label>
-        <input type="password" name="password" 
-                required 
-                pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[#?!@$%^&*-+=]).{8,}"
-                title="One number, one uppercase and one lowercase letter, one of the special symbols #?!@$%^&*-+=, and at least 8 symbols.">
-        <br>
 
-        <small>One number, one uppercase and one lowercase letter, one of the special symbols #?!@$%^&*-+=, and at least 8 symbols.</small>
-        <br><br>
-        <button type="submit">Register</button>
-        <br><br>
-    </form>
-</div>
+<style>
+
+    body {
+        background-color: #888888;
+        color: #ffffff;
+        font-family: Arial, sans-serif;
+        margin: 0; 
+        padding: 0;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        margin-top: 0;
+        margin-bottom: 0;
+    }
+
+    #topBar {
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+        align-items: center; 
+        padding: 15px;
+        background-color: rgba(0, 0, 0, 0.8); 
+        box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1); 
+        margin-top: 0;
+        margin-bottom: 0;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .outercontainer{
+        display: flex;
+        flex-direction: column;
+        align-items: center; 
+        justify-content: center; 
+        width: 100%; 
+        height: 100%; 
+    }
+    .container {
+        max-width: 600px;
+        width: 100%;
+        padding: 10px;
+        border-radius: 8px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+        background-color: rgba(0, 0, 0, 0.8);
+        animation: fade-in 1s ease-in-out;
+        margin-top: 5px;
+    }
+
+    label {
+        display: block;
+        margin: 10px 0;
+    }
+
+    input,
+    select {
+        width: 100%;
+        padding: 10px;
+        margin-bottom: 20px;
+        box-sizing: border-box;
+    }
+
+    button {
+        background-color: #47095a;
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: background-color 0.3s;
+    }
+
+    button:hover {
+        background-color: #45a049;
+    }
+
+    @keyframes fade-in {
+        from {
+            opacity: 0;
+        }
+
+        to {
+            opacity: 1;
+        }
+    }
+</style>
+
+<body>
+    <div id="topBar">
+        <h1>MatchScore Registration</h1>
+    </div>
+    <div class="outercontainer">
+        <div class="container">
+            {% if improper_email%}
+            <h3 style="text-align: left;">Please input a proper e-mail!</h3>
+            {%endif%}
+            {% if improper_fullname%}
+            <h3 style="text-align: left;">Full name should be at least 4 symbols and not more than 100 symbols!</h3>
+            {%endif%}
+            {% if email_exists%}
+            <h3 style="text-align: left;">The provided email is already registered! Please, provide another e-mail!</h3>
+            {%endif%}
+            <div id="register-section">
+                <h2>Register</h2>
+                <form action="/users" method="post">
+                    <label for="username">Email:</label>
+                    <input type="text" name="username" required>
+                    <br>
+                    <label for="fullname">Full name:</label>
+                    <input type="text" name="fullname" required>
+                    <br>
+                    <label for="password">Password:</label>
+                    <input type="password" name="password" 
+                            required 
+                            pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[#?!@$%^&*-+=]).{8,}"
+                            title="One number, one upper-case and one lower-case letter, one of the special symbols #?!@$%^&*-+=, and at least 8 symbols.">
+                    <br>
+
+                    <small>One number, one upper-case and one lower-case letter, one of the special symbols #?!@$%^&*-+=, and at least 8 symbols.</small>
+                    <br><br>
+                    <button type="submit">Register</button>
+                    <br><br>
+                </form>
+            </div>
+        </div>
+    </div>
 </body>
 </html>
