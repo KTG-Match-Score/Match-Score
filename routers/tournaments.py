@@ -186,10 +186,10 @@ async def add_prizes_to_tournament(request: Request,
 
     action = tournaments_services.add_prizes(prizes_for_insert, tournament_id, request, name, image_data_url, tokens)
 
-    response = users.templates.TemplateResponse("user_dashboard.html", {"request": request})
+    response = RedirectResponse(url = f"matches/?tournament_id={tournament_id}", status_code=303)
     response.set_cookie(key="access_token",
                         value=tokens["access_token"], httponly=True)
     response.set_cookie(key="refresh_token",
                         value=tokens["refresh_token"], httponly=True)
-    
     return response
+    

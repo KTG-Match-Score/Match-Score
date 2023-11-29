@@ -158,31 +158,19 @@ def get_match_participants(match: Match):
 
     return match
 
-async def create_match(request: Request, data: dict):
+async def create_match(data: dict[Tournament, dict, str]):
 
     """ requires login and director/admin rights """
-    access_token = request.cookies.get("access_token")
-    refresh_token = request.cookies.get("refresh_token")
-    tokens = {"access_token": access_token, "refresh_token": refresh_token}
-    try:
-        user = await auth.get_current_user(access_token)
-    except:
-        try:
-            user = await auth.refresh_access_token(access_token, refresh_token)
-            tokens = auth.token_response(user)
-        except:
-            RedirectResponse(url='/', status_code=303)
-
-    # json_data = await request.json()
     
     schema: dict = data["schema"]
-    tournament_format = data["format"]
-    tournament_id = data["tournament_id"]
-    location: Optional[str] = "unknown location"
-    tournament: Tournament = await get_tournament_by_id(tournament_id)
-    played_on_date: datetime = tournament.start_date
-    format = match_format_from_tournament_sport(data["sport"])
+    tournament: Tournament = data["tournament"]
     sport = data["sport"]
+    user = data["user"]
+    tournament_format = tournament.format
+    location: Optional[str] = "unknown location"
+    played_on_date: datetime = tournament.start_date
+    format = match_format_from_tournament_sport(sport)
+    
 
     # ms.update_id_of_parent_tournament(tournament.id)
     parent = tournament
@@ -192,9 +180,6 @@ async def create_match(request: Request, data: dict):
             if isinstance(play, list):
                 for pl in play:
                     participants = create_players_from_ids(pl)
-                    
-                    if (played_on_date < tournament.start_date) or (played_on_date >= tournament.end_date): 
-                        return bad_request(request, "The time of the match should be within the time of the tournament")
                     
                     create_new_match(
                         Match(
@@ -243,15 +228,11 @@ async def create_match(request: Request, data: dict):
                         tournament_id = tournament.id
                         ), participants)
                 
-                if (played_on_date < tournament.start_date) or (played_on_date >= tournament.end_date): 
-                    return bad_request(request, "The time of the match should be within the time of the tournament")
                 if subtournament == "Race":
                     break
     
     # the user should be returned as owner of the tournament
-    return templates.TemplateResponse(f"matches/?tournament_id={tournament.id}", 
-                                    {"request": request, "user": user}, 
-                                    status_code=status.HTTP_201_CREATED)
+    
 
 def create_new_match(
         match: Match,
