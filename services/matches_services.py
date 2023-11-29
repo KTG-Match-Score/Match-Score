@@ -215,18 +215,18 @@ async def create_match(data: dict[Tournament, dict, str]):
     else:
         for subtournament, play in schema.items():
             for pl in play:
-                if isinstance(pl, list):
+                if isinstance(pl, tuple):
                     participants = create_players_from_ids(pl)
                 if isinstance(pl, int):
                     participants = create_players_from_ids(play)
-                    create_new_match(
-                        Match(
-                        format = format, 
-                        played_on = played_on_date, 
-                        is_individuals = tournament.is_individuals, 
-                        location = location,
-                        tournament_id = tournament.id
-                        ), participants)
+                create_new_match(
+                    Match(
+                    format = format, 
+                    played_on = played_on_date, 
+                    is_individuals = tournament.is_individuals, 
+                    location = location,
+                    tournament_id = tournament.id
+                    ), participants)
                 
                 if subtournament == "Race":
                     break

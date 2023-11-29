@@ -44,8 +44,20 @@ async def edit_match_redirect(id: int, request: Request):
 
     if not match: return ms.not_found(request)
     
+    access_token = request.cookies.get("access_token")
+    refresh_token = request.cookies.get("refresh_token")
+    tokens = {"access_token": access_token, "refresh_token": refresh_token}
+    try:
+        user = await auth.get_current_user(access_token)
+    except:
+        try:
+            user = await auth.refresh_access_token(access_token, refresh_token)
+            tokens = auth.token_response(user)
+        except:
+            RedirectResponse(url='/', status_code=303)
+
     return templates.TemplateResponse("edit_match.html", 
-                                     {"request": request, "id": id, "match": match},
+                                     {"request": request, "id": id, "match": match, "user": user},
                                      status_code=status.HTTP_303_SEE_OTHER)
 
 
@@ -78,8 +90,20 @@ async def add_result_redirect(id: int, request: Request):
 
     if not match: return ms.not_found(request)
     
+    access_token = request.cookies.get("access_token")
+    refresh_token = request.cookies.get("refresh_token")
+    tokens = {"access_token": access_token, "refresh_token": refresh_token}
+    try:
+        user = await auth.get_current_user(access_token)
+    except:
+        try:
+            user = await auth.refresh_access_token(access_token, refresh_token)
+            tokens = auth.token_response(user)
+        except:
+            RedirectResponse(url='/', status_code=303)
+
     return templates.TemplateResponse("add_result_form.html", 
-                                     {"request": request, "id": id, "match": match},
+                                     {"request": request, "id": id, "match": match, "user": user},
                                      status_code=status.HTTP_303_SEE_OTHER)
 
 

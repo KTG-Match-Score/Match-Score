@@ -4,7 +4,6 @@ from routers.matches import matches_router
 from fastapi.templating import Jinja2Templates
 from routers.tournaments import tournaments_router
 from routers.sports import sports_router
-# from routers.timestamps import timestamps_router
 from routers.players import players_router
 
 import uvicorn
@@ -18,6 +17,7 @@ app.include_router(players_router)
 
 
 templates = Jinja2Templates(directory="templates/")
+
 
 @app.get("/")
 def landing_page(request: Request):

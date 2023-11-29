@@ -147,37 +147,6 @@ async def create_tournament(request: Request,
     
     return response
 
-@tournaments_router.post("/create_tournament_schema")
-async def create_tournament_schema(request: Request):
-    
-    json_data = await request.json()
-
-    tournament_id = json_data.get("tournament_id")
-    participants_per_match = json_data.get("participants_per_match")
-    format = json_data.get("format")
-    number_participants = json_data.get("number_participants")
-    sport = json_data.get("sport")
-
-    access_token = request.cookies.get("access_token")
-    refresh_token = request.cookies.get("refresh_token")
-    
-    try:
-        user = await auth.get_current_user(access_token)
-    except:
-        try:
-            user = await auth.refresh_access_token(access_token, refresh_token)
-            tokens = auth.token_response(user)
-        except:
-            return RedirectResponse(url='/', status_code=303)
-
-    if user.role != "director" and user.role != "admin":
-        return RedirectResponse(url='/users/dashboard', status_code=303)
-
-    schema = tournaments_services.generate_schema(tournament_id, participants_per_match, format, number_participants, sport)
-
-    cookies = request.cookies
-    async with httpx.AsyncClient() as client:
-        response = await client.post("http://localhost:8000/matches/create", cookies=cookies, json={ "tournament_id":tournament_id, "format": format, "sport": sport, "schema": schema}) 
 
 @tournaments_router.post("/add_prizes")
 async def add_prizes_to_tournament(request: Request,
