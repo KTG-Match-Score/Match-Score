@@ -57,3 +57,12 @@ class MatchesInTournament(BaseModel):
             picture=picture,
             result=result
         )
+    
+class KnockoutTournament(BaseModel):
+    id: int
+    title: str
+    parent_id: int | None = None
+
+    @classmethod
+    def from_query(cls, id, title, parent_id):
+        return cls(id=id, title=title, parent_id=parent_id)
