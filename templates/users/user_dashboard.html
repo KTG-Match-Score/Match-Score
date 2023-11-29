@@ -7,189 +7,231 @@
     <title>MatchScore Dashboard</title>
 </head>
 <style>
+    body {
+        background-color: #888888;
+        color: #ffffff;
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+    }
+
     #topBar {
+        width: 100%;
         display: flex;
         justify-content: space-between;
         align-items: center; 
         padding: 10px;
-        background-color: #f8f8f8; 
+        background-color: rgba(0, 0, 0, 0.8); 
         box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1); 
     }
 
-    #userDetails {
+    .outercontainer{
         display: flex;
-        align-items: center;
+        flex-direction: column;
+        align-items: center; 
+        justify-content: center; 
+        width: 100%; 
+        height: 100%; 
     }
 
-    #userDetails img {
-        margin-left: 10px;
-        height: 50px;
-        width: 50px;
-        border-radius: 50%; 
+    .container {
+        max-width: 1200px;
+        width: 100%;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+        background-color: rgba(0, 0, 0, 0.8);
+        animation: fade-in 1s ease-in-out;
+        margin-top: 20px;
     }
-
-    .buttons-container {
+    .subcontainer{
         display: flex;
-        align-items: center;
+        flex-direction: column;
+        align-items: center; 
+        justify-content: center; 
+        width: 100%; 
+        height: 100%; 
+    }
+    .list_items{
+        border-width: 2px;      
+        border-style: dashed;   
+        border-color: #47095a;
+        padding-left: 5px;
+        padding-right: 5px;
+        margin-bottom: 10px;
     }
 
-    .topbar-button {
+    label {
+        display: block;
+        margin: 10px 0;
+    }
+
+    input,
+    select {
+        width: 100%;
+        padding: 10px;
+        margin-bottom: 20px;
+        box-sizing: border-box;
+    }
+
+    button {
+        background-color: #47095a;
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: background-color 0.3s;
+    }
+
+    button:hover {
+        background-color: #45a049;
+    }
+
+    .topbar-button, a.topbar-button {
         height: 50px;
         margin-right: 10px;
     }
+    #tournaments, 
+    #tournaments ul,
+    #matches,
+    #matches ul,
+    #pending_requests,
+    #pending_requests ul
+     {
+    padding-left: 0;
+    margin-left: 5px;
+    margin-right: 5px;
+}
 
-    /* New container for main content */
-    #mainContainer {
-        display: flex;
-        height: calc(100vh - 60px); /* Adjust based on the height of the top bar */
-        margin-top: 10px; /* Optional: adds some space below the top bar */
+    @keyframes fade-in {
+        from {
+            opacity: 0;
+        }
+
+        to {
+            opacity: 1;
+        }
     }
-
-    /* Style for the dashboard section */
-    #dashboard, #focus {
-        flex: 1; /* Flexbox handles the width */
-        padding: 10px;
-        overflow-y: auto;
-    }
-
-    #dashboard {
-        margin-right: 10px; /* Right margin only for dashboard */
-    }
-
-    /* Style for the buttons in the dashboard */
-    .dashboard-button, .dashboard-button:link, .dashboard-button:visited, .dashboard-form .dashboard-button {
-        display: block;
-        margin-bottom: 10px;
-        padding: 8px 15px;
-        background-color: #007bff;
-        color: white;
-        text-align: center;
-        text-decoration: none;
-        border-radius: 4px;
-        transition: background-color 0.3s ease;
-        justify-content: space-between;
-    }
-
-    #dashboard h2, {
-        margin-bottom: 20px; /* Add some space below the heading */
-    }
-
-    .dashboard-buttons-container {
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-        flex-grow: 1; /* Ensures it takes up available space */
-    }
-
-    .dashboard-button:hover {
-        background-color: #0056b3;
-    }
-
-    /* Style for warning messages */
-    .warning-message {
-        color: red;
-        margin-bottom: 10px;
-    }
-
-    /* Style for the right-hand content area */
+</style>
     
 </style>
 </head>
 <body>
     <div id="topBar">
-        <!-- Buttons on the left -->
         <div class="buttons-container">
-            <button class="topbar-button" onclick="location.href='/'">Main Page (Logout)</button>
+            <button class="topbar-button" onclick="location.href='/'">Main Page </button>
         </div>
-
+        <h1>MatchScore Dashboard</h1>
         <!-- User details on the right -->
         <div id="userDetails">
             <span>{{ name }}</span>
-            <img src="{{ image_data_url }}" alt="User Image">
+            <img src="{{ image_data_url }}" alt="User Image" style="height: 50px; width: 50px;">
         </div>  
     </div>
-    <div id="dashboard">
-        <h2>Dashboard</h2>
-        {% if user_role == 'player' %}
-            <a href="/users/accountmanagement" class="dashboard-button">Manage your profile</a>
-            {% if player_id %}
-            <a href="/players/accountmanagement" class="dashboard-button">Manage player profile</a>
-            {% endif %}
-            <a href="/users/request" class="dashboard-button">Make  a request</a>
-            {% if request_response %}
-                {{ request_response}}
-            {% endif %}
-        {% endif %}
+    <div class="outercontainer">
+        <div id="dashboard" class="container">
+            <h2>Dashboard</h2>
+            <div class="subcontainer">
+                <div class="buttons-container">
+                    {% if user_role == 'player' %}
+                    
+                    <button onclick="location.href='/users/accountmanagement';" class = "topbar-button">Manage your profile</button>
+                
+                    {% if player_id %}
+                    <button onclick="location.href='/players/accountmanagement';" class="topbar-button">Manage player profile</button>
+                    {% endif %}
+                    <button onclick="location.href='/users/request';" class="topbar-button">Make  a request</button>
+                    {% if request_response %}
+                        {{ request_response}}
+                    {% endif %}
+                    {% endif %}
 
-        {% if user_role == 'director' %}
-            <a href="/users/accountmanagement" class="dashboard-button">Manage your profile</a>
-            <a href="/users/request" class="dashboard-button">Make  a request</a>
-            <a href="/tournaments/create_tournament_form" class="dashboard-button">Create a tournament</a>
-        {% endif %}
+                {% if user_role == 'director' %}
+                    <button onclick="location.href='/users/accountmanagement';" class="topbar-button">Manage your profile</button>
+                    <button onclick="location.href='/users/request';" class="topbar-button">Make  a request</button>
+                    <button onclick="location.href='/tournaments/create_tournament_form';" class="topbar-button">Create a tournament</button>
+                {% endif %}
 
-        {% if user_role == 'club_manager' %}
-            <a href="/users/accountmanagement" class="dashboard-button">Manage your profile</a>
-            {% if player_id %}
-            <a href="/players/accountmanagement" class="dashboard-button">Manage player profile</a>
-            {% endif %}
-            <a href="/users/request" class="dashboard-button">Make  a request</a>
-            <a href="/users/add_players" class="dashboard-button">Add players to club</a>
-            <a href="/players/createsingletemplate" class="dashboard-button">Create player</a>
-            <form id="addPlayersForm" method="post" class="dashboard-form" action ="/users/addplayerstoclub" >
-                <input type="hidden" name="sports_club_id" value="{{ sports_club_id }}">
-                <input type="hidden" name="is_sports_club" value={{1}}>
-                <input type="hidden" name="player_sport" value="{{ sport }}">
-                <button type="submit" class="dashboard-button">Add players to club</button>
-            </form>
-        {% endif %}
+                {% if user_role == 'club_manager' %}
+                    <button onclick="location.href='/users/accountmanagement';" class="topbar-button">Manage your profile</button>
+                    {% if player_id %}
+                    <button onclick="location.href='/players/accountmanagement';" class="topbar-button">Manage player profile</button>
+                    {% endif %}
+                    <button onclick="location.href='/users/request';" class="topbar-button">Make  a request</button>
+                    <button onclick="location.href='/users/add_players';" class="topbar-button">Add players to club</button>
+                    <button onclick="location.href='/players/createsingletemplate';" class="topbar-button">Create player</button>
+                    <form id="addPlayersForm" method="post" class="dashboard-form" action ="/users/addplayerstoclub" >
+                        <input type="hidden" name="sports_club_id" value="{{ sports_club_id }}">
+                        <input type="hidden" name="is_sports_club" value={{1}}>
+                        <input type="hidden" name="player_sport" value="{{ sport }}">
+                        <button type="submit" class="topbar-button">Add players to club</button>
+                    </form>
+                {% endif %}
 
-        {% if user_role == 'admin' %}
-            <a href="/users/accountmanagement" class="dashboard-button">Manage your profile</a>
-            <a href="/players/accountmanagement" class="dashboard-button">Manage player profile</a>
-            <a href="/tournaments/create_tournament_form" class="dashboard-button">Create a tournament</a>
-            <a href="/users/add_players" class="dashboard-button">Add players to club</a>
-            <a href="/players/createsingletemplate" class="dashboard-button">Create player</a>
-            <a href="/players/remove" class="dashboard-button">Remove player</a>
-            <a href="/users/remove" class="dashboard-button">Delete user</a>
-        {% endif %}
-    </div>
-    <div id="focus">
+                {% if user_role == 'admin' %}
+                    <button onclick="location.href='/users/accountmanagement';" class="topbar-button">Manage your profile</button>
+                    <button onclick="location.href='/players/accountmanagement';" class="topbar-button">Manage player profile</button>
+                    <button onclick="location.href='/tournaments/create_tournament_form';" class="topbar-button">Create a tournament</button>
+                    <button onclick="location.href='/users/add_players';" class="topbar-button">Add players to club</button>
+                    <button onclick="location.href='/players/createsingletemplate';" class="topbar-button">Create player</button>
+                    <button onclick="location.href='/players/remove';" class="topbar-button">Remove player</button>
+                    <button onclick="location.href='/users/remove';" class="topbar-button">Delete user</button>
+                {% endif %}
+                </div>
+            </div>
+        </div>
+    <div id="focus" class="container">
         <h2>Your Events</h2>
+        <div class="subcontainer">
+            
             {% if user_role == 'player' or user_role == 'club_manager' %}
                 {% if matches %}
+                <div class="list_items">
                     <ul id="matches">
                         {% for match in matches%}
-                        <li>
-                            <h4>Tournament:{{ match[8] }}</h4>
-                            <h5>Opponent:{{ match[7] }}</h5>
-                            <h5>Scheduled:{{ match[2] }}</h5>
-                        </li>
+                        <ul>
+                            <h4>Tournament: {{ match[8] }}</h4>
+                            <h5>Opponent: {{ match[7] }}</h5>
+                            <h5>Scheduled: {{ match[2] }}</h5>
+                        </ul>
                         {% endfor %}  
-                    </ul>              
+                    </ul> 
+                </div> 
+                {%else%}
+                <h3>You don't have any upcoming events</h3>           
                 {% endif %}
             {% endif %}
 
             {% if user_role == 'director' %}
                 {% if tournaments %}
+                <div class="list_items">
                     <ul id="tournaments">
                         {% for tournament in tournaments%}
-                        <li>
-                            <h4>Tournament:{{ tournament.title }}</h4>
-                            <h5>Start date:{{ tournament.start_date }}</h5>
-                            <h5>End date:{{ tournament.start_date }}</h5>
-                            <h5>Format:{{ tournament.format }}</h5>
-                        </li>
+                        <ul>
+                            <h4>Tournament: {{ tournament.title }}</h4>
+                            <h5>Start: {{ tournament.start_date }}</h5>
+                            <h5>End: {{ tournament.start_date }}</h5>
+                            <h5>Format: {{ tournament.format }}</h5>
+                        </ul>
                         {% endfor %}  
-                    </ul>              
+                    </ul>  
+                </div>
+                {%else%}
+                <h3>You don't have any upcoming events</h3>            
                 {% endif %}
             {% endif %}
 
             {% if user_role == 'admin' %}
                 {% if pending_requests %}
+                <div class="list_items">
                     <ul id="pending_requests">
                         {% for request in pending_requests%}
-                        <li>
-                            <h4>Requestor:{{ request[1] }}</h4>
+                        <ul>
+                            <h4>Requestor: {{ request[1] }}</h4>
                             {% if request[2] is not none%}
                             <h5>Request type: link player with id {{request[2]}}</h5>
                             {% endif %}
@@ -199,23 +241,32 @@
                             {% if request[4] != 0 %}
                             <h5>Request type: elevate to club manager</h5>
                             {% endif %}
-                            <h5>Request details:{{ request[6] }}</h5>
+                            <h5>Request details: {{ request[6] }}</h5>
                             <div>
                                 <form id="approveRequest" method="post" class="dashboard-form" action ="/users/handlerequest" >
                                     <input type="hidden" name="request_id" value="{{ request[0] }}">
                                     <input type="hidden" name="is_approved" value={{True}}>
                                     <button type="submit" class="dashboard-button">Approve</button>
                                 </form>
+                                <br>
                                 <form id="denyRequest" method="post" class="dashboard-form" action ="/users/handlerequest" >
                                     <input type="hidden" name="request_id" value="{{ request[0] }}">
                                     <input type="hidden" name="is_approved" value={{False}}>
                                     <button type="submit" class="dashboard-button">Deny</button>
                                 </form>
-                        </li>
+                            </ul>
                         {% endfor %}  
-                    </ul>              
+                    </ul>  
+                </div>
+                    {%else%}
+                <h3>You don't have any upcoming events</h3>            
                 {% endif %}
             {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+    
     <script>
         function showPlayerSearchForm() {
             // Hide the original form

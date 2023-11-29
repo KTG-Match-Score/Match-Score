@@ -87,37 +87,41 @@ async def create_player(
             response.set_cookie(key="refresh_token",
                                 value=tokens["refresh_token"], httponly=True)
             return response
-            
-    if created:
-        added_players_lst.append(player_name)
-        response = templates.TemplateResponse("create_multiple_players.html", context={
-        "request": request,
-        "player_name": player_name, 
-        "max_players": max_players,  
-        "player_sport": player_sport,
-        "added_players": added_players_lst,
-        "tournament_id": tournament_id,
-        "sports_club_id": sports_club_id,
-        "is_sports_club": is_sports_club})
-        response.set_cookie(key="access_token",
-                    value=tokens["access_token"], httponly=True)
-        response.set_cookie(key="refresh_token",
-                    value=tokens["refresh_token"], httponly=True)
-        return response
-    response = templates.TemplateResponse("create_multiple_players.html", context={
-            "request": request, 
-            "player_name": player_name,
-            "max_players": max_players, 
-            "player_sport": player_sport, 
-            "no_player": "Such player already exists! Try search!", 
+    else:        
+        if created:
+            added_players_lst.append(player_name)
+            response = templates.TemplateResponse("create_multiple_players.html", context={
+            "request": request,
+            "player_name": player_name, 
+            "max_players": max_players,  
+            "player_sport": player_sport,
             "added_players": added_players_lst,
             "tournament_id": tournament_id,
             "sports_club_id": sports_club_id,
-            "is_sports_club": is_sports_club})
-    response.set_cookie(key="access_token",
+            "is_sports_club": is_sports_club,
+            "name": user.fullname,
+            "image_data_url": image_data_url})
+            response.set_cookie(key="access_token",
                         value=tokens["access_token"], httponly=True)
-    response.set_cookie(key="refresh_token",
+            response.set_cookie(key="refresh_token",
                         value=tokens["refresh_token"], httponly=True)
+            return response
+        response = templates.TemplateResponse("create_multiple_players.html", context={
+                "request": request, 
+                "player_name": player_name,
+                "max_players": max_players, 
+                "player_sport": player_sport, 
+                "no_player": "Such player already exists! Try search!", 
+                "added_players": added_players_lst,
+                "tournament_id": tournament_id,
+                "sports_club_id": sports_club_id,
+                "is_sports_club": is_sports_club,
+                "name": user.fullname,
+                "image_data_url": image_data_url})
+        response.set_cookie(key="access_token",
+                            value=tokens["access_token"], httponly=True)
+        response.set_cookie(key="refresh_token",
+                            value=tokens["refresh_token"], httponly=True)
     return response
         
 @players_router.post('/creation')
@@ -140,10 +144,13 @@ async def show_player(
         user = await auth.get_current_user(access_token)
     except:
         try:
-            user = auth.refresh_access_token(access_token, refresh_token)
+            user = await auth.refresh_access_token(access_token, refresh_token)
             tokens = auth.token_response(user)
         except:
             return RedirectResponse(url='/', status_code=303)
+    mime_type = "image/jpg"
+    base64_encoded_data = base64.b64encode(user.picture).decode('utf-8')
+    image_data_url = f"data:{mime_type};base64,{base64_encoded_data}" 
     players = await players_services.find_player(player_name, player_sport, is_sports_club)
     if added_players:
         added_players_lst = json.loads(added_players)
@@ -159,7 +166,9 @@ async def show_player(
             "added_players": added_players_lst,
             "tournament_id": tournament_id,
             "sports_club_id": sports_club_id,
-            "is_sports_club": is_sports_club})
+            "is_sports_club": is_sports_club,
+            "name": user.fullname,
+            "image_data_url": image_data_url})
         response.set_cookie(key="access_token",
                         value=tokens["access_token"], httponly=True)
         response.set_cookie(key="refresh_token",
@@ -169,9 +178,6 @@ async def show_player(
     post_players =[]
     for player in players:
         id, name, picture, sport, sport_club = player
-        mime_type = "image/jpg"
-        base64_encoded_data = base64.b64encode(picture).decode('utf-8')
-        image_data_url = f"data:{mime_type};base64,{base64_encoded_data}" 
         modified_player={
             "name": name,
             "sport": sport,
@@ -190,7 +196,9 @@ async def show_player(
             "added_players": added_players_lst,
             "tournament_id": tournament_id,
             "sports_club_id": sports_club_id,
-            "is_sports_club": is_sports_club})
+            "is_sports_club": is_sports_club,
+            "name": user.fullname,
+            "image_data_url": image_data_url})
     response.set_cookie(key="access_token",
                         value=tokens["access_token"], httponly=True)
     response.set_cookie(key="refresh_token",
@@ -210,16 +218,19 @@ async def show_invalid_credntials(request: Request, param: Optional[str] = Query
             tokens = auth.token_response(user)
         except:
             return RedirectResponse(url='/', status_code=303)
+    mime_type = "image/jpg"
+    base64_encoded_data = base64.b64encode(user.picture).decode('utf-8')
+    image_data_url = f"data:{mime_type};base64,{base64_encoded_data}" 
     if param:
         response =  templates.TemplateResponse("invalid_credentials.html", context={
-            "request": request, f"{param}": True})
+            "request": request, f"{param}": True,"name": user.fullname,"image_data_url": image_data_url})
         response.set_cookie(key="access_token",
                         value=tokens["access_token"], httponly=True)
         response.set_cookie(key="refresh_token",
                         value=tokens["refresh_token"], httponly=True)
         return response
     response = templates.TemplateResponse("invalid_credentials.html", context={
-            "request": request})
+            "request": request, "name": user.fullname, "image_data_url": image_data_url})
     response.set_cookie(key="access_token",
                         value=tokens["access_token"], httponly=True)
     response.set_cookie(key="refresh_token",
@@ -246,6 +257,9 @@ async def get_create_multiple_players(
             tokens = auth.token_response(user)
         except:
             return RedirectResponse(url='/', status_code=303)
+    mime_type = "image/jpg"
+    base64_encoded_data = base64.b64encode(user.picture).decode('utf-8')
+    image_data_url = f"data:{mime_type};base64,{base64_encoded_data}" 
     if user.role == "player":
         return RedirectResponse(url="/players/invalidcredentials?param=create_players", status_code=303)  
     if user.role =="director":
@@ -268,7 +282,9 @@ async def get_create_multiple_players(
             "player_sport": player_sport,
             "tournament_id": tournament_id,
             "sports_club_id": sports_club_id,
-            "is_sports_club": is_sports_club})
+            "is_sports_club": is_sports_club,
+            "name": user.fullname,
+            "image_data_url": image_data_url})
     response.set_cookie(key="access_token",
                         value=tokens["access_token"], httponly=True)
     response.set_cookie(key="refresh_token",
@@ -298,6 +314,9 @@ async def get_create_single_player_template(
             tokens = auth.token_response(user)
         except:
             return RedirectResponse(url='/', status_code=303)
+    mime_type = "image/jpg"
+    base64_encoded_data = base64.b64encode(user.picture).decode('utf-8')
+    image_data_url = f"data:{mime_type};base64,{base64_encoded_data}"
     if user.role == "player":
         return RedirectResponse(url="/players/invalidcredentials?param=create_players", status_code=303)  
     if user.role =="director":
@@ -322,7 +341,9 @@ async def get_create_single_player_template(
             "tournament_id": tournament_id,
             "sports_club_id": sports_club_id,
             "added_players": added_players,
-            "is_sports_club": is_sports_club})
+            "is_sports_club": is_sports_club,
+            "name": user.fullname,
+            "image_data_url": image_data_url})
     response.set_cookie(key="access_token",
                         value=tokens["access_token"], httponly=True)
     response.set_cookie(key="refresh_token",
@@ -349,6 +370,9 @@ async def add_players_to_tornament(
             tokens = auth.token_response(user)
         except:
             return RedirectResponse(url='/', status_code=303)
+    mime_type = "image/jpg"
+    base64_encoded_data = base64.b64encode(user.picture).decode('utf-8')
+    image_data_url = f"data:{mime_type};base64,{base64_encoded_data}"
     tournament = await players_services.check_tournament_exists(tournament_id)
     tournament_model = Tournament.from_query_result(*tournament)
     if not players or not tournament: 

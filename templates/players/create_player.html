@@ -3,132 +3,191 @@
 <head>
     <meta charset="UTF-8">
     <title>Create Player</title>
-    <style>
-        #topBar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center; 
-            padding: 10px;
-            background-color: #f8f8f8; 
-            box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1); 
-        }
-
-        #userDetails {
-            display: flex;
-            align-items: center;
-        }
-
-        #userDetails img {
-            margin-left: 10px;
-            height: 50px;
-            width: 50px;
-            border-radius: 50%; 
-        }
-
-        .buttons-container {
-            display: flex;
-            align-items: center;
-        }
-
-        .topbar-button {
-            height: 50px;
-            margin-right: 10px;
-        }
-
-        .hidden {
-            display: none;
-        }
-        .form-group {
-            margin-bottom: 10px; 
-        }
-
-        .form-group label {
-            display: block; 
-            margin-bottom: 5px; 
-        }
-
-        .form-group input {
-            width: 100%; 
-            padding: 5px; 
-            box-sizing: border-box; 
-        }
-
-        .buttons-container {
-            margin-top: 20px; 
-        }
-    </style>
 </head>
+<style>
+    body {
+        background-color: #888888;
+        color: #ffffff;
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+    }
+
+    #topBar {
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+        align-items: center; 
+        padding: 10px;
+        background-color: rgba(0, 0, 0, 0.8); 
+        box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1); 
+    }
+
+    .outercontainer{
+        display: flex;
+        flex-direction: column;
+        align-items: center; 
+        justify-content: center; 
+        width: 100%; 
+        height: 100%; 
+    }
+
+    .container {
+        max-width: 1200px;
+        width: 100%;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+        background-color: rgba(0, 0, 0, 0.8);
+        animation: fade-in 1s ease-in-out;
+        margin-top: 20px;
+    }
+    .subcontainer{
+        display: flex;
+        flex-direction: column;
+        align-items: center; 
+        justify-content: center; 
+        width: 100%; 
+        height: 100%; 
+    }
+    .list_items{
+        border-width: 2px;      
+        border-style: dashed;   
+        border-color: #47095a;
+        padding-left: 5px;
+        padding-right: 5px;
+        margin-bottom: 10px;
+    }
+
+    label {
+        display: block;
+        margin: 10px 0;
+    }
+
+    input,
+    select {
+        width: 100%;
+        padding: 10px;
+        margin-bottom: 20px;
+        box-sizing: border-box;
+    }
+
+    button {
+        background-color: #47095a;
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: background-color 0.3s;
+    }
+
+    button:hover {
+        background-color: #45a049;
+    }
+
+    .topbar-button, a.topbar-button {
+        height: 50px;
+        margin-right: 10px;
+    }
+    #tournaments, 
+    #tournaments ul,
+    #matches,
+    #matches ul,
+    #pending_requests,
+    #pending_requests ul
+     {
+    padding-left: 0;
+    margin-left: 5px;
+    margin-right: 5px;
+}
+    .hidden {
+        display: none;
+    }
+    @keyframes fade-in {
+        from {
+            opacity: 0;
+        }
+
+        to {
+            opacity: 1;
+        }
+    }
+</style>
 <body>
     <div id="topBar">
         
-        <!-- Buttons on the left -->
         <div class="buttons-container">
             <button class="topbar-button" onclick="location.href='/users/dashboard'">Back to Dashboard</button>
             <button class="topbar-button" onclick="location.href='/'">Main Page</button>
         </div>
         <h1 style="text-align: center;"> MatchScore Create Player</h1>
-        <!-- User details on the right -->
         <div id="userDetails">
             <span>{{ name }}</span>
-            <img src="{{ image_data_url }}" alt="User Image">
+            <img src="{{ image_data_url }}" alt="User Image" style="height: 50px; width: 50px;">
         </div>  
     </div>
-    <br><br><br>
-    <div class="container">
-        <form id="createForm" method="post" action="/players">
-            <div class="form-group">
-                <label for="player_name_input">Player name:</label>
-                {% if player_name %}    
-                <input type="text" name="player_name" id="player_name_input" value="{{ player_name }}" readonly>
-                {% else %}
-                <input type="text" name="player_name" id="player_name_input" required>
-                {% endif %}
-            </div>
-            <div class="form-group">
-                <label for="sport_input">Sport:</label>
-                {% if player_sport %}
-                <input type="text" name="player_sport" id="sport_input" value="{{ player_sport }}" readonly>
-                {% else %}
-                    <select id="dropdownMenu1" name="player_sport">
-                        <option value="football">Football</option>
-                        <option value="tennis">Tennis</option>
-                        <option value="athletics">Athletics</option>
-                    </select>
-                {% endif %}
-            </div >
-            {% if not is_sports_club %}
-            <div class="form-group">
-                <label for="isIndividualClub">Club or individual:</label>
-                    <select id="dropdownMenu2" name="is_sports_club">
-                        <option value={{1}}>Club</option>
-                        <option value={{0}}>Individual</option>
-                    </select>
-            {% endif %}
-            </div>
-            <div class="form-group">
-                <label for="country">Country (Optional):</label>
-                <input type="text" name="country" id="country_input">
-            </div>
-            <input type="hidden" name="sports_club_id" id="sports_club_id_input" value="{{ sports_club_id if sports_club_id is not none else '' }}">
-            <input type="hidden" name="added_players" id="added_players_input" value="{{ added_players }}">
-            <input type="hidden" name="max_players" id="max_players_input" value="{{ max_players }}">
-            <input type="hidden" name="tournament_id" id="tournament_id_input" value="{{ tournament_id }}">
-            <input type="hidden" name="manual" id="manual" value=1>
-            {% if is_sports_club %}
-            <input type="hidden" name="is_sports_club" id="is_sports_club" value={{ is_sports_club }}>
-            {% endif %}
-            <div class="buttons-container">
-                <button type="submit" class="button">Create Player</button>
+    <div class="outercontainer">
+        <div class="container">
+            <form id="createForm" method="post" action="/players">
+                <div class="form-group">
+                    <label for="player_name_input">Player name:</label>
+                    {% if player_name %}    
+                    <input type="text" name="player_name" id="player_name_input" value="{{ player_name }}" readonly>
+                    {% else %}
+                    <input type="text" name="player_name" id="player_name_input" required>
+                    {% endif %}
                 </div>
-            </form>
-        <div>
-            {% if success ==1 %} 
-            <h4 style="text-align: center;"> Successfully created</h4>
-            {% endif%}
+                <div class="form-group">
+                    <label for="sport_input">Sport:</label>
+                    {% if player_sport %}
+                    <input type="text" name="player_sport" id="sport_input" value="{{ player_sport }}" readonly>
+                    {% else %}
+                        <select id="dropdownMenu1" name="player_sport">
+                            <option value="football">Football</option>
+                            <option value="tennis">Tennis</option>
+                            <option value="athletics">Athletics</option>
+                        </select>
+                    {% endif %}
+                </div >
+                {% if not is_sports_club %}
+                <div class="form-group">
+                    <label for="isIndividualClub">Club or individual:</label>
+                        <select id="dropdownMenu2" name="is_sports_club">
+                            <option value={{1}}>Club</option>
+                            <option value={{0}}>Individual</option>
+                        </select>
+                    </div>
+                {% endif %}
+                <div class="form-group">
+                    <label for="country">Country (Optional):</label>
+                    <input type="text" name="country" id="country_input">
+                </div>
+                <input type="hidden" name="sports_club_id" id="sports_club_id_input" value="{{ sports_club_id if sports_club_id is not none else '' }}">
+                <input type="hidden" name="added_players" id="added_players_input" value="{{ added_players }}">
+                <input type="hidden" name="max_players" id="max_players_input" value="{{ max_players }}">
+                <input type="hidden" name="tournament_id" id="tournament_id_input" value="{{ tournament_id }}">
+                <input type="hidden" name="manual" id="manual" value=1>
+                {% if is_sports_club %}
+                <input type="hidden" name="is_sports_club" id="is_sports_club" value={{ is_sports_club }}>
+                {% endif %}
+                <div class="buttons-container">
+                    <button type="submit" class="button">Create Player</button>
+                </div>
+                </form>
+            <div>
+                {% if success ==1 %} 
+                <h4 style="text-align: center;"> Successfully created</h4>
+                {% endif%}
 
-            {% if success == 0 %} 
-            <h4 style="text-align: center;"> Player already exists</h4>
-            {% endif%}
+                {% if success == 0 %} 
+                <h4 style="text-align: center;"> Player already exists</h4>
+                {% endif%}
+            </div>
+        </div>
     </div>
 </body>
 </html>
