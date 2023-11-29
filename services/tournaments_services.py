@@ -1,5 +1,5 @@
 from data.database import read_query, insert_query, update_query
-from models.tournament import Tournament, MatchesInTournament
+from models.tournament import Tournament, MatchesInTournament, KnockoutTournament
 from models.user import User
 import routers.tournaments as tournaments
 from datetime import date
@@ -26,7 +26,7 @@ def get_tournaments(sport_name: str = None, tournament_name: str = None):
         query = """ With sports as (SELECT * FROM sports WHERE name like ?),
                     tournaments_ids_sports_ids as (SELECT * FROM tournaments_has_sports WHERE sport_id IN (SELECT id FROM sports))
                     SELECT * FROM tournaments
-                    WHERE tournaments.id IN (SELECT tournament_id FROM tournaments_ids_sports_ids) AND tournaments.title like ?
+                    WHERE tournaments.id IN (SELECT tournament_id FROM tournaments_ids_sports_ids) AND tournaments.title like ? AND tournaments.parent_tournament_id is NULL
                     ORDER BY tournaments.title ASC"""
         params.append(f"%{sport_name}%")
         params.append(f"%{tournament_name}%")
@@ -35,7 +35,7 @@ def get_tournaments(sport_name: str = None, tournament_name: str = None):
         query = """ With sports as (SELECT * FROM sports WHERE name like ?),
                     tournaments_ids_sports_ids as (SELECT * FROM tournaments_has_sports WHERE sport_id IN (SELECT id FROM sports))
                     SELECT * FROM tournaments
-                    WHERE tournaments.id IN (SELECT tournament_id FROM tournaments_ids_sports_ids)
+                    WHERE tournaments.id IN (SELECT tournament_id FROM tournaments_ids_sports_ids) AND tournaments.parent_tournament_id is NULL
                     ORDER BY tournaments.title ASC"""
         params.append(f"%{sport_name}%")
 
@@ -43,16 +43,31 @@ def get_tournaments(sport_name: str = None, tournament_name: str = None):
         query = """ With sports as (SELECT * FROM sports),
                     tournaments_ids_sports_ids as (SELECT * FROM tournaments_has_sports WHERE sport_id IN (SELECT id FROM sports))
                     SELECT * FROM tournaments
-                    WHERE tournaments.id IN (SELECT tournament_id FROM tournaments_ids_sports_ids) AND tournaments.title like ?
+                    WHERE tournaments.id IN (SELECT tournament_id FROM tournaments_ids_sports_ids) AND tournaments.title like ? AND tournaments.parent_tournament_id is NULL
                     ORDER BY tournaments.title ASC"""
         params.append(f"%{tournament_name}%")
 
     else:
-        query = """SELECT * FROM tournaments"""
+        query = """SELECT * FROM tournaments WHERE tournaments.parent_tournament_id is NULL"""
 
     tournaments = [
         Tournament.from_query_result(*row) for row in read_query(query, tuple(params))
     ]
+
+    return tournaments
+
+def get_knockout_tournament_by_id(id: int):
+    query = '''WITH RECURSIVE TournamentHierarchy AS (
+            SELECT id, title, parent_tournament_id FROM tournaments WHERE id = ?
+            UNION ALL
+            SELECT t.id, t.title , t.parent_tournament_id
+            FROM tournaments t
+            JOIN TournamentHierarchy h ON t.parent_tournament_id = h.id
+            )
+            SELECT * FROM TournamentHierarchy'''
+    params = (id,)
+
+    tournaments = [KnockoutTournament.from_query(*row) for row in read_query(query, params)]
 
     return tournaments
 

@@ -394,7 +394,7 @@ async def add_players_to_tornament(
             email, name = contact_details[0]
             await send_email.send_email(email, name,
                                 tournament_participation=tournament[1])
-    schema = await ts.generate_schema(tournament_model.id, tournament_model.participants_per_match, tournament_model.format, len(players_lst), player_sport) 
+    schema = ts.generate_schema(tournament_model.id, tournament_model.participants_per_match, tournament_model.format, len(players_lst), player_sport) 
     data = {
         "schema": schema,
         "tournament": tournament_model,
