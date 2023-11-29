@@ -13,12 +13,11 @@ app = FastAPI()
 app.include_router(users_router)
 app.include_router(sports_router)
 app.include_router(tournaments_router)
-# app.include_router(timestamps_router)
 app.include_router(matches_router)
 app.include_router(players_router)
 
 
-templates = Jinja2Templates(directory="templates")
+templates = Jinja2Templates(directory="templates/")
 
 @app.get("/")
 def landing_page(request: Request):
