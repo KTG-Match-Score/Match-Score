@@ -4,7 +4,6 @@ from routers.matches import matches_router
 from fastapi.templating import Jinja2Templates
 from routers.tournaments import tournaments_router
 from routers.sports import sports_router
-# from routers.timestamps import timestamps_router
 from routers.players import players_router
 
 import uvicorn
@@ -13,7 +12,6 @@ app = FastAPI()
 app.include_router(users_router)
 app.include_router(sports_router)
 app.include_router(tournaments_router)
-# app.include_router(timestamps_router)
 app.include_router(matches_router)
 app.include_router(players_router)
 

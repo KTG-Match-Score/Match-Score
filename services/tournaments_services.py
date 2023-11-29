@@ -212,7 +212,7 @@ def generate_schema(t_id: int, participants_per_match: int, format: str, number_
                         8: "Round of 16"}
     schema = {}
     participants = [(part[0]) for part in read_query('SELECT players_id FROM tournaments_has_players WHERE tournaments_id = ?', (t_id, ))]
-    # random.shuffle(participants)
+    random.shuffle(participants)
     
     if participants_per_match == number_of_participants or sport == "athletics":
         schema["Race"] = participants
