@@ -17,15 +17,56 @@
             padding: 0;
             min-height: 100vh;
         }
-        
+
+        #topBar {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center; 
+            padding: 10px;
+            background-color: rgba(0, 0, 0, 0.8); 
+            box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1); 
+        }
+
+        #topBar h1 {
+            text-align: middle;
+            font-size: 25px;
+            color: white;
+            margin: 0;
+        }
+
+        .auth-buttons {
+            display: flex;
+            gap: 10px;
+            margin-right: 50px;
+        }
+
+        .auth-buttons a {
+            text-decoration: none;
+            color: white;
+        }
+
+        .auth-buttons button {
+            background-color: #47095a;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .auth-buttons button:hover {
+            background-color: #45a049;
+        }
+
         .page-container {
             display: flex;
             max-width: 1200px;
-            margin: 0 auto;
+            margin: 30px auto 0; /* Adjusted the top margin */
             padding: 0;
             justify-content: center;
         }
-
 
         .container {
             display: flex;
@@ -41,7 +82,7 @@
             max-width: 400px;
             margin: 0 auto;
         }
-        
+
         .tournaments-container,
         .sports-container,
         .timestamp-container {
@@ -56,7 +97,7 @@
         .right-container {
             width: 40%;
         }
-        
+
         .tournaments-container {
             max-width: 400px;
             width: 100%;
@@ -146,6 +187,7 @@
             max-width: 600px;
             width: 100%;
             display: flex;
+            flex-direction: column;
             flex-wrap: wrap;
             align-items: center;
             justify-content: space-around;
@@ -159,35 +201,7 @@
             z-index: 1;
         }
 
-        .auth-buttons {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-        }
-
-        .auth-buttons a {
-            text-decoration: none;
-            color: white;
-            margin-bottom: 10px;
-            display: block;
-        }
-
-        .auth-buttons button {
-            background-color: #47095a;
-            color: white;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: background-color 0.3s;
-            display: block;
-            margin-top: 10px;
-        }
-
-        .auth-buttons button:hover {
-            background-color: #45a049;
-        }
-        button {
+        .button-common {
             background-color: #47095a;
             color: white;
             padding: 10px 20px;
@@ -197,10 +211,11 @@
             transition: background-color 0.3s, color 0.3s;
         }
 
-        button:hover {
+        .button-common:hover {
             background-color: #45a049;
             color: white;
         }
+
         @keyframes fade-in {
             from {
                 opacity: 0;
@@ -216,8 +231,18 @@
 </head>
 
 <body>
-
-    <h1 style="text-align: center; font-size: 36px; color: white; margin-bottom: 20px;">MatchScore</h1>
+    <div id="topBar">
+        <h1>MatchScore</h1>
+        <div class="auth-buttons">
+            <a href="users/registrationform">
+                <button>Register</button>
+            </a>
+            <a href="users/login">
+                <button>Login</button>
+            </a>
+        </div>
+    </div>
+    <!-- <h1 style="text-align: center; font-size: 36px; color: white; margin-bottom: 20px;">MatchScore</h1> -->
     <div class="page-container">
         <div class="left-container">
             <div id="sports-section" class="container">
@@ -247,15 +272,6 @@
             <div id="results-display-section" class="container">
                 <div id="results-container"></div>
             </div>
-
-    <div class="auth-buttons">
-        <a href="users/registrationform">
-            <button>Register</button>
-        </a>
-        <a href="users/login">
-            <button>Login</button>
-        </a>
-    </div>
 
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script>
@@ -370,7 +386,6 @@
                         var h2 = document.createElement("h2");
                         h2.textContent = tournamentTitle;
 
-                        // Create an unordered list for matches
                         var ul = document.createElement("ul");
                         ul.style.listStyleType = "none";
                         ul.style.padding = "0";
@@ -419,6 +434,7 @@
                             
                             var button = document.createElement("button");
                             button.textContent = "View Match Details";
+                            button.classList.add("button-common");
 
                             function handleButtonHover() {
                                 button.style.backgroundColor = "#45a049";
@@ -482,7 +498,6 @@
             var sportsFlexContainer = document.createElement("ul");
             sportsFlexContainer.classList.add("sports-container");
 
-            // Add "All" sport button
             var allSportItem = document.createElement("li");
             allSportItem.classList.add("sport-item");
 
@@ -490,13 +505,12 @@
             allSportH2.textContent = "All";
 
             allSportH2.addEventListener("click", function () {
-                fetchTournamentsBySport(null);  // Pass null for "All"
+                fetchTournamentsBySport(null);
             });
 
             allSportItem.appendChild(allSportH2);
             sportsFlexContainer.appendChild(allSportItem);
 
-            // Add other sports
             sportsData.forEach(function (sport) {
                 var sportItem = document.createElement("li");
                 sportItem.classList.add("sport-item");
@@ -552,9 +566,15 @@
                         var li = document.createElement("li");
                         li.classList.add("tournament-item");
                         li.textContent = tournament.title;
-
+                        
                         li.onclick = function () {
-                            window.location = `/matches/?tournament_id=${tournament.id}`;
+                            if (tournament.format === "knockout") {
+                                window.location = `/tournaments/knockout/${tournament.id}`;
+                            } else {
+                                window.location = `/matches/?tournament_id=${tournament.id}`;
+                            }
+                        // li.onclick = function () {
+                        //     window.location = `/matches/?tournament_id=${tournament.id}`;
                         };
 
                         ul.appendChild(li);

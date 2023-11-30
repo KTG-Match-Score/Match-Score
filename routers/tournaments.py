@@ -87,6 +87,12 @@ async def show_add_prizes_to_tournament_form(request: Request,
     
     return response
 
+@tournaments_router.get("/knockout/{id}")
+async def view_knockout_tournament(request: Request,
+                                   id: int):
+    tournaments = tournaments_services.get_knockout_tournament_by_id(id)
+
+    return templates.TemplateResponse("return_knockout_tournaments_by_id.html", context={"request": request, "parent_tournament": tournaments[0], "tournaments": tournaments[1:]})
 
 @tournaments_router.get("/{date}", status_code=status.HTTP_200_OK, response_model=list[MatchesInTournament])
 async def view_tournaments_by_date(request: Request,
@@ -94,6 +100,7 @@ async def view_tournaments_by_date(request: Request,
     tournaments_matches = tournaments_services.get_tournaments_by_date(date)
 
     return JSONResponse(content=tournaments_matches)
+
 
 @tournaments_router.post("/create_tournament")
 async def create_tournament(request: Request,
