@@ -10,7 +10,7 @@
             background-color: #888888;
             color: #ffffff;
             font-family: Arial, sans-serif;
-            margin: 10px;
+            margin: 0;
             padding: 0;
             display: flex;
             flex-direction: column;
@@ -112,6 +112,9 @@
     </div>
     <div class="container">
         <h2>Create Tournament</h2>
+        {% if error_message %}
+            <p style="color: red;">{{ error_message }}</p>
+        {% endif %}
         <form action="/tournaments/create_tournament" method="post">
             <label for="title">Tournament Title:</label>
             <input type="text" id="title" name="title" required>
@@ -129,7 +132,7 @@
                 <option value="" disabled selected hidden>Select Format</option>
                 <option value="knockout">Knockout</option>
                 <option value="league">League</option>
-                <option value="league">Single</option>
+                <option value="single">Single</option>
             </select>
 
             <label for="prize_type">Prize Type (Optional):</label>
@@ -140,7 +143,7 @@
                 <img alt="calendar" loading="lazy" decoding="async"
                     src="https://www.livescore.com/ls-web-assets/svgs/common/calendar-62a86ad26c51fe49ea1c6abb202a15b4.svg"
                     style="color: transparent;">
-                <input type="text" id="start_date" name="start_date" placeholder="Select Start Date" required>
+                <input type="text" id="start_date" name="start_date" required>
             </div>
 
             <label for="end_date">End Date:</label>
@@ -148,7 +151,7 @@
                 <img alt="calendar" loading="lazy" decoding="async"
                     src="https://www.livescore.com/ls-web-assets/svgs/common/calendar-62a86ad26c51fe49ea1c6abb202a15b4.svg"
                     style="color: transparent;">
-                <input type="text" id="end_date" name="end_date" placeholder="Select End Date" required>
+                <input type="text" id="end_date" name="end_date" required>
             </div>
 
             <label for="parent_tournament_id">Parent Tournament ID (Optional):</label>
@@ -233,7 +236,7 @@
             dropdown.setAttribute("name", "number_of_participants");
             dropdown.setAttribute("required", "true");
 
-            var options = [2, 8, 16, 32, 64, 128, 256];
+            var options = [2, 4, 8, 16, 32, 64, 128, 256];
             options.forEach(function (option) {
                 var optionElement = document.createElement("option");
                 optionElement.value = option;
