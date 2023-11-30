@@ -169,7 +169,8 @@ async def update_country(country: str, player_id: int):
     if country_exists:
         update_query('''update players set country_code = ? where id = ?''', (country_exists[0][0], player_id))      
        
-        
+async def find_matches_for_Table(tournament_id: int):
+    matches =         
         
 
 

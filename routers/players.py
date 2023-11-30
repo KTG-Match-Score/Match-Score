@@ -877,12 +877,12 @@ async def manage_player_account(
                         value=tokens["refresh_token"], httponly=True)
     return response            
 
-@players_router.get("/standings")
+@players_router.get("/leaguestandings")
 async def show_table(
     request: Request,
     tournament_id:int = Query(...)
 ):
-    tournament
+    tournament = players_services.check_tournament_exists(tournament_id)
     
             
     
