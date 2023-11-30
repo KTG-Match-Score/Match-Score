@@ -57,14 +57,14 @@ def get_tournaments(sport_name: str = None, tournament_name: str = None):
     return tournaments
 
 def get_knockout_tournament_by_id(id: int):
-    query = '''WITH RECURSIVE TournamentHierarchy AS (
-            SELECT id, title, parent_tournament_id FROM tournaments WHERE id = ?
-            UNION ALL
-            SELECT t.id, t.title , t.parent_tournament_id
-            FROM tournaments t
-            JOIN TournamentHierarchy h ON t.parent_tournament_id = h.id
-            )
-            SELECT * FROM TournamentHierarchy'''
+    query = ''' WITH RECURSIVE TournamentHierarchy AS (
+                SELECT id, title, parent_tournament_id FROM tournaments WHERE id = ?
+                UNION ALL
+                SELECT t.id, t.title , t.parent_tournament_id
+                FROM tournaments t
+                JOIN TournamentHierarchy h ON t.parent_tournament_id = h.id
+                )
+                SELECT * FROM TournamentHierarchy'''
     params = (id,)
 
     tournaments = [KnockoutTournament.from_query(*row) for row in read_query(query, params)]
@@ -77,6 +77,7 @@ def get_tournaments_by_date(date: date):
                 SELECT
                     t.id AS tournament_id,
                     t.title AS tournament_title,
+                    t.format AS tournament_format,
                     t.parent_tournament_id,
                     m.id AS match_id,
                     m.format AS match_format,
@@ -99,6 +100,7 @@ def get_tournaments_by_date(date: date):
                 SELECT
                     tp.tournament_id,
                     tp.tournament_title,
+                    tp.tournament_format,
                     tp.match_id,
                     tp.match_format AS format,
                     tp.match_played_on AS played_on,
@@ -123,6 +125,7 @@ def get_tournaments_by_date(date: date):
     for info in matches:
         tournament_id = info.tournament_id
         tournament_title = info.tournament_title
+        tournament_format = info.tournament_format
         match_id = info.match_id
         format = info.format
         played_on = info.played_on
@@ -137,6 +140,7 @@ def get_tournaments_by_date(date: date):
             tournaments[tournament_id] = {
                 "tournament_id": tournament_id,
                 "tournament_title": tournament_title,
+                "tournament_format": tournament_format,
                 "format": format,
                 "matches": {},
             }
