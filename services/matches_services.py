@@ -276,20 +276,25 @@ def add_participants(match: Match, participants: list[Player]):
         match.participants.extend(participants) # if the request is edit_match, the participants list will be already updated
     return match
 
-def create_players_from_names(participants: list[str]) -> list[Player]:
+async def create_players_from_names(participants: list[str], sport: str) -> list[Player]:
     temp_participants = []
     if participants != []:
         for pl in participants:
-            temp_participants.append(next(Player.from_query_with_results(*p) for p in read_query(
-                f'''SELECT
-                p.id, p.full_name, p. profile_picture, p.country_code, is_sports_club, p.sports_club_id,  
-                (SELECT
-                s.name FROM sports s 
-                JOIN players_has_sports phs ON s.id = phs.sport_id 
-                WHERE phs.player_id=p.id) AS sport,
-                mp.result, mp. place
-                FROM players p
-                JOIN matches_has_players mp ON p.id = mp.players_id WHERE p.full_name LIKE "%{pl}%" ''')))
+            data = read_query(
+                f'''SELECT p.id, p.full_name, p. profile_picture, p.country_code, is_sports_club, p.sports_club_id,  
+                    (SELECT
+                    s.name FROM sports s 
+                    JOIN players_has_sports phs ON s.id = phs.sport_id 
+                    WHERE phs.player_id=p.id) AS sport,
+                    mp.result, mp. place
+                    FROM players p
+                    JOIN matches_has_players mp ON p.id = mp.players_id 
+                    JOIN players_has_sports ps ON p.id = ps.player_id 
+                    JOIN sports s ON s.id = ps.sport_id
+                    WHERE p.full_name LIKE "%{pl}%" AND s.name LIKE "%{sport}%" LIMIT 1''')
+            for pr in data:
+                player = Player.from_query_with_results(*pr)
+                temp_participants.append(player)         
 
     return temp_participants
 
@@ -335,6 +340,7 @@ def add_match_result(match: Match, result: dict):
         for k, v in result.items():
             for t, s in v.items():
                 results.append(f"WHEN {t} THEN '{s}'")
+                if k == "draw": k = "3"
                 places.append(f"WHEN {t} THEN '{k}'")  
 
     elif match.format == "score limited":
@@ -479,6 +485,7 @@ def calculate_result_and_get_winner(match: Match, result: dict):
             score[1] = {team2: result[team2]}
             score[2] = {team1: result[team1]}
         else:
+            score = {}
             score["draw"] = {team1: result[team1],
                                 team2: result[team2]} 
 

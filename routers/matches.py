@@ -126,7 +126,6 @@ async def add_result(request: Request, id: int):
         result = ms.convert_result_from_string(await request.json())
 
     except Exception as e:
-        print(str(e))
         return ms.bad_request(request, "Error while converting the score! Review your input")
     
     match = ms.view_single_match(id)
@@ -172,8 +171,8 @@ async def edit_match(
     new_day: Annotated[int, Form(...)],
     new_hour: Annotated[int, Form(...)],
     new_minute: Annotated[int, Form(...)],
-    new_format: Annotated[str, Form(...)], 
-    new_is_individuals: Annotated[bool, Form(...)], 
+    # new_format: Annotated[str, Form(...)], 
+    # new_is_individuals: Annotated[bool, Form(...)], 
     new_location: Annotated[str, Form(pattern="[A-z]{3}")],
     new_participants: Annotated[list, Form(min_length=2)]
     ):
@@ -206,13 +205,19 @@ async def edit_match(
         return ms.bad_request(request, "The time of the match should be within the time of the tournament")
 
     match.played_on = new_date
-    if new_format: match.format = new_format
-    if new_is_individuals: match.is_individuals = new_is_individuals
+    # if new_format: match.format = new_format
+    # if new_is_individuals: match.is_individuals = new_is_individuals
     if new_location: match.location = new_location
     if new_participants:
-        new_participants = ms.create_players_from_names(new_participants)
+        if len(new_participants) != tournament.participants_per_match:
+            return ms.bad_request(request, 
+                                  f"Incorrect number of participants. Should be {tournament.participants_per_match}")
         old_participants = match.participants
-        match.participants = new_participants
+        if (set(new_participants) != set([p.fullname for p in match.participants])):
+            new_participants = await ms.create_players_from_names(new_participants, match.sport)
+            if len(new_participants) < tournament.participants_per_match:
+                return ms.bad_request(request, "Player/s not found!")
+            match.participants = new_participants
     
     result = ms.edit_match_details(match, old_participants)
     if result: return templates.TemplateResponse("view_match.html", 

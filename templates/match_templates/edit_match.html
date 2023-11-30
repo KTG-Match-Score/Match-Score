@@ -131,21 +131,21 @@
             <label for="new_minute">minutes</label>  
             <input type="datetime" name="new_minute" id="new_minute" value="{{match.played_on.minute}}"><br>
             
-            <label for="new_format">Edit format</label>
+            <!-- <label for="new_format">Edit format</label>
             <select name="new_format" id="new_format" value="{{ match.format }}">
                 <option value="time limited">Time limited</option>
                 <option value="score limited">Score limited</option>
                 <option value="first finisher">First finisher</option>
-            </select>
+            </select> -->
             
             <label for="new_location">Edit location</label>
             <input type="text" id="new_location" name="new_location" value="{{ match.location }}" required>
             
-            <label for="new_is_individuals">Individuals/Team:</label>
+            <!-- <label for="new_is_individuals">Individuals/Team:</label>
             <select name="new_is_individuals" id="new_is_individuals" value="{{ match.is_individuals }}" >
                 <option value="false">Team</option>
                 <option value="true">Individuals</option>
-            </select>
+            </select> -->
 
             <div id="participantsSection">
                 <h4>Add/remove players:</h4>
