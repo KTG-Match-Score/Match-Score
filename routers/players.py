@@ -410,7 +410,7 @@ async def add_players_to_tornament(
                             value=tokens["refresh_token"], httponly=True)
         return response
         
-    response = RedirectResponse(url = f"matches/?tournament_id={tournament_model.id}", status_code=303)
+    response = RedirectResponse(url = f"/matches/?tournament_id={tournament_model.id}", status_code=303)
     response.set_cookie(key="access_token",
                         value=tokens["access_token"], httponly=True)
     response.set_cookie(key="refresh_token",

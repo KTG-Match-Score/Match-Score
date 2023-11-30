@@ -92,7 +92,7 @@ async def view_knockout_tournament(request: Request,
                                    id: int):
     tournaments = tournaments_services.get_knockout_tournament_by_id(id)
 
-    return templates.TemplateResponse("return_knockout_tournaments_by_id.html", context={"request": request, "parent_tournament": tournaments[0], "tournaments": tournaments[1:]})
+    return templates.TemplateResponse("return_knockout_tournaments_by_id.html", context={"request": request, "parent_tournament": tournaments[0], "tournaments": tournaments})
 
 @tournaments_router.get("/{date}", status_code=status.HTTP_200_OK, response_model=list[MatchesInTournament])
 async def view_tournaments_by_date(request: Request,
@@ -107,13 +107,14 @@ async def create_tournament(request: Request,
                             title: str = Form(),
                             format: str = Form(pattern="^(knockout|league|single)$"),
                             prize_type: str = Form(None),
-                            start_date: datetime = Form(),
-                            end_date: datetime = Form(),
+                            start_date: Optional[datetime] = Form(None),
+                            end_date: Optional[datetime] = Form(None),
                             parent_tournament_id: Optional[int] = Form(None),
                             participants_per_match: int = Form(min=2),
                             is_individuals: bool = Form(),
                             number_of_participants: int = Form(min=2),
                             sport_name: str = Form(min_length=3, max_length=60)):
+
 
     access_token = request.cookies.get("access_token")
     refresh_token = request.cookies.get("refresh_token")
@@ -130,6 +131,34 @@ async def create_tournament(request: Request,
     if user.role != "director" and user.role != "admin":
         return RedirectResponse(url='/users/dashboard', status_code=303)
     
+    error_message = ""
+
+    if start_date == None:
+        error_message += "Select a Start Date!"
+    if end_date == None:
+        if error_message != "":
+            error_message += "\n"
+        error_message += "Select an End Date!"
+    
+    if participants_per_match > number_of_participants:
+        if error_message != "":
+            error_message += "\n"
+        error_message += "Number of participants, should be more than the participants per match!"
+
+    if error_message != "":
+        mime_type = "image/jpg"
+        base64_encoded_data = base64.b64encode(user.picture).decode('utf-8')
+        image_data_url = f"data:{mime_type};base64,{base64_encoded_data}" 
+
+        response = templates.TemplateResponse("create_tournament_form.html", context={"request": request, "error_message": error_message, "name": user.fullname, "image_data_url": image_data_url})
+
+        response.set_cookie(key="access_token",
+                            value=tokens["access_token"], httponly=True)
+        response.set_cookie(key="refresh_token",
+                            value=tokens["refresh_token"], httponly=True)
+        return response 
+
+
     new_tournament = Tournament(title=title,
                                 format=format,
                                 prize_type=prize_type,
