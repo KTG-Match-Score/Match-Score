@@ -143,7 +143,11 @@ async def create_tournament(request: Request,
     if participants_per_match > number_of_participants:
         if error_message != "":
             error_message += "\n"
-        error_message += "Number of participants, should be more than the participants per match!"
+        error_message += "Number of Participants, should be more than the Participants per Match!"
+    elif format == "single" and participants_per_match != number_of_participants:
+        if error_message != "":
+            error_message += "\n"
+        error_message += "In Single Format, Participants per Match should be equal to Number of Participants!"
 
     if error_message != "":
         mime_type = "image/jpg"
