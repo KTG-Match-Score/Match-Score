@@ -105,7 +105,7 @@ async def view_tournaments_by_date(request: Request,
 @tournaments_router.post("/create_tournament")
 async def create_tournament(request: Request,
                             title: str = Form(),
-                            format: str = Form(pattern="^(knockout|league)$"),
+                            format: str = Form(pattern="^(knockout|league|single)$"),
                             prize_type: str = Form(None),
                             start_date: datetime = Form(),
                             end_date: datetime = Form(),
