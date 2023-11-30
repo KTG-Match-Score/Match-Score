@@ -17,6 +17,8 @@ from models.tournament import Tournament
 from models.player import Player
 import services.tournaments_services as ts
 import services.matches_services as ms
+from datetime import datetime
+from pydantic import BaseModel
 
 
 players_router = APIRouter(prefix='/players')
@@ -877,12 +879,94 @@ async def manage_player_account(
                         value=tokens["refresh_token"], httponly=True)
     return response            
 
-@players_router.get("/leaguestandings")
+@players_router.get("/standings")
 async def show_table(
     request: Request,
     tournament_id:int = Query(...)
 ):
-    tournament = players_services.check_tournament_exists(tournament_id)
+    sorted_table, success = await players_services.generate_standings(tournament_id)
+    
+    return templates.TemplateResponse("show_standings.html", context={
+        "request": request,
+        "table": sorted_table,
+        "success": success  
+    })
+    
+@players_router.get("/statistics")
+async def show_table(
+    request: Request,
+    player_id:int = Query(...)
+):
+    player_from_db = players_services.find_player_with_sport(player_id)
+    
+    class PlayerStats(BaseModel):
+        tournaments_played: Optional[int] = 0
+        tournaments_won: Optional[int] = 0
+        tournaments_won_names: Optional[list[str]] = []
+        tournaments_second_place: Optional[int] = 0
+        tournaments_second_place_names: Optional[list[str]] = []
+        tournaments_third_place: Optional[int] = 0
+        tournaments_third_place_names: Optional[list[str]] = []
+        
+        @classmethod
+        def create_instance (
+            cls, 
+            tournaments_played, 
+            tournaments_won,
+            tournamentstournaments_won_names,
+            tournaments_second_place,
+            tournaments_second_place_names,
+            tournaments_third_place,
+            tournaments_third_place_names
+            ):
+            return cls(
+                tournaments_played = tournaments_played, 
+                tournaments_won = tournaments_won,
+                tournamentstournaments_won_names = tournamentstournaments_won_names,
+                tournaments_second_place = tournaments_second_place,
+                tournaments_second_place_names = tournaments_second_place_names,
+                tournaments_third_place = tournaments_third_place,
+                tournaments_third_place_names = tournaments_third_place_names
+            )
+        
+    
+    if player_from_db:
+        player = Player.from_query(*player_from_db)
+        total_stats = []
+        current_year_stats = []
+        current_year = datetime.utcnow().year
+        tournaments_played_all = players_services.find_tournaments_played(player_id)
+        total_stats.append(len(tournaments_played_all))
+        tournaments_player_current_year = players_services.find_tournaments_played_current_year(player_id, datetime.utcnow().year)
+        current_year_stats.append(len(tournaments_player_current_year))
+        first_place_all =[]
+        second_place_all = []
+        third_place_all = []
+        for tournament in tournaments_played_all:
+            id, title, format = tournament
+            if format == "league":
+                standings = players_services.generate_standings(id)
+                if player.id == standings[0][0]:
+                    first_place_all.append(title) 
+                if player.id == standings[1][0]:
+                    second_place_all.append(title) 
+                if player.id == standings[2][0]:
+                    third_place_all.append(title) 
+            total_stats.extend([len(first_place_all), first_place_all, len(second_place_all), second_place_all, len(third_place_all), third_place_all])
+            if format == "knockout":
+                pass
+            if format == "single":
+                pass
+    else:
+        statistics = None
+        success = "No such player"
+    
+    return templates.TemplateResponse("show_statistics.html", context={
+        "request": request,
+        "statistics": statistics,
+        "success": success  
+    })        
+                
     
             
     

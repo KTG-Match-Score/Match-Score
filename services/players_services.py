@@ -3,6 +3,8 @@ import common.picture_handler as ph
 from models.player import Player
 import base64
 from fastapi import UploadFile
+from common.league_points import points_dict as league_points
+from datetime import datetime
 
 async def register_player(fullname:str, sport:str, is_sports_club:int, sports_club_id:int=None, country:str=None):    
     existing_players = read_query('''select pl.full_name, is_sports_club  
@@ -169,9 +171,127 @@ async def update_country(country: str, player_id: int):
     if country_exists:
         update_query('''update players set country_code = ? where id = ?''', (country_exists[0][0], player_id))      
        
-async def find_matches_for_Table(tournament_id: int):
-    matches =         
-        
+async def find_matches_for_table(tournament_id: int):
+    played_matches = read_query('''select p.id, p.profile_picture, p.full_name, mp.result, mp1.result, mp.place
+                                from matches_has_players mp
+                                join players p on p.id = mp.players_id
+                                join matches m on mp.matches_id = m.id
+                                join tournaments t on m.tournament_id = t.id
+                                join matches_has_players mp1 on (mp1.matches_id = mp.matches_id and mp1.players_id != mp.players_id) 
+                                where t.id = ? and mp.place !=?''',(tournament_id, 0))   
+    if played_matches:
+        return played_matches
+    return   
 
+async def find_single(tournament_id: int):
+    played_matches = read_query('''select p.id, p.profile_picture, p.full_name, mp.result, mp.place
+                                from matches_has_players mp
+                                join players p on p.id = mp.players_id
+                                join matches m on mp.matches_id = m.id
+                                join tournaments t on m.tournament_id = t.id 
+                                where t.id = ? and mp.place !=?''',(tournament_id, 0))   
+    if played_matches:
+        return played_matches
+    return   
+async def check_tournament_exists_with_sport(tournament_id: int):
+    tournament = read_query('''select t.format, s.name 
+                            from tournaments t
+                            join tournaments_has_sports ts on t.id = ts.tournament_id
+                            join sports s on s.id = ts.sport_id
+                            where id = ?''', (tournament_id,))
+    if tournament:
+        return tournament[0]
+    return
 
+async def find_player_with_sport(player_id: int):
+    player = read_query('''select p.id, p.full_name, p.profile_picture, p.country_code, p.is_sports_club, p.sports_club_id, s.name
+                        from players p
+                        join players_has_sports ps on p.id = ps.player_id
+                        join sports s on s.id = ps.sport_id
+                        where p.id = ? and p.inactivated !=?''',
+                        (player_id, 1))       
+    if player:
+        return player[0]
+    return
+
+async def generate_standings(tournament_id: int):
+    tournament = await check_tournament_exists_with_sport(tournament_id)
+    if tournament[0] == 'league' and tournament[1] == "football": 
+        matches = await find_matches_for_table(tournament_id)
+        if matches:
+            success = None
+            table = []
+            player_added = []
+            for item in matches:
+                id, blob, name, goals_for, goals_against, place = item
+                goal_difference = int(goals_for) - int(goals_against)
+                player_added.append(id)
+                player_lst = []
+                mime_type = "image/jpg"
+                base64_encoded_data = base64.b64encode(blob).decode('utf-8')
+                picture = f"data:{mime_type};base64,{base64_encoded_data}" 
+                points = league_points.get(place)
+                matches_played = 1
+                if id not in player_added:
+                    player_lst = [id, picture, name, matches_played, int(goals_for), int(goals_against), goal_difference, points]
+                    table.append(player_lst)
+                else:
+                    player_lst = [lst for lst in table if lst[0] == id][0]
+                    table.remove(player_lst)
+                    player_lst[3] +=1
+                    player_lst[4] += int(goals_for)
+                    player_lst[5] += int(goals_against)
+                    player_lst[6] += goal_difference
+                    player_lst[7] += points
+                    table.append(player_lst) 
+            sorted_table = sorted(table, key= lambda x: x[4], reverse = True)
+            sorted_table = sorted(table, key= lambda x: x[6], reverse = True)        
+            sorted_table = sorted(table, key= lambda x: x[7], reverse = True)
+            for i in range(len(sorted_table)):
+                place = sorted_table.pop(i)
+                place.insert(i+1,1)
+                sorted_table.insert(i, place)   
+        else:
+            sorted_table = None
+            success = "No matches have been played yet for this tournament!"
     
+    elif tournament[2] == 'single': 
+        table = await find_single(tournament_id)
+        if table:
+            sucess = None
+            sorted_table = sorted(table, key= lambda x: x[4])
+            for i in range(len(sorted_table)):
+                place = sorted_table.pop(i)
+                place[0] = i+1
+                sorted_table.insert(i, place) 
+        else:
+            sorted_table = None
+            success = "The event has not taken place yet."
+    else:
+        sorted_table = None
+        success = "No standings for this tournament are available"
+    return sorted_table, success
+
+async def find_tournaments_played(player_id: int):
+    time = datetime.utcnow().replace(microsecond=0)
+    tournaments = read_query('''select t.id, t.title, t.fromat
+                        from tournaments t
+                        join tournaments_has_players tp on t.id = tp.tournaments_id
+                        join players p on p.id = tp.players_id
+                        where p.id = ? and t.end_date <=?''',
+                        (player_id, time))       
+    if tournaments:
+        return tournaments
+    return
+
+async def find_tournaments_played_current_year(player_id: int, year: int):
+    time = datetime.utcnow().replace(microsecond=0)
+    tournaments = read_query('''select t.id, t.title, t.fromat
+                        from tournaments t
+                        join tournaments_has_players tp on t.id = tp.tournaments_id
+                        join players p on p.id = tp.players_id
+                        where p.id = ? and t.end_date <=? and year(t.end_date) = ?''',
+                        (player_id, time, year))       
+    if tournaments:
+        return tournaments
+    return
