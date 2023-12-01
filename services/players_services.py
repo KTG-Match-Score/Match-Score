@@ -274,7 +274,7 @@ async def generate_standings(tournament_id: int):
 
 async def find_tournaments_played(player_id: int):
     time = datetime.utcnow().replace(microsecond=0)
-    tournaments = read_query('''select t.id, t.title, t.fromat
+    tournaments = read_query('''select t.id, t.title, t.fromat, t.child_id
                         from tournaments t
                         join tournaments_has_players tp on t.id = tp.tournaments_id
                         join players p on p.id = tp.players_id
@@ -284,14 +284,90 @@ async def find_tournaments_played(player_id: int):
         return tournaments
     return
 
-async def find_tournaments_played_current_year(player_id: int, year: int):
-    time = datetime.utcnow().replace(microsecond=0)
-    tournaments = read_query('''select t.id, t.title, t.fromat
-                        from tournaments t
-                        join tournaments_has_players tp on t.id = tp.tournaments_id
-                        join players p on p.id = tp.players_id
-                        where p.id = ? and t.end_date <=? and year(t.end_date) = ?''',
-                        (player_id, time, year))       
-    if tournaments:
-        return tournaments
-    return
+
+async def find_finals(tournament_id: int):
+    played_matches = read_query('''select m.id, p.id, mp.place, t.title
+                                from matches_has_players mp
+                                join players p on p.id = mp.players_id
+                                join matches m on mp.matches_id = m.id
+                                join tournaments t on m.tournament_id = t.id 
+                                where t.id = ?
+                                order by m.id asc''', 
+                                (tournament_id,))   
+    if played_matches:
+        return played_matches
+    return  
+
+async def find_single_place(tournament_id: int, player_id):
+    place = read_query('''select mp.place, t.title
+                                from matches_has_players mp
+                                join players p on p.id = mp.players_id
+                                join matches m on mp.matches_id = m.id
+                                join tournaments t on m.tournament_id = t.id 
+                                where t.id = ? and p.id = ? and (mp.result = 1 or mp.result = 2 or mp.result = 3)''', 
+                                (tournament_id, player_id))   
+    if place:
+        return place[0]
+    return 
+
+async def find_matches(player_id: int):
+    best_opponent= read_query('''
+                      select p1.full_name, count(m.id) as total_matches, 
+                      (select count(mp2.matches_id) from matches_has_players mp2 where mp2.players_id = p.id and mp2.place =1)/count(m.id) as win_ratio
+                      from matches_has_players mp
+                      join players p on p.id = mp.players_id
+                      join matches m on mp.matches_id = m.id
+                      join matches_has_players mp1 on mp1.matches_id = m.id and mp1.players_id != ?
+                      join players p1 on p1.id = mp1.players_id
+                      join tournaments t on m.tournament_id = t.id
+                      where p.id = ? and t.format != ?
+                      group by p1.full_name
+                      having win_ratio = (select max(sub.win_ratio) 
+                      from (SELECT 
+                        (select count(mp2.matches_id) FROM matches_has_players mp2 WHERE mp2.players_id = p.id AND mp2.place = 1) / COUNT(m.id) AS win_ratio
+                        from matches_has_players mp
+                        join players p on p.id = mp.players_id
+                        join matches m on mp.matches_id = m.id
+                        join matches_has_players mp1 on mp1.matches_id = m.id and mp1.players_id != ?
+                        join players p1 on p1.id = mp1.players_id
+                        join tournaments t on m.tournament_id = t.id
+                        WHERE p.id = ? and t.format != ?
+                        GROUP BY p1.full_name
+                        ) sub)''',
+                      (player_id, player_id, "single", player_id, player_id, "single"))
+    worst_opponent = read_query('''
+                      select p1.full_name, count(m.id) as total_matches,  
+                      (select count(mp2.matches_id) from matches_has_players mp2 where mp2.players_id = p.id and mp2.place =2)/count(m.id) as loss_ratio
+                      from matches_has_players mp
+                      join players p on p.id = mp.players_id
+                      join matches m on mp.matches_id = m.id
+                      join matches_has_players mp1 on mp1.matches_id = m.id and mp1.players_id != ?
+                      join players p1 on p1.id = mp1.players_id
+                      join tournaments t on m.tournament_id = t.id
+                      where p.id = ? and t.format != ?
+                      group by p1.full_name
+                      having win_ratio = (select max(sub.win_ratio) 
+                      from (SELECT 
+                        (select count(mp2.matches_id) FROM matches_has_players mp2 WHERE mp2.players_id = p.id AND mp2.place = 2) / COUNT(m.id) AS win_ratio
+                        from matches_has_players mp
+                        join players p on p.id = mp.players_id
+                        join matches m on mp.matches_id = m.id
+                        join matches_has_players mp1 on mp1.matches_id = m.id and mp1.players_id != ?
+                        join players p1 on p1.id = mp1.players_id
+                        join tournaments t on m.tournament_id = t.id
+                        WHERE p.id = ? and t.format != ?
+                        GROUP BY p1.full_name
+                        ) sub)''',
+                      (player_id, player_id, "single", player_id, player_id, "single"))
+    total_matches = read_query(read_query('''
+                      select count(m.id) as total_matches, 
+                      (select count(mp1.matches_id) from matches_has_players mp1 where mp1.players_id = p.id and mp1.place =1)/count(m.id) as win_ratio, 
+                      (select count(mp1.matches_id) from matches_has_players mp1 where mp1.players_id = p.id and mp2.place =2)/count(m.id) as loss_ratio
+                      from matches_has_players mp
+                      join players p on p.id = mp.players_id
+                      join matches m on mp.matches_id = m.id
+                      where p.id = ?'''
+                      (player_id, )))
+    if total_matches == []:
+        return
+    return total_matches[0], next(iter(best_opponent), None), next(iter(worst_opponent, None))

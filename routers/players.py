@@ -906,7 +906,10 @@ async def show_table(
         tournaments_second_place: Optional[int] = 0
         tournaments_second_place_names: Optional[list[str]] = []
         tournaments_third_place: Optional[int] = 0
-        tournaments_third_place_names: Optional[list[str]] = []
+        tournaments_third_place_names: Optional[list[str]] = [],
+        total_matches: Optional[list] = [],
+        best_opponent: Optional[list] = [],
+        worst_opponent: Optional[list] = []
         
         @classmethod
         def create_instance (
@@ -917,7 +920,11 @@ async def show_table(
             tournaments_second_place,
             tournaments_second_place_names,
             tournaments_third_place,
-            tournaments_third_place_names
+            tournaments_third_place_names,
+            total_matches,
+            best_opponent,
+            worst_opponent
+            
             ):
             return cls(
                 tournaments_played = tournaments_played, 
@@ -926,24 +933,23 @@ async def show_table(
                 tournaments_second_place = tournaments_second_place,
                 tournaments_second_place_names = tournaments_second_place_names,
                 tournaments_third_place = tournaments_third_place,
-                tournaments_third_place_names = tournaments_third_place_names
+                tournaments_third_place_names = tournaments_third_place_names,
+                total_matches = total_matches,
+                best_opponent = best_opponent,
+                worst_opponent = worst_opponent
             )
         
     
     if player_from_db:
         player = Player.from_query(*player_from_db)
         total_stats = []
-        current_year_stats = []
-        current_year = datetime.utcnow().year
-        tournaments_played_all = players_services.find_tournaments_played(player_id)
+        tournaments_played_all = await players_services.find_tournaments_played(player_id)
         total_stats.append(len(tournaments_played_all))
-        tournaments_player_current_year = players_services.find_tournaments_played_current_year(player_id, datetime.utcnow().year)
-        current_year_stats.append(len(tournaments_player_current_year))
         first_place_all =[]
         second_place_all = []
         third_place_all = []
         for tournament in tournaments_played_all:
-            id, title, format = tournament
+            id, title, format, child_id = tournament
             if format == "league":
                 standings = players_services.generate_standings(id)
                 if player.id == standings[0][0]:
@@ -952,11 +958,46 @@ async def show_table(
                     second_place_all.append(title) 
                 if player.id == standings[2][0]:
                     third_place_all.append(title) 
-            total_stats.extend([len(first_place_all), first_place_all, len(second_place_all), second_place_all, len(third_place_all), third_place_all])
+           
             if format == "knockout":
-                pass
+                if child_id is not None:
+                    continue
+                else:
+                    matches = await players_services.find_finals(id)
+                    if not matches:
+                        continue
+                    else:
+                        for i in range(len(matches)):
+                            if matches[i][1] == player_id:
+                                title_suffix = matches[i][3].split()
+                                title = ' '.join(title_suffix[:-1])
+                                if i == 0 or i == 1: 
+                                    if matches[i][2] == 1:
+                                        first_place_all.append(title)
+                                    if matches [i][2] == 2:
+                                        second_place_all.append(title)
+                                if i == 2 or i == 3:
+                                    if matches[i][2] == 0 or matches[i][2] == 1:
+                                        third_place_all.append(title)                           
+                                        
             if format == "single":
-                pass
+                items = await players_services.find_single_place(id, player.id)
+                if not items:
+                    continue
+                else:
+                    place, title = items
+                    if place == 1:
+                        first_place_all.append(title)
+                    if place == 2:
+                        second_place_all.append(title)
+                    if place == 3:
+                        third_place_all.append(title)            
+        total_stats.extend([len(first_place_all), first_place_all, len(second_place_all), second_place_all, len(third_place_all), third_place_all])
+        total_matches, best_oponent, worst_oponent = await players_services.find_matches(player_id)
+        total_stats.append(total_matches)
+        total_stats.append(best_oponent)
+        total_stats.append(worst_oponent)
+        statistics = PlayerStats.create_instance(*total_stats)
     else:
         statistics = None
         success = "No such player"
