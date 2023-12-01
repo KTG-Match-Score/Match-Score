@@ -538,3 +538,17 @@ def match_format_from_tournament_sport(f: str):
         case "football": return "time limited"
         case "athletics": return "first finisher"
         case "tennis": return "score limited"
+
+
+async def check_user_token(access_token, refresh_token):
+    tokens = {"access_token": access_token, "refresh_token": refresh_token}
+    try:
+        user = await auth.get_current_user(access_token)
+    except:
+        try:
+            user = await auth.refresh_access_token(access_token, refresh_token)
+            tokens = auth.token_response(user)
+        except:
+            RedirectResponse(url='/', status_code=303)
+
+    return user

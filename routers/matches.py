@@ -1,6 +1,7 @@
+import base64
 from datetime import datetime
 from fastapi import APIRouter, Body, Depends, Form, HTTPException, Header, Path, Query, Request, status
-from fastapi.responses import RedirectResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.templating import Jinja2Templates
 from models.match import Match
@@ -44,20 +45,19 @@ async def edit_match_redirect(id: int, request: Request):
 
     if not match: return ms.not_found(request)
     
-    access_token = request.cookies.get("access_token")
-    refresh_token = request.cookies.get("refresh_token")
-    tokens = {"access_token": access_token, "refresh_token": refresh_token}
-    try:
-        user = await auth.get_current_user(access_token)
-    except:
-        try:
-            user = await auth.refresh_access_token(access_token, refresh_token)
-            tokens = auth.token_response(user)
-        except:
-            RedirectResponse(url='/', status_code=303)
+    user = await ms.check_user_token(request.cookies.get("access_token"), 
+                                     request.cookies.get("refresh_token"))
+
+    mime_type = "image/jpg"
+    base64_encoded_data = base64.b64encode(user.picture).decode('utf-8')
+    image_data_url = f"data:{mime_type};base64,{base64_encoded_data}"
 
     return templates.TemplateResponse("edit_match.html", 
-                                     {"request": request, "id": id, "match": match, "user": user},
+                                     {"request": request, 
+                                      "id": id, 
+                                      "match": match, 
+                                      "user": user,
+                                      "image_data_url": image_data_url},
                                      status_code=status.HTTP_303_SEE_OTHER)
 
 
@@ -68,68 +68,65 @@ async def view_match_by_id(id: int, request: Request):
 
     if not match: return ms.not_found(request)
 
-    access_token = request.cookies.get("access_token")
-    refresh_token = request.cookies.get("refresh_token")
-    tokens = {"access_token": access_token, "refresh_token": refresh_token}
-    try:
-        user = await auth.get_current_user(access_token)
-    except:
-        try:
-            user = await auth.refresh_access_token(access_token, refresh_token)
-            tokens = auth.token_response(user)
-        except:
-            RedirectResponse(url='/', status_code=303)
+    user = await ms.check_user_token(request.cookies.get("access_token"), 
+                                     request.cookies.get("refresh_token"))
 
-    return templates.TemplateResponse("view_match.html", {"request": request, "match": match, "user": user})
+    mime_type = "image/jpg"
+    base64_encoded_data = base64.b64encode(user.picture).decode('utf-8')
+    image_data_url = f"data:{mime_type};base64,{base64_encoded_data}"
+
+    return templates.TemplateResponse("view_match.html", {"request": request, 
+                                                          "match": match, 
+                                                          "user": user,
+                                                          "image_data_url": image_data_url})
 
 
-@matches_router.get("/match/result/{id}", tags=["Matches redirect"])
+@matches_router.get("/match-result/{id}", tags=["Matches redirect"])
 async def add_result_redirect(id: int, request: Request):
     """ requires login after redirection """
     match = ms.view_single_match(id)
 
     if not match: return ms.not_found(request)
     
-    access_token = request.cookies.get("access_token")
-    refresh_token = request.cookies.get("refresh_token")
-    tokens = {"access_token": access_token, "refresh_token": refresh_token}
-    try:
-        user = await auth.get_current_user(access_token)
-    except:
-        try:
-            user = await auth.refresh_access_token(access_token, refresh_token)
-            tokens = auth.token_response(user)
-        except:
-            RedirectResponse(url='/', status_code=303)
+    user = await ms.check_user_token(request.cookies.get("access_token"), 
+                                     request.cookies.get("refresh_token"))
+
+    mime_type = "image/jpg"
+    base64_encoded_data = base64.b64encode(user.picture).decode('utf-8')
+    image_data_url = f"data:{mime_type};base64,{base64_encoded_data}"
 
     return templates.TemplateResponse("add_result_form.html", 
-                                     {"request": request, "id": id, "match": match, "user": user},
+                                     {"request": request, 
+                                      "id": id, 
+                                      "match": match, 
+                                      "user": user,
+                                      "image_data_url": image_data_url,},
                                      status_code=status.HTTP_303_SEE_OTHER)
 
 
-@matches_router.post("/match/result/{id}", tags=["Matches"])
+@matches_router.post("/result/{id}", tags=["Matches"])
 async def add_result(request: Request, id: int):
     """update the result, update the places of the participants"""
-    access_token = request.cookies.get("access_token")
-    refresh_token = request.cookies.get("refresh_token")
-    tokens = {"access_token": access_token, "refresh_token": refresh_token}
-    try:
-        user = await auth.get_current_user(access_token)
-    except:
-        try:
-            user = await auth.refresh_access_token(access_token, refresh_token)
-            tokens = auth.token_response(user)
-        except:
-            RedirectResponse(url='/', status_code=303)
+    user = await ms.check_user_token(request.cookies.get("access_token"), 
+                                     request.cookies.get("refresh_token"))
+    
+    # check if user is the owner of the tournament
+
+    if user.role != "director" and user.role != "admin":
+        return RedirectResponse(url='/users/dashboard', status_code=303)
+
+    match = ms.view_single_match(id)
+    tournament = await ms.get_tournament_by_id(match.tournament_id)
+    
 
     try:
         result = ms.convert_result_from_string(await request.json())
-
-    except Exception as e:
+        values = [x for x in result.values() if x != '']
+        if len(result) != len(values):
+            raise UserWarning
+    except UserWarning as e:
         return ms.bad_request(request, "Error while converting the score! Review your input")
     
-    match = ms.view_single_match(id)
-
     if not match: return ms.not_found(request)
     if match.played_on < datetime.utcnow() and match.finished == "not finished":
         ms.change_match_to_finished(match)
@@ -138,29 +135,20 @@ async def add_result(request: Request, id: int):
     
     try:
         new_result = ms.calculate_result_and_get_winner(match, result)
-    except:
+    except Exception as e:
         return ms.bad_request(request, "Error while calculating the score! Review your input")
     
     match = ms.add_match_result(match, new_result)
     match.has_result = True # added for a check in the view_match.html
 
-    tournament = await ms.get_tournament_by_id(match.tournament_id)
     if tournament.format == "knockout":
         try:
             await ms.assign_to_next_match(match, new_result)
         except Exception as e:
             return ms.bad_request(request, str(e))
     
-    # return templates.TemplateResponse("view_match.html", 
-    #                                  {"request": request, "match": match, "user": user},
-    #                                  status_code=status.HTTP_202_ACCEPTED)
-    template = Jinja2Templates(directory="/")
-    response = RedirectResponse(url = f"matches/match/{match.id}", status_code=303)
-    response.set_cookie(key="access_token",
-                        value=tokens["access_token"], httponly=True)
-    response.set_cookie(key="refresh_token",
-                        value=tokens["refresh_token"], httponly=True)
-    return response 
+    return JSONResponse("Result added", status_code=status.HTTP_202_ACCEPTED)
+
 
 @matches_router.post("/edit/{id}", tags=["Matches"])
 async def edit_match(
@@ -171,8 +159,6 @@ async def edit_match(
     new_day: Annotated[int, Form(...)],
     new_hour: Annotated[int, Form(...)],
     new_minute: Annotated[int, Form(...)],
-    # new_format: Annotated[str, Form(...)], 
-    # new_is_individuals: Annotated[bool, Form(...)], 
     new_location: Annotated[str, Form(pattern="[A-z]{3}")],
     new_participants: Annotated[list, Form(min_length=2)]
     ):
@@ -180,17 +166,8 @@ async def edit_match(
     requires login and director/admin rights
     change match time, change match format, change location
     update the list of participants"""
-    access_token = request.cookies.get("access_token")
-    refresh_token = request.cookies.get("refresh_token")
-    tokens = {"access_token": access_token, "refresh_token": refresh_token}
-    try:
-        user = await auth.get_current_user(access_token)
-    except:
-        try:
-            user = await auth.refresh_access_token(access_token, refresh_token)
-            tokens = auth.token_response(user)
-        except:
-            RedirectResponse(url='/', status_code=303)
+    user = await ms.check_user_token(request.cookies.get("access_token"), 
+                                     request.cookies.get("refresh_token"))
 
     if user.role != "director" and user.role != "admin":
         return RedirectResponse(url='/users/dashboard', status_code=303)
@@ -205,8 +182,6 @@ async def edit_match(
         return ms.bad_request(request, "The time of the match should be within the time of the tournament")
 
     match.played_on = new_date
-    # if new_format: match.format = new_format
-    # if new_is_individuals: match.is_individuals = new_is_individuals
     if new_location: match.location = new_location
     if new_participants:
         if len(new_participants) != tournament.participants_per_match:
