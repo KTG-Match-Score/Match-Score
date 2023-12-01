@@ -52,13 +52,24 @@ async def edit_match_redirect(id: int, request: Request):
     base64_encoded_data = base64.b64encode(user.picture).decode('utf-8')
     image_data_url = f"data:{mime_type};base64,{base64_encoded_data}"
 
-    return templates.TemplateResponse("edit_match.html", 
-                                     {"request": request, 
-                                      "id": id, 
-                                      "match": match, 
-                                      "user": user,
-                                      "image_data_url": image_data_url},
-                                     status_code=status.HTTP_303_SEE_OTHER)
+    is_owner: bool = ms.check_if_user_is_tournament_owner(user.id, match.tournament_id)
+
+    if (user.role == "director") or (user.role == "admin"):
+        if (user.role == "director" and is_owner) or user.role == "admin":
+            return templates.TemplateResponse("edit_match.html", 
+                                        {"request": request, 
+                                        "id": id, 
+                                        "match": match, 
+                                        "user": user,
+                                        "image_data_url": image_data_url},
+                                        status_code=status.HTTP_303_SEE_OTHER)
+    return templates.TemplateResponse("return_not_authorised.html", 
+                                        {"request": request, 
+                                        "id": id, 
+                                        "match": match, 
+                                        "user": user,
+                                        "image_data_url": image_data_url,},
+                                        status_code=status.HTTP_401_UNAUTHORIZED)
 
 
 @matches_router.get("/match/{id}", tags=["Matches"])
@@ -74,12 +85,13 @@ async def view_match_by_id(id: int, request: Request):
     mime_type = "image/jpg"
     base64_encoded_data = base64.b64encode(user.picture).decode('utf-8')
     image_data_url = f"data:{mime_type};base64,{base64_encoded_data}"
+    is_owner: bool = ms.check_if_user_is_tournament_owner(user.id, match.tournament_id)
 
     return templates.TemplateResponse("view_match.html", {"request": request, 
                                                           "match": match, 
                                                           "user": user,
-                                                          "image_data_url": image_data_url})
-
+                                                          "image_data_url": image_data_url,
+                                                          "owner": is_owner})
 
 @matches_router.get("/match-result/{id}", tags=["Matches redirect"])
 async def add_result_redirect(id: int, request: Request):
@@ -95,13 +107,24 @@ async def add_result_redirect(id: int, request: Request):
     base64_encoded_data = base64.b64encode(user.picture).decode('utf-8')
     image_data_url = f"data:{mime_type};base64,{base64_encoded_data}"
 
-    return templates.TemplateResponse("add_result_form.html", 
-                                     {"request": request, 
-                                      "id": id, 
-                                      "match": match, 
-                                      "user": user,
-                                      "image_data_url": image_data_url,},
-                                     status_code=status.HTTP_303_SEE_OTHER)
+    is_owner: bool = ms.check_if_user_is_tournament_owner(user.id, match.tournament_id)
+
+    if (user.role == "director") or (user.role == "admin"):
+        if (user.role == "director" and is_owner) or user.role == "admin":
+            return templates.TemplateResponse("add_result_form.html", 
+                                            {"request": request, 
+                                            "id": id, 
+                                            "match": match, 
+                                            "user": user,
+                                            "image_data_url": image_data_url,},
+                                            status_code=status.HTTP_303_SEE_OTHER)
+    return templates.TemplateResponse("return_not_authorised.html", 
+                                        {"request": request, 
+                                        "id": id, 
+                                        "match": match, 
+                                        "user": user,
+                                        "image_data_url": image_data_url,},
+                                        status_code=status.HTTP_401_UNAUTHORIZED)
 
 
 @matches_router.post("/result/{id}", tags=["Matches"])
@@ -110,15 +133,12 @@ async def add_result(request: Request, id: int):
     user = await ms.check_user_token(request.cookies.get("access_token"), 
                                      request.cookies.get("refresh_token"))
     
-    # check if user is the owner of the tournament
-
     if user.role != "director" and user.role != "admin":
         return RedirectResponse(url='/users/dashboard', status_code=303)
 
     match = ms.view_single_match(id)
     tournament = await ms.get_tournament_by_id(match.tournament_id)
     
-
     try:
         result = ms.convert_result_from_string(await request.json())
         values = [x for x in result.values() if x != '']
@@ -164,7 +184,7 @@ async def edit_match(
     ):
     """ 
     requires login and director/admin rights
-    change match time, change match format, change location
+    change match time, change location
     update the list of participants"""
     user = await ms.check_user_token(request.cookies.get("access_token"), 
                                      request.cookies.get("refresh_token"))

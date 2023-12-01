@@ -101,13 +101,13 @@
                 {% if match.is_individuals == false %}    
                 <li>
                     {% if match.participants == [] %}
-                    <form action="/matches/match/{{ match.id }}" method="get">
-                        <button type="submit">No players yet</button>
-                    </form>
+                    
+                    <h4>No players yet</h4>
+                    
                     {% else %}
                         {% for player in match.participants %}
                             <li>
-                                {{ player.fullname }} 
+                               <p><strong>{{ player.fullname }}</strong>   {{ player.result }}</p> 
                             </li>    
                         {% endfor %}
                     {% endif %}
