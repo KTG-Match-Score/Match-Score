@@ -101,7 +101,9 @@
         <h2>Tournament Prizes</h2>
         <form id="prizesForm" action="/tournaments/add_prizes" method="post">
             <label for="num_of_places">Number of Places:</label>
-            <input type="number" id="num_of_places" name="num_of_places" min="1" required>
+            <input type="number" id="num_of_places" name="num_of_places" 
+                    min="1" max="{{ max_players }}" 
+                    placeholder="Players in the tournament: {{ max_players }}" required>
             <input type="hidden" id="tournament_id" name="tournament_id" value="" data-tournament-id="{{ tournament_id }}">
             <div id="prizes">
             </div>

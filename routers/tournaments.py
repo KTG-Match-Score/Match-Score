@@ -5,6 +5,7 @@ import routers.users as users
 import common.auth as auth
 from typing import Optional
 from services import tournaments_services
+from services import matches_services as ms
 from fastapi.templating import Jinja2Templates
 from datetime import date, datetime
 from fastapi.responses import RedirectResponse, JSONResponse
@@ -78,7 +79,15 @@ async def show_add_prizes_to_tournament_form(request: Request,
     base64_encoded_data = base64.b64encode(user.picture).decode('utf-8')
     image_data_url = f"data:{mime_type};base64,{base64_encoded_data}" 
 
-    response = templates.TemplateResponse("add_prizes_to_tournament_form.html", context={"request": request, "name": user.fullname, "image_data_url": image_data_url, "tournament_id": tournament_id})
+    tournament = await ms.get_tournament_by_id(tournament_id)
+    max_players = tournaments_services.get_number_of_tournament_players(tournament)
+    response = templates.TemplateResponse("add_prizes_to_tournament_form.html", 
+                                          context={
+                                              "request": request, 
+                                              "name": user.fullname, 
+                                              "image_data_url": image_data_url, 
+                                              "tournament_id": tournament_id,
+                                              "max_players": max_players})
 
     response.set_cookie(key="access_token",
                         value=tokens["access_token"], httponly=True)
@@ -189,10 +198,7 @@ async def create_tournament(request: Request,
 
 
 @tournaments_router.post("/add_prizes")
-async def add_prizes_to_tournament(request: Request,
-                                   tournament_id: int = Query(...),
-                                   data: dict = Form(...)):
-    
+async def add_prizes_to_tournament(request: Request):
     access_token = request.cookies.get("access_token")
     refresh_token = request.cookies.get("refresh_token")
     tokens = {"access_token": access_token, "refresh_token": refresh_token}
@@ -206,17 +212,29 @@ async def add_prizes_to_tournament(request: Request,
             RedirectResponse(url= "/", status_code=303)
 
     if user.role != "director" and user.role != "admin":
-        RedirectResponse(url= "/users/dashboard", status_code=303)
+        return RedirectResponse(url= "/users/dashboard", status_code=303)
+    
+    data = await request.form()
+    num_of_places = int(data.get("num_of_places"))
+    tournament_id = data.get("tournament_id")
+    tournament = await ms.get_tournament_by_id(tournament_id)
+    max_players = tournaments_services.get_number_of_tournament_players(tournament)
 
-    prizes_data: dict = data.get("prizes")
+    if max_players < num_of_places:
+        url = f"/tournaments/add_prizes_to_tournament_form?tournament_id={tournament.id}"
+        return RedirectResponse(url= url, status_code=303)
 
     prizes_for_insert = []
 
-    for prize in prizes_data:
-        place = prize.get("place")
-        format = prize.get("prize_type")
-        amount = float(prize.get("amount"))
-        prizes_for_insert.append(tournament_id, place, format, amount)
+    for prize in range(1, num_of_places + 1):
+        place = prize
+        format = data.get(f"prize_for_place_{prize}")
+        amount = data.get(f"amount_for_place_{prize}")
+        if amount.isdigit():
+            amount = float(amount)
+        elif amount == '':
+            amount = None
+        prizes_for_insert.append((tournament_id, place, format, amount))
 
     mime_type = "image/jpg"
     base64_encoded_data = base64.b64encode(user.picture).decode('utf-8')
@@ -225,8 +243,8 @@ async def add_prizes_to_tournament(request: Request,
     image_data_url = image_data_url
 
     action = tournaments_services.add_prizes(prizes_for_insert, tournament_id, request, name, image_data_url, tokens)
-
-    response = RedirectResponse(url = f"matches/?tournament_id={tournament_id}", status_code=303)
+    url = f"../matches/?tournament_id={tournament_id}"
+    response = RedirectResponse(url = url, status_code=303)
     response.set_cookie(key="access_token",
                         value=tokens["access_token"], httponly=True)
     response.set_cookie(key="refresh_token",

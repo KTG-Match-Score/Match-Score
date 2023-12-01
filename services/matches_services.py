@@ -538,3 +538,23 @@ def match_format_from_tournament_sport(f: str):
         case "football": return "time limited"
         case "athletics": return "first finisher"
         case "tennis": return "score limited"
+
+
+async def check_user_token(access_token, refresh_token):
+    tokens = {"access_token": access_token, "refresh_token": refresh_token}
+    try:
+        user = await auth.get_current_user(access_token)
+    except:
+        try:
+            user = await auth.refresh_access_token(access_token, refresh_token)
+            tokens = auth.token_response(user)
+        except:
+            RedirectResponse(url='/', status_code=303)
+
+    return user
+
+def check_if_user_is_tournament_owner(user_id, tournament_id):
+    data = read_query(f"""SELECT tournaments_id, users_id FROM tournaments_has_directors WHERE 
+                        users_id = {user_id} and tournaments_id = {tournament_id}""")
+    
+    return False if data == [] else True

@@ -27,7 +27,16 @@
             animation: fade-in 1s ease-in-out;
             margin-top: 20px;
         }
-
+        .notification {
+            position: fixed;
+            top: 100px;
+            right: 45%;
+            background-color: #45a049;
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            z-index: 9999;
+        }
         .topbar-button {
             height: 50px;
             margin-right: 10px;
@@ -110,8 +119,9 @@
         <div class="buttons-container">
             <button class="topbar-button" onclick="location.href='/users/dashboard'">Back to Dashboard</button>
             <button class="topbar-button" onclick="location.href='/'">Main Page</button>
+            <button class="topbar-button" onclick="window.location.href = '/matches?tournament_id={{match.tournament_id}}'">Back to tournament</button>
+            <button class="topbar-button" onclick="window.location.href = '/matches/match/{{match.id}}'">Back to match</button>
         </div>
-
         <div id="userDetails">
             <span>{{ user.fullname }}</span>
             <img src="{{ image_data_url }}" alt="User Image" style="height: 50px; width: 50px;">
@@ -119,7 +129,7 @@
     </div>
     <div class="container">
         <h2>Add Result: {{ match.tournament_name }}</h2>
-        <form id="myForm" action="/matches/match/result/{{match.id}}" method="POST">
+        <form id="myForm">
             {% if match.format == "time limited" %}
             <ul>
                 {% for player in match.participants %}
@@ -150,7 +160,7 @@
                 </li>
                 {% endfor %}                
                 {% endif%}
-                <button onclick="submitData()">Submit</button>
+                <button class="button" onclick="submitData()">Submit</button>
             </ul>
         </form>
     </div>
@@ -160,25 +170,20 @@
         const formData = new FormData(document.getElementById('myForm'));
         const data = {};
 
-        // Loop through form data and create a dictionary
         for (const [key, value] of formData.entries()) {
-            const name = key.split(/[0-9]+/)[0]; // Extract the 'name' or 'score' part
-            const index = key.match(/[0-9]+$/)[0]; // Extract the index
+            const name = key.split(/[0-9]+/)[0]; 
+            const index = key.match(/[0-9]+$/)[0];
             if (!data[index]) {
                 data[index] = {};
             }
             data[index][name] = value;
         }
-
-        // Convert the data to an array of dictionaries
         const results = Object.values(data).map(item => {
             return {
                 [item.name]: item.score
             };
         });
-
-        // Perform an AJAX request using Fetch API
-        fetch('/matches/match/result/{{match.id}}', {
+        fetch('/matches/result/{{match.id}}', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -192,15 +197,16 @@
             return response.json();
         })
         .then(result => {
-            // Handle response from the server
-            console.log('Success:', result);
-            // window.history.back();
-            window.location.href = '/matches/match/{{match.id}}';
+            const notification = document.createElement('div');
+            notification.textContent = 'Result added';
+            notification.classList.add('notification');
+            document.body.appendChild(notification);
+
+            // Hide the notification after 3 seconds
+            setTimeout(() => {
+                document.body.removeChild(notification);
+            }, 3000);
         })
-        .catch(error => {
-            // Handle errors
-            console.error('Error:', error);
-        });
     }
     </script>
 </body>
