@@ -119,11 +119,10 @@
         <div class="buttons-container">
             <button class="topbar-button" onclick="location.href='/users/dashboard'">Back to Dashboard</button>
             <button class="topbar-button" onclick="location.href='/'">Main Page</button>
-        </div>
-        <div>
+            <button class="topbar-button" onclick="window.location.href = '/matches?tournament_id={{match.tournament_id}}'">Back to tournament</button>
             <button class="topbar-button" onclick="window.location.href = '/matches/match/{{match.id}}'">Back to match</button>
         </div>
-
+        
         <div id="userDetails">
             <span>{{ user.fullname }}</span>
             <img src="{{ image_data_url }}" alt="User Image" style="height: 50px; width: 50px;">
@@ -131,7 +130,7 @@
     </div>
     <div class="container">
         <h2>Add Result: {{ match.tournament_name }}</h2>
-        <form id="myForm" action="/matches/result/{{match.id}}" method="POST">
+        <form id="myForm">
             {% if match.format == "time limited" %}
             <ul>
                 {% for player in match.participants %}

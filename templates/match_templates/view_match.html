@@ -91,6 +91,8 @@
         <div class="buttons-container">
             <button class="topbar-button" onclick="location.href='/users/dashboard'">Back to Dashboard</button>
             <button class="topbar-button" onclick="location.href='/'">Main Page</button>
+            <button class="topbar-button" onclick="window.location.href = '/matches?tournament_id={{match.tournament_id}}'">Back to tournament</button>
+
         </div>
 
         <div id="userDetails">
@@ -102,18 +104,24 @@
         <ul>
         {% if match.is_individuals == false %}
                 <h4>{{ match.tournament_name }}</h4>
-                {% for player in match.participants %}
-                    {% if match.finished == "finished" %}
-                        <h4><img src="{{ player.picture }}" alt="{{ player.fullname }}" 
-                        style="height: 30px; width: 30px; border-radius: 50%;">
-                        {{ player.fullname }}, {{ player.country_code }}:
-                        <strong>{{ player.result }}</strong></h4>
+                {% if match.participants == [] %}
+                    <br>
+                    <p style="text-align: center;"><strong>No players yet</strong></p>
+                    <br>
                     {% else %}
-                        <h4> <img src="{{ player.picture }}" alt="{{ player.fullname }}" 
-                        style="height: 30px; width: 30px; border-radius: 50%;">
-                        {{ player.fullname }}, {{ player.country_code }}</h4>
-                    {% endif %}
-                {% endfor %}
+                    {% for player in match.participants %}
+                        {% if match.finished == "finished" %}
+                            <h4 style="text-align: center;"><img src="{{ player.picture }}" alt="{{ player.fullname }}" 
+                            style="height: 30px; width: 30px; border-radius: 50%;">
+                            {{ player.fullname }}, {{ player.country_code }}:
+                            <strong>{{ player.result }}</strong></h4>
+                        {% else %}
+                            <h4 style="text-align: center;"> <img src="{{ player.picture }}" alt="{{ player.fullname }}" 
+                            style="height: 30px; width: 30px; border-radius: 50%;">
+                            {{ player.fullname }}, {{ player.country_code }}</h4>
+                        {% endif %}
+                    {% endfor %}
+                {% endif %}
                 <h3>Played in {{ match.location }}: 
                         {{ match.played_on.strftime("%Y-%m-%d  %H:%M") }}</h3>
         {% else %}
@@ -124,13 +132,13 @@
                 {% for player in match.participants|sort(attribute="place") %}
                 <li>
                     {% if match.finished == "finished" %}
-                        <p><img src="{{ player.picture }}" alt="{{ player.fullname }}" 
+                        <p style="text-align: center;"><img src="{{ player.picture }}" alt="{{ player.fullname }}" 
                         style="height: 30px; width: 30px; border-radius: 50%;">
                         {{ player.fullname }}, {{ player.country_code }} <br>Place:
                         <strong>{{ player.place}}</strong>, Score: <strong>{{ player.result }}</strong></p>
                         {{ player.result['type'] }}
                     {% else %}
-                        <p><img src="{{ player.picture }}" alt="{{ player.fullname }}" 
+                        <p style="text-align: center;"><img src="{{ player.picture }}" alt="{{ player.fullname }}" 
                         style="height: 30px; width: 30px; border-radius: 50%;">
                         {{ player.fullname }}, {{ player.country_code }}</p>
                     {% endif %}
@@ -143,7 +151,7 @@
                     {% endif %}
         {% endif %}
             <!-- check if the tournament belongs to that director -->
-        {% if user and (user.role == "director" or user.role == "admin") and match.finished == "not finished" %}
+        {% if user and ((user.role == "director" and owner) or user.role == "admin") and match.finished == "not finished" %}
          <li style="display: inline-block;">
             <form action="/matches/match-result/{{ match.id }}" method="get">
                 <button type="submit">Add result</button>
