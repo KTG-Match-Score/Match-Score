@@ -63,7 +63,7 @@
         .page-container {
             display: flex;
             max-width: 1200px;
-            margin: 30px auto 0; /* Adjusted the top margin */
+            margin: 30px auto 0;
             padding: 0;
             justify-content: center;
         }
@@ -216,6 +216,15 @@
             color: white;
         }
 
+        .clickable-title {
+            color: white;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+
+        .clickable-title:hover {
+            color: #47095a;
+        }
         @keyframes fade-in {
             from {
                 opacity: 0;
@@ -384,7 +393,23 @@
                         const tournamentTitle = tournamentInfo["tournament_title"];
 
                         var h2 = document.createElement("h2");
+                        // h2.textContent = tournamentTitle;
+
+                        // Wrap the tournament title in an anchor tag
+                        var h2 = document.createElement("h2");
                         h2.textContent = tournamentTitle;
+                        h2.classList.add("clickable-title");
+
+                        // Attach the onClick event
+                        h2.onclick = function () {
+                            if (tournamentInfo["tournament_format"] === "knockout") {
+                                window.location = `/tournaments/knockout/${tournamentId}`;
+                            } else {
+                                window.location = `/matches/?tournament_id=${tournamentId}`;
+                            }
+                        };
+
+                        resultsContainer.appendChild(h2);
 
                         var ul = document.createElement("ul");
                         ul.style.listStyleType = "none";
@@ -428,38 +453,33 @@
                             pStartTime.textContent = "Start Time: " + matchInfo["played_on"];
 
                             var form = document.createElement("form");
-                            form.action = "/matches/match/" + matchId;
                             form.method = "get";
 
-                            
+                            // Check the tournament format and generate the appropriate URL
+                            if (tournamentInfo["tournament_format"] === "knockout") {
+                                form.action = `/tournaments/knockout/${tournamentId}/matches/${matchId}`;
+                            } else {
+                                form.action = `/matches/match/${matchId}`;
+                            }
+
                             var button = document.createElement("button");
                             button.textContent = "View Match Details";
                             button.classList.add("button-common");
 
-                            function handleButtonHover() {
-                                button.style.backgroundColor = "#45a049";
-                            }
-
-                            function handleButtonMouseOut() {
-                                button.style.backgroundColor = "#47095a";
-                            }
-
                             form.appendChild(button);
-                            
+
                             li.appendChild(pParticipants);
                             li.appendChild(pTitle);
                             li.appendChild(pStartTime);
                             li.appendChild(form);
-                            
+
                             ul.appendChild(li);
                         }
 
-                        
                         resultsContainer.appendChild(h2);
                         resultsContainer.appendChild(ul);
                     }
                 } else {
-                    
                     var h2 = document.createElement("h2");
                     h2.textContent = "No events for this date.";
 
@@ -505,7 +525,7 @@
             allSportH2.textContent = "All";
 
             allSportH2.addEventListener("click", function () {
-                fetchTournamentsBySport(null);
+                fetchTournamentsBySport(null); 
             });
 
             allSportItem.appendChild(allSportH2);
@@ -576,7 +596,7 @@
                         // li.onclick = function () {
                         //     window.location = `/matches/?tournament_id=${tournament.id}`;
                         };
-
+ 
                         ul.appendChild(li);
                     }
                 });
@@ -589,7 +609,6 @@
             }
         }
     </script>
-
 
 </body>
 

@@ -5,7 +5,7 @@ from datetime import datetime
 class Tournament(BaseModel):
     id: Optional[Annotated[int, Field(ge=0)]] | None = None
     title: Optional[Annotated[str, StringConstraints(min_length=1, max_length=100)]] | None = None
-    format: Optional[Annotated[str, StringConstraints(pattern="^(knockout|league)$")]] | None = None
+    format: Optional[Annotated[str, StringConstraints(pattern="^(knockout|league|single)$")]] | None = None
     prize_type: Optional[Annotated[str, StringConstraints(min_length=1, max_length=45)]] | None = None
     start_date: Optional[datetime] | None = None
     end_date: Optional[datetime] | None = None
@@ -32,6 +32,7 @@ class Tournament(BaseModel):
 class MatchesInTournament(BaseModel):
     tournament_id: int 
     tournament_title: str 
+    tournament_format: str
     match_id: int 
     format: str 
     played_on: datetime 
@@ -43,10 +44,11 @@ class MatchesInTournament(BaseModel):
     result: str | None 
 
     @classmethod
-    def from_query(cls, tournament_id, tournament_title, match_id, format, played_on, location, is_individuals, finished, participant, picture, result):
+    def from_query(cls, tournament_id, tournament_title, tournament_format, match_id, format, played_on, location, is_individuals, finished, participant, picture, result):
         return cls(
             tournament_id=tournament_id,
             tournament_title=tournament_title,
+            tournament_format=tournament_format,
             match_id=match_id,
             format=format,
             played_on=played_on,
