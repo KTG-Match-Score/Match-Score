@@ -93,7 +93,6 @@ async def view_match_by_id(id: int, request: Request):
                                                           "image_data_url": image_data_url,
                                                           "owner": is_owner})
 
-
 @matches_router.get("/match-result/{id}", tags=["Matches redirect"])
 async def add_result_redirect(id: int, request: Request):
     """ requires login after redirection """
