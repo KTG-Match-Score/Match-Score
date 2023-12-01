@@ -158,6 +158,9 @@ async def add_result(request: Request, id: int):
     except Exception as e:
         return ms.bad_request(request, "Error while calculating the score! Review your input")
     
+    if tournament.format == "knockout" and list(new_result.keys())[0] == "draw":
+        return ms.bad_request(request, "This match is draw and it doesn't fit the tournament format")
+
     match = ms.add_match_result(match, new_result)
     match.has_result = True # added for a check in the view_match.html
 

@@ -33,13 +33,14 @@
             margin-right: 10px;
         }
         #topBar {
-            width: 100%;
+            width: 98.5%;
             display: flex;
             justify-content: space-between;
-            align-items: center; 
+            align-items: center;
             padding: 10px;
-            background-color: rgba(0, 0, 0, 0.8); 
-            box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1); 
+            background-color: rgba(0, 0, 0, 0.8);
+            box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
+            z-index: 999;
         }
         button {
             background-color: #47095a;
@@ -50,7 +51,12 @@
             cursor: pointer;
             transition: background-color 0.3s, color 0.3s;
         }
-
+        #topBar h1 {
+            text-align: middle;
+            font-size: 25px;
+            color: white;
+            margin: 0;
+        }
         button:hover {
             background-color: #45a049;
         }
@@ -87,6 +93,9 @@
         <div class="buttons-container">
             <button class="topbar-button" onclick="location.href='/users/dashboard'">Back to Dashboard</button>
             <button class="topbar-button" onclick="location.href='/'">Main Page</button>
+        </div>
+        <div>
+            <h1 style="position: relative;">MatchScore</h1>
         </div>
     </div>
     <div class="container">

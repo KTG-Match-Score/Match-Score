@@ -276,11 +276,12 @@ def add_prizes(prizes_list: list[tuple], tournament_id, request, name, image_dat
 
             for prize in prizes_list:
                 if prize[-1] == None:
-                    query = '''INSERT INTO prize_allocation(tournament_id, place, format) VALUES ?'''
                     params = prize[0:3]
+                    query = f'''INSERT INTO prize_allocation(tournament_id, place, format) VALUES {params}'''
                 else:
-                    query = '''INSERT INTO prize_allocation(tournament_id, place, format, amount) VALUES ?'''
-                cursor.execute(query, params)
+                    params = prize
+                    query = f'''INSERT INTO prize_allocation(tournament_id, place, format, amount) VALUES {params}'''
+                cursor.execute(query)
             
             connection.commit()
         
@@ -298,3 +299,16 @@ def add_prizes(prizes_list: list[tuple], tournament_id, request, name, image_dat
         return response
     
     return True
+
+def get_number_of_tournament_players(tournament: Tournament):
+    if tournament.format == "league":
+        data = read_query(f"""
+                        SELECT DISTINCT mp.players_id FROM matches_has_players mp
+                        JOIN matches m ON m.id = mp.matches_id 
+                        WHERE m.tournament_id = {tournament.id}""")
+        return len(data)
+    if tournament.format == "knockout":
+        data = read_query(f"""SELECT count(*)*2 from matches where tournament_id = {tournament.id}""")
+        return int(data[0])
+    if tournament.format == "single":
+        return tournament.participants_per_match
