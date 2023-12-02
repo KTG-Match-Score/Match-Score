@@ -371,3 +371,37 @@ async def find_matches(player_id: int):
     if total_matches == []:
         return
     return total_matches[0], next(iter(best_opponent), None), next(iter(worst_opponent, None))
+
+async def  find_prize_league(tournament_id: int, place: int):
+    prize = read_query('''select amount 
+                       from prize_allocation
+                       where tournmanet_id = ? and place =?''',
+                       (tournament_id, place))
+    if prize:
+        return prize[0][0]
+    else:
+        return 0
+
+async def find_match_won (tournament_id: int, player_id: int):
+    won = read_query ('''select mp.place 
+                      from matches_has players mp
+                      join matches m on m.id = mp.matches_id
+                      join tournamnets t on t.id = m.tournament_id
+                      join players p on p.id = mp.players_id
+                      where t.id = ?  and p.id = ?'''
+                      (tournament_id, player_id))   
+    if not won:
+        return
+    else:
+        return won[0][0]
+
+async def find_prize_knockout_not_final(tournament_id: int):
+    prize = read_query('''select amount from prize_allocation 
+                       where tournament_id = ? and place is null''', 
+                       (tournament_id,))
+    if not prize:
+        return 0
+    else:
+        return prize[0][0]
+        
+        
