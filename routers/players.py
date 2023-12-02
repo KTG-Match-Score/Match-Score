@@ -884,16 +884,18 @@ async def show_table(
     request: Request,
     tournament_id:int = Query(...)
 ):
-    sorted_table, success = await players_services.generate_standings(tournament_id)
+    sorted_table, success, columns, tournament_name = await players_services.generate_standings(tournament_id)
     
     return templates.TemplateResponse("show_standings.html", context={
         "request": request,
         "table": sorted_table,
-        "success": success  
+        "success": success,
+        "tournament_name": tournament_name,
+        "columns": columns
     })
     
 @players_router.get("/statistics")
-async def show_table(
+async def show_stats(
     request: Request,
     player_id:int = Query(...)
 ):
@@ -917,7 +919,7 @@ async def show_table(
             cls, 
             tournaments_played, 
             tournaments_won,
-            tournamentstournaments_won_names,
+            tournaments_won_names,
             tournaments_second_place,
             tournaments_second_place_names,
             tournaments_third_place,
@@ -931,7 +933,7 @@ async def show_table(
             return cls(
                 tournaments_played = tournaments_played, 
                 tournaments_won = tournaments_won,
-                tournamentstournaments_won_names = tournamentstournaments_won_names,
+                tournaments_won_names = tournaments_won_names,
                 tournaments_second_place = tournaments_second_place,
                 tournaments_second_place_names = tournaments_second_place_names,
                 tournaments_third_place = tournaments_third_place,
