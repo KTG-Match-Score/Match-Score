@@ -184,23 +184,33 @@ async def find_matches_for_table(tournament_id: int):
     return   
 
 async def find_single(tournament_id: int):
-    played_matches = read_query('''select p.id, p.profile_picture, p.full_name, mp.result, mp.place
+    played_matches = read_query('''select p.id, mp.place, p.profile_picture, p.full_name, mp.result
                                 from matches_has_players mp
                                 join players p on p.id = mp.players_id
                                 join matches m on mp.matches_id = m.id
                                 join tournaments t on m.tournament_id = t.id 
-                                where t.id = ? and mp.place !=?''',(tournament_id, 0))   
+                                where t.id = ?''',(tournament_id,))   
     if played_matches:
         return played_matches
     return   
 async def check_tournament_exists_with_sport(tournament_id: int):
-    tournament = read_query('''select t.format, s.name 
+    tournament = read_query('''select t.format, s.name, t.title
                             from tournaments t
                             join tournaments_has_sports ts on t.id = ts.tournament_id
                             join sports s on s.id = ts.sport_id
-                            where id = ?''', (tournament_id,))
+                            where t.id = ?''', (tournament_id,))
     if tournament:
         return tournament[0]
+    return
+
+async def players_of_tournament(tournament_id: int):
+    players = read_query('''select p.id, p.profile_picture, p.full_name
+                            from players p
+                            join tournaments_has_players tp on p.id = tp.players_id
+                            join tournaments t on t.id = tp.tournaments_id
+                            where t.id = ?''', (tournament_id,))
+    if players:
+        return players
     return
 
 async def find_player_with_sport(player_id: int):
@@ -216,61 +226,100 @@ async def find_player_with_sport(player_id: int):
 
 async def generate_standings(tournament_id: int):
     tournament = await check_tournament_exists_with_sport(tournament_id)
-    if tournament[0] == 'league' and tournament[1] == "football": 
-        matches = await find_matches_for_table(tournament_id)
-        if matches:
-            success = None
-            table = []
-            player_added = []
-            for item in matches:
-                id, blob, name, goals_for, goals_against, place = item
-                goal_difference = int(goals_for) - int(goals_against)
-                player_added.append(id)
-                player_lst = []
-                mime_type = "image/jpg"
-                base64_encoded_data = base64.b64encode(blob).decode('utf-8')
-                picture = f"data:{mime_type};base64,{base64_encoded_data}" 
-                points = league_points.get(place)
-                matches_played = 1
-                if id not in player_added:
-                    player_lst = [id, picture, name, matches_played, int(goals_for), int(goals_against), goal_difference, points]
-                    table.append(player_lst)
-                else:
-                    player_lst = [lst for lst in table if lst[0] == id][0]
-                    table.remove(player_lst)
-                    player_lst[3] +=1
-                    player_lst[4] += int(goals_for)
-                    player_lst[5] += int(goals_against)
-                    player_lst[6] += goal_difference
-                    player_lst[7] += points
-                    table.append(player_lst) 
-            sorted_table = sorted(table, key= lambda x: x[4], reverse = True)
-            sorted_table = sorted(table, key= lambda x: x[6], reverse = True)        
-            sorted_table = sorted(table, key= lambda x: x[7], reverse = True)
-            for i in range(len(sorted_table)):
-                place = sorted_table.pop(i)
-                place.insert(i+1,1)
-                sorted_table.insert(i, place)   
-        else:
-            sorted_table = None
-            success = "No matches have been played yet for this tournament!"
-    
-    elif tournament[2] == 'single': 
-        table = await find_single(tournament_id)
-        if table:
-            sucess = None
-            sorted_table = sorted(table, key= lambda x: x[4])
-            for i in range(len(sorted_table)):
-                place = sorted_table.pop(i)
-                place[0] = i+1
-                sorted_table.insert(i, place) 
-        else:
-            sorted_table = None
-            success = "The event has not taken place yet."
-    else:
+    if not tournament:
+        columns = None
         sorted_table = None
-        success = "No standings for this tournament are available"
-    return sorted_table, success
+        success = "No such tournament"
+        tournament_name = None
+    else:
+        if tournament[0] == 'league' and tournament[1] == "football": 
+            players = await players_of_tournament(tournament_id)
+            matches = await find_matches_for_table(tournament_id)
+            table = []
+            if matches:
+                success = None
+                columns = ['', '', '', 'Matches Played', 'Goals For', 'Goals Against', 'Goal Diffence', 'Points']
+                tournament_name = tournament[2]
+                player_added = []
+                for item in matches:
+                    id, blob, name, goals_for, goals_against, place = item
+                    goal_difference = int(goals_for) - int(goals_against)
+                    player_lst = []
+                    mime_type = "image/jpg"
+                    base64_encoded_data = base64.b64encode(blob).decode('utf-8')
+                    picture = f"data:{mime_type};base64,{base64_encoded_data}" 
+                    points = league_points.get(place)
+                    matches_played = 1
+                    if id not in player_added:
+                        player_lst = [id, picture, name, matches_played, int(goals_for), int(goals_against), goal_difference, points]
+                        table.append(player_lst)
+                        player_added.append(id)
+                    else:
+                        player_lst = [lst for lst in table if lst[0] == id][0]
+                        table.remove(player_lst)
+                        player_lst[3] +=1
+                        player_lst[4] += int(goals_for)
+                        player_lst[5] += int(goals_against)
+                        player_lst[6] += goal_difference
+                        player_lst[7] += points
+                        table.append(player_lst) 
+                sorted_table = sorted(table, key= lambda x: x[4], reverse = True)
+                sorted_table = sorted(table, key= lambda x: x[6], reverse = True)        
+                sorted_table = sorted(table, key= lambda x: x[7], reverse = True)
+                for i in range(len(sorted_table)):
+                    place = sorted_table.pop(i)
+                    place.insert(1,i+1)
+                    sorted_table.insert(i, place)   
+            else:
+                if players:
+                    for player in players:
+                        player = list(player)
+                        blob = player.pop(1)
+                        mime_type = "image/jpg"
+                        base64_encoded_data = base64.b64encode(blob).decode('utf-8')
+                        picture = f"data:{mime_type};base64,{base64_encoded_data}" 
+                        player.insert(1, picture)
+                        player.insert(1,1)
+                        player.extend([0,0,0,0,0])
+                        table.append(player)
+                    success = None
+                    columns = ['', '', '', 'Matches Played', 'Goals For', 'Goals Against', 'Goal Diffence', 'Points']
+                    tournament_name = tournament[2]
+                    sorted_table = table
+                    
+                else:
+                    columns = None
+                    sorted_table = None
+                    success = "No players have been added to this tournament!"
+                    tournament_name = tournament[2]
+        
+        elif tournament[0] == 'single': 
+            table = await find_single(tournament_id)
+            if table:                
+                for i in range (len(table)):
+                    player = table.pop(i)
+                    player = list(player)
+                    blob = player.pop(2)
+                    mime_type = "image/jpg"
+                    base64_encoded_data = base64.b64encode(blob).decode('utf-8')
+                    picture = f"data:{mime_type};base64,{base64_encoded_data}" 
+                    player.insert(2, picture)
+                    table.insert(i, player)
+                sorted_table = sorted(table, key= lambda x: x[1])
+                tournament_name = tournament[2]
+                success = None
+                columns = ['', '', '', 'Result']
+            else:
+                columns = None
+                sorted_table = None
+                success = "The event has not taken place yet."
+                tournament_name = tournament[2]
+        else:
+            columns = None
+            sorted_table = None
+            success = "No standings for this tournament are available"
+            tournament_name = tournament[2]
+    return sorted_table, success, columns, tournament_name
 
 async def find_tournaments_played(player_id: int):
     time = datetime.utcnow().replace(microsecond=0)
@@ -366,7 +415,7 @@ async def find_matches(player_id: int):
                       from matches_has_players mp
                       join players p on p.id = mp.players_id
                       join matches m on mp.matches_id = m.id
-                      where p.id = ?'''
+                      where p.id = ?''',
                       (player_id, )))
     if total_matches == []:
         return
@@ -388,7 +437,7 @@ async def find_match_won (tournament_id: int, player_id: int):
                       join matches m on m.id = mp.matches_id
                       join tournamnets t on t.id = m.tournament_id
                       join players p on p.id = mp.players_id
-                      where t.id = ?  and p.id = ?'''
+                      where t.id = ?  and p.id = ?''',
                       (tournament_id, player_id))   
     if not won:
         return
