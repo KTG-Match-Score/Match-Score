@@ -16,6 +16,7 @@
             margin: 0;
             padding: 0;
             min-height: 100vh;
+            overflow-x: hidden;
         }
 
         #topBar {
@@ -38,7 +39,7 @@
         .auth-buttons {
             display: flex;
             gap: 10px;
-            margin-right: 50px;
+            margin-right: 30px;
         }
 
         .auth-buttons a {
@@ -142,6 +143,12 @@
             white-space: nowrap;
         }
 
+        ul {
+            display: inline-block;
+            padding: 0;
+            list-style: none;
+        }
+
         .sport-item {
             cursor: pointer;
             transition: color 0.3s;
@@ -191,6 +198,11 @@
             flex-wrap: wrap;
             align-items: center;
             justify-content: space-around;
+        }
+        
+        #results-container .participant-name:hover {
+            color: #47095a;
+            cursor: pointer;
         }
 
         .calendar-trigger {
@@ -251,7 +263,6 @@
             </a>
         </div>
     </div>
-    <!-- <h1 style="text-align: center; font-size: 36px; color: white; margin-bottom: 20px;">MatchScore</h1> -->
     <div class="page-container">
         <div class="left-container">
             <div id="sports-section" class="container">
@@ -392,20 +403,16 @@
                         const tournamentInfo = resultsData[tournamentId];
                         const tournamentTitle = tournamentInfo["tournament_title"];
 
-                        var h2 = document.createElement("h2");
-                        // h2.textContent = tournamentTitle;
-
-                        // Wrap the tournament title in an anchor tag
+                        // var h2 = document.createElement("h2");
                         var h2 = document.createElement("h2");
                         h2.textContent = tournamentTitle;
                         h2.classList.add("clickable-title");
 
-                        // Attach the onClick event
                         h2.onclick = function () {
                             if (tournamentInfo["tournament_format"] === "knockout") {
                                 window.location = `/tournaments/knockout/${tournamentId}`;
                             } else {
-                                window.location = `/matches/?tournament_id=${tournamentId}`;
+                                window.location = `/players/standings?tournament_id=${tournamentId}`;
                             }
                         };
 
@@ -438,8 +445,18 @@
                                     img.height = 30;
                                     img.style.borderRadius = "50%";
                                     pParticipants.appendChild(img);
-                                    pParticipants.appendChild(document.createTextNode(" " + participant));
+                                    
+                                    var participantLink = document.createElement("span");
+                                    participantLink.classList.add("participant-name");
+                                    participantLink.style.cursor = "pointer";
+                                    participantLink.textContent = participant;
+                                    
+                                    participantLink.onclick = function () {
+                                        window.location = `/players/statistics?player_id=${participantInfo.participant_id}`;
+                                    };
 
+                                    pParticipants.appendChild(participantLink);
+                                    
                                     if (participant !== Object.keys(participants)[Object.keys(participants).length - 1]) {
                                         pParticipants.appendChild(document.createTextNode(" vs "));
                                     }
@@ -454,13 +471,8 @@
 
                             var form = document.createElement("form");
                             form.method = "get";
+                            form.action = `/matches/match/${matchId}`;
 
-                            // Check the tournament format and generate the appropriate URL
-                            if (tournamentInfo["tournament_format"] === "knockout") {
-                                form.action = `/tournaments/knockout/${tournamentId}/matches/${matchId}`;
-                            } else {
-                                form.action = `/matches/match/${matchId}`;
-                            }
 
                             var button = document.createElement("button");
                             button.textContent = "View Match Details";
@@ -593,8 +605,6 @@
                             } else {
                                 window.location = `/matches/?tournament_id=${tournament.id}`;
                             }
-                        // li.onclick = function () {
-                        //     window.location = `/matches/?tournament_id=${tournament.id}`;
                         };
  
                         ul.appendChild(li);

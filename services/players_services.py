@@ -366,7 +366,7 @@ async def find_matches(player_id: int):
                       from matches_has_players mp
                       join players p on p.id = mp.players_id
                       join matches m on mp.matches_id = m.id
-                      where p.id = ?'''
+                      where p.id = ?''',
                       (player_id, )))
     if total_matches == []:
         return
@@ -388,7 +388,7 @@ async def find_match_won (tournament_id: int, player_id: int):
                       join matches m on m.id = mp.matches_id
                       join tournamnets t on t.id = m.tournament_id
                       join players p on p.id = mp.players_id
-                      where t.id = ?  and p.id = ?'''
+                      where t.id = ? and p.id = ?''', 
                       (tournament_id, player_id))   
     if not won:
         return

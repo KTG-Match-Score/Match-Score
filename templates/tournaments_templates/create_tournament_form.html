@@ -17,6 +17,7 @@
             align-items: center;
             justify-content: center;
             min-height: 100vh;
+            overflow-x: hidden;
         }
 
         #topBar {
@@ -81,8 +82,9 @@
         }
 
         .topbar-button {
-            height: 50px;
+            height: 40px;
             margin-right: 10px;
+            margin-left: 10px;
         }
 
         @keyframes fade-in {
@@ -107,7 +109,7 @@
 
         <div id="userDetails">
             <span>{{ name }}</span>
-            <img src="{{ image_data_url }}" alt="User Image" style="height: 50px; width: 50px;">
+            <img src="{{ image_data_url }}" alt="User Image" style="height: 50px; width: 50px; margin-right: 10px;">
         </div>  
     </div>
     <div class="container">
