@@ -39,12 +39,13 @@ class MatchesInTournament(BaseModel):
     location: str 
     is_individuals: int 
     finished: str 
+    participant_id: int
     participant: str 
     picture: bytes 
     result: str | None 
 
     @classmethod
-    def from_query(cls, tournament_id, tournament_title, tournament_format, match_id, format, played_on, location, is_individuals, finished, participant, picture, result):
+    def from_query(cls, tournament_id, tournament_title, tournament_format, match_id, format, played_on, location, is_individuals, finished, participant_id, participant, picture, result):
         return cls(
             tournament_id=tournament_id,
             tournament_title=tournament_title,
@@ -55,6 +56,7 @@ class MatchesInTournament(BaseModel):
             location=location,
             is_individuals=is_individuals,
             finished=finished,
+            participant_id=participant_id,
             participant=participant,
             picture=picture,
             result=result
