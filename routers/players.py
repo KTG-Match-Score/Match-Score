@@ -895,7 +895,7 @@ async def show_table(
     })
     
 @players_router.get("/statistics")
-async def show_table(
+async def show_stats(
     request: Request,
     player_id:int = Query(...)
 ):
