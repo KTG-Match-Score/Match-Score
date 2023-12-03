@@ -884,16 +884,18 @@ async def show_table(
     request: Request,
     tournament_id:int = Query(...)
 ):
-    sorted_table, success = await players_services.generate_standings(tournament_id)
+    sorted_table, success, columns, tournament_name = await players_services.generate_standings(tournament_id)
     
     return templates.TemplateResponse("show_standings.html", context={
         "request": request,
         "table": sorted_table,
-        "success": success  
+        "success": success,
+        "tournament_name": tournament_name,
+        "columns": columns
     })
     
 @players_router.get("/statistics")
-async def show_table(
+async def show_stats(
     request: Request,
     player_id:int = Query(...)
 ):
@@ -902,41 +904,44 @@ async def show_table(
     class PlayerStats(BaseModel):
         tournaments_played: Optional[int] = 0
         tournaments_won: Optional[int] = 0
-        tournaments_won_names: Optional[list[str]] = []
+        tournaments_won_names: Optional[str] = []
         tournaments_second_place: Optional[int] = 0
-        tournaments_second_place_names: Optional[list[str]] = []
+        tournaments_second_place_names: Optional[str] = []
         tournaments_third_place: Optional[int] = 0
-        tournaments_third_place_names: Optional[list[str]] = [],
+        tournaments_third_place_names: Optional[str] = [],
         total_matches: Optional[list] = [],
         best_opponent: Optional[list] = [],
-        worst_opponent: Optional[list] = []
+        worst_opponent: Optional[list] = [],
+        prizes_won: Optional[int] = 0, 
         
         @classmethod
         def create_instance (
             cls, 
             tournaments_played, 
             tournaments_won,
-            tournamentstournaments_won_names,
+            tournaments_won_names,
             tournaments_second_place,
             tournaments_second_place_names,
             tournaments_third_place,
             tournaments_third_place_names,
             total_matches,
             best_opponent,
-            worst_opponent
-            
+            worst_opponent,
+            prizes_won           
             ):
+            
             return cls(
                 tournaments_played = tournaments_played, 
                 tournaments_won = tournaments_won,
-                tournamentstournaments_won_names = tournamentstournaments_won_names,
+                tournaments_won_names = tournaments_won_names,
                 tournaments_second_place = tournaments_second_place,
                 tournaments_second_place_names = tournaments_second_place_names,
                 tournaments_third_place = tournaments_third_place,
                 tournaments_third_place_names = tournaments_third_place_names,
                 total_matches = total_matches,
                 best_opponent = best_opponent,
-                worst_opponent = worst_opponent
+                worst_opponent = worst_opponent,
+                prizes_won = prizes_won
             )
         
     
@@ -948,21 +953,30 @@ async def show_table(
         first_place_all =[]
         second_place_all = []
         third_place_all = []
+        prizes_won = 0
         for tournament in tournaments_played_all:
             id, title, format, child_id = tournament
+            place = 0
             if format == "league":
                 standings = players_services.generate_standings(id)
                 if player.id == standings[0][0]:
-                    first_place_all.append(title) 
-                if player.id == standings[1][0]:
+                    first_place_all.append(title)
+                    place = 1 
+                elif player.id == standings[1][0]:
                     second_place_all.append(title) 
-                if player.id == standings[2][0]:
+                    place = 2
+                elif player.id == standings[2][0]:
                     third_place_all.append(title) 
-           
-            if format == "knockout":
-                if child_id is not None:
-                    continue
+                    place = 3
                 else:
+                    for i in range (3, len(standings)):
+                        if player.id == standings[i][0]:
+                            place = i
+                            break
+                prizes_won += players_services.find_prize_league(id, place)
+                
+            if format == "knockout":
+                if child_id is None:
                     matches = await players_services.find_finals(id)
                     if not matches:
                         continue
@@ -974,11 +988,25 @@ async def show_table(
                                 if i == 0 or i == 1: 
                                     if matches[i][2] == 1:
                                         first_place_all.append(title)
+                                        place = 1
                                     if matches [i][2] == 2:
                                         second_place_all.append(title)
+                                        place = 2
                                 if i == 2 or i == 3:
                                     if matches[i][2] == 0 or matches[i][2] == 1:
-                                        third_place_all.append(title)                           
+                                        third_place_all.append(title) 
+                                        place = 3
+                                    else:
+                                        place = 4
+                                prizes_won += await players_services.find_prize_league(id, place)
+                else:
+                    match_won = await players_services.find_match_won(id, player.id)   
+                    if not match_won:
+                        continue
+                    elif match_won == 1:
+                        continue
+                    else:
+                        prizes_won += await players_services.find_prize_knockout_not_final(id)                       
                                         
             if format == "single":
                 items = await players_services.find_single_place(id, player.id)
@@ -991,12 +1019,15 @@ async def show_table(
                     if place == 2:
                         second_place_all.append(title)
                     if place == 3:
-                        third_place_all.append(title)            
-        total_stats.extend([len(first_place_all), first_place_all, len(second_place_all), second_place_all, len(third_place_all), third_place_all])
+                        third_place_all.append(title) 
+                    prizes_won += players_services.find_prize_league(id, place)             
+                               
+        total_stats.extend([len(first_place_all), ', '.join(first_place_all), len(second_place_all), ', '.join(second_place_all), len(third_place_all), ', '.join(third_place_all)])
         total_matches, best_oponent, worst_oponent = await players_services.find_matches(player_id)
         total_stats.append(total_matches)
         total_stats.append(best_oponent)
         total_stats.append(worst_oponent)
+        total_stats.append(prizes_won)
         statistics = PlayerStats.create_instance(*total_stats)
     else:
         statistics = None

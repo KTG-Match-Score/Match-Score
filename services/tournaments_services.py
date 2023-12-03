@@ -85,6 +85,7 @@ def get_tournaments_by_date(date: date):
                     m.location AS match_location,
                     t.is_individuals AS match_is_individuals,
                     m.finished AS match_finished,
+                    p.id as participant_id,
                     p.full_name AS participant,
                     p.profile_picture AS profile_or_logo,
                     mp.result AS result
@@ -107,6 +108,7 @@ def get_tournaments_by_date(date: date):
                     tp.match_location AS location,
                     tp.match_is_individuals AS is_individuals,
                     tp.match_finished AS finished,
+                    tp.participant_id,
                     tp.participant,
                     tp.profile_or_logo AS picture,
                     tp.result
@@ -132,6 +134,7 @@ def get_tournaments_by_date(date: date):
         location = info.location
         is_individuals = info.is_individuals
         finished = info.finished
+        participant_id = info.participant_id
         participant = info.participant
         picture = base64.b64encode(info.picture).decode("utf-8")
         result = info.result
@@ -152,6 +155,7 @@ def get_tournaments_by_date(date: date):
                 "finished": finished,
                 "participants": {
                     participant: {
+                        "participant_id": participant_id,
                         "result": result,
                         "picture": picture,
                     }
@@ -161,6 +165,7 @@ def get_tournaments_by_date(date: date):
             tournaments[tournament_id]["matches"][match_id]["participants"][
                 participant
             ] = {
+                "participant_id": participant_id,
                 "result": result,
                 "picture": picture,
             }
