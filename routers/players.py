@@ -899,20 +899,20 @@ async def show_stats(
     request: Request,
     player_id:int = Query(...)
 ):
-    player_from_db = players_services.find_player_with_sport(player_id)
+    player_from_db = await players_services.find_player_with_sport(player_id)
     
     class PlayerStats(BaseModel):
-        tournaments_played: Optional[int] = 0
-        tournaments_won: Optional[int] = 0
-        tournaments_won_names: Optional[str] = []
-        tournaments_second_place: Optional[int] = 0
-        tournaments_second_place_names: Optional[str] = []
-        tournaments_third_place: Optional[int] = 0
-        tournaments_third_place_names: Optional[str] = [],
-        total_matches: Optional[list] = [],
-        best_opponent: Optional[list] = [],
-        worst_opponent: Optional[list] = [],
-        prizes_won: Optional[int] = 0, 
+        tournaments_played: Optional[int] 
+        tournaments_won: Optional[int] 
+        tournaments_won_names: Optional[str] 
+        tournaments_second_place: Optional[int] 
+        tournaments_second_place_names: Optional[str] 
+        tournaments_third_place: Optional[int] 
+        tournaments_third_place_names: Optional[str] 
+        total_matches: Optional[list] 
+        best_opponent: Optional[list] 
+        worst_opponent: Optional[list] 
+        prizes_won: Optional[int]  
         
         @classmethod
         def create_instance (
@@ -946,7 +946,12 @@ async def show_stats(
         
     
     if player_from_db:
+        success = None
         player = Player.from_query(*player_from_db)
+        mime_type = "image/jpg"
+        base64_encoded_data = base64.b64encode(player.picture).decode('utf-8')
+        image_data_url = f"data:{mime_type};base64,{base64_encoded_data}" 
+        player.picture = image_data_url
         total_stats = []
         tournaments_played_all = await players_services.find_tournaments_played(player_id)
         total_stats.append(len(tournaments_played_all))
@@ -958,22 +963,28 @@ async def show_stats(
             id, title, format, child_id = tournament
             place = 0
             if format == "league":
-                standings = players_services.generate_standings(id)
-                if player.id == standings[0][0]:
-                    first_place_all.append(title)
-                    place = 1 
-                elif player.id == standings[1][0]:
-                    second_place_all.append(title) 
-                    place = 2
-                elif player.id == standings[2][0]:
-                    third_place_all.append(title) 
-                    place = 3
+                standings = await players_services.generate_standings(id)
+                if not standings:
+                    continue
                 else:
-                    for i in range (3, len(standings)):
-                        if player.id == standings[i][0]:
-                            place = i
-                            break
-                prizes_won += players_services.find_prize_league(id, place)
+                    try: 
+                        if player.id == standings[0][0][0]:
+                            first_place_all.append(title)
+                            place = 1 
+                        elif player.id == standings[0][1][0]:
+                            second_place_all.append(title) 
+                            place = 2
+                        elif player.id == standings[0][2][0]:
+                            third_place_all.append(title) 
+                            place = 3
+                        else:
+                            for i in range (3, len(standings)):
+                                if player.id == standings[0][i]:
+                                    place = i
+                                    break
+                    except:
+                        continue
+                prizes_won += await players_services.find_prize_league(id, place)
                 
             if format == "knockout":
                 if child_id is None:
@@ -1023,18 +1034,27 @@ async def show_stats(
                     prizes_won += players_services.find_prize_league(id, place)             
                                
         total_stats.extend([len(first_place_all), ', '.join(first_place_all), len(second_place_all), ', '.join(second_place_all), len(third_place_all), ', '.join(third_place_all)])
-        total_matches, best_oponent, worst_oponent = await players_services.find_matches(player_id)
-        total_stats.append(total_matches)
-        total_stats.append(best_oponent)
-        total_stats.append(worst_oponent)
-        total_stats.append(prizes_won)
-        statistics = PlayerStats.create_instance(*total_stats)
+        data = await players_services.find_matches(player_id)
+        if not data:
+            total_stats.append([0, 0, 0])
+            total_stats.append(['', 0, 0])
+            total_stats.append(['', 0, 0])
+            total_stats.append(prizes_won)
+            statistics = PlayerStats.create_instance(*total_stats)
+        else:
+            total_matches, best_oponent, worst_oponent = data
+            total_stats.append(total_matches)
+            total_stats.append(best_oponent)
+            total_stats.append(worst_oponent)
+            total_stats.append(prizes_won)
+            statistics = PlayerStats.create_instance(*total_stats)
     else:
         statistics = None
         success = "No such player"
     
-    return templates.TemplateResponse("show_statistics.html", context={
+    return templates.TemplateResponse("show_stats.html", context={
         "request": request,
+        "player": player,
         "statistics": statistics,
         "success": success  
     })        
