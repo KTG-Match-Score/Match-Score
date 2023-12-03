@@ -305,6 +305,54 @@ def add_prizes(prizes_list: list[tuple], tournament_id, request, name, image_dat
     
     return True
 
+def add_prizes_knockout(prizes_list: list[tuple], tournament_id, request, name, image_data_url, tokens, tourns):
+    
+    try:
+        with db._get_connection() as connection:
+            cursor = connection.cursor()
+
+            for prize in prizes_list[:4]:
+                if prize[-1] == None:
+                    params = list(prize[0:3])
+                    params[0] = tourns[0]
+                    query = f'''INSERT INTO prize_allocation(tournament_id, place, format) VALUES {tuple(params)}'''
+                else:
+                    params = list(prize)
+                    params[0] = tourns[0]
+                    query = f'''INSERT INTO prize_allocation(tournament_id, place, format, amount) VALUES {tuple(params)}'''
+                cursor.execute(query)
+            t_counter = 1
+            for prize in prizes_list[4:]:
+                if prize[-1] == None:
+                    params = list(prize[0:3])
+                    params[0] = tourns[t_counter]
+                    params.pop(1)
+                    query = f'''INSERT INTO prize_allocation(tournament_id, format) VALUES {tuple(params)}'''
+                    t_counter += 1
+                else:
+                    params = list(prize)
+                    params[0] = tourns[t_counter]
+                    params.pop(1)
+                    query = f'''INSERT INTO prize_allocation(tournament_id, format, amount) VALUES {tuple(params)}'''
+                    t_counter += 1
+                cursor.execute(query)
+            connection.commit()
+        
+    except Exception as e:
+        response =  tournaments.templates.TemplateResponse("add_prizes_to_tournament.html", context={
+                "request": request,
+                "tournament_id": tournament_id,
+                "name": name, 
+                "image_data_url": image_data_url
+            })
+        response.set_cookie(key="access_token",
+                    value=tokens["access_token"], httponly=True)
+        response.set_cookie(key="refresh_token",
+                            value=tokens["refresh_token"], httponly=True)
+        return response
+    
+    return True
+
 def get_number_of_tournament_players(tournament: Tournament):
     if tournament.format == "league":
         data = read_query(f"""
@@ -313,7 +361,16 @@ def get_number_of_tournament_players(tournament: Tournament):
                         WHERE m.tournament_id = {tournament.id}""")
         return len(data)
     if tournament.format == "knockout":
-        data = read_query(f"""SELECT count(*)*2 from matches where tournament_id = {tournament.id}""")
-        return int(data[0])
+        data = read_query(f"""
+            WITH RECURSIVE TournamentHierarchy AS (
+            SELECT id, title, parent_tournament_id, child_tournament_id FROM tournaments 
+            WHERE id = {tournament.id}
+            UNION ALL
+            SELECT t.id, t.title , t.parent_tournament_id, t.child_tournament_id
+            FROM tournaments t
+            JOIN TournamentHierarchy h ON t.parent_tournament_id = h.id )
+            SELECT id FROM TournamentHierarchy where title not like '%Semi-finals%'""")
+        
+        return [el[0] for el in reversed(data)]
     if tournament.format == "single":
         return tournament.participants_per_match

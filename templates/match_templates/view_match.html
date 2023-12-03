@@ -94,11 +94,12 @@
             <button class="topbar-button" onclick="window.location.href = '/matches?tournament_id={{match.tournament_id}}'">Back to tournament</button>
 
         </div>
-
+        {% if user %}
         <div id="userDetails">
             <span>{{ user.fullname }}</span>
             <img src="{{ image_data_url }}" alt="User Image" style="height: 50px; width: 50px;">
-        </div>  
+        </div>
+        {% endif %}
     </div>
     <div class="container">
         <ul>
