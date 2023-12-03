@@ -26,16 +26,8 @@ def view_matches(
     ):
     """ no login endpoint"""
     matches = ms.view_matches(by_date, by_location, tournament_id)
-    # check user credentials
+    
     return templates.TemplateResponse("view_matches.html", {"request":request, "matches": matches})
-
-
-@matches_router.get("/create", tags=["Matches redirect"]) 
-async def create_redirect(request: Request):
-    """ requires login after redirection """
-    return templates.TemplateResponse("create_match.html", 
-                                     {"request": request},
-                                     status_code=status.HTTP_303_SEE_OTHER)
 
 
 @matches_router.get("/edit/{id}", tags=["Matches redirect"])
@@ -78,20 +70,33 @@ async def view_match_by_id(id: int, request: Request):
     match = ms.view_single_match(id)
 
     if not match: return ms.not_found(request)
+    access_token = request.cookies.get("access_token")
+    refresh_token = request.cookies.get("refresh_token")
+    tokens = {"access_token": access_token, "refresh_token": refresh_token}
 
-    user = await ms.check_user_token(request.cookies.get("access_token"), 
-                                     request.cookies.get("refresh_token"))
-
+    try:
+        user = await auth.get_current_user(access_token)
+    except:
+        try:
+            user = await auth.refresh_access_token(access_token, refresh_token)
+            tokens = auth.token_response(user)
+        except:
+            user = None
+            is_owner = False
+            return templates.TemplateResponse("view_match.html", {"request": request, 
+                                                            "match": match, 
+                                                            "user": user,
+                                                            "owner": is_owner})
     mime_type = "image/jpg"
     base64_encoded_data = base64.b64encode(user.picture).decode('utf-8')
     image_data_url = f"data:{mime_type};base64,{base64_encoded_data}"
     is_owner: bool = ms.check_if_user_is_tournament_owner(user.id, match.tournament_id)
-
     return templates.TemplateResponse("view_match.html", {"request": request, 
-                                                          "match": match, 
-                                                          "user": user,
-                                                          "image_data_url": image_data_url,
-                                                          "owner": is_owner})
+                                                    "match": match, 
+                                                    "user": user,
+                                                    "image_data_url": image_data_url,
+                                                    "owner": is_owner})
+                                     
 
 @matches_router.get("/match-result/{id}", tags=["Matches redirect"])
 async def add_result_redirect(id: int, request: Request):
@@ -137,6 +142,7 @@ async def add_result(request: Request, id: int):
         return RedirectResponse(url='/users/dashboard', status_code=303)
 
     match = ms.view_single_match(id)
+    if not match: return ms.not_found(request)
     tournament = await ms.get_tournament_by_id(match.tournament_id)
     
     try:
@@ -147,7 +153,6 @@ async def add_result(request: Request, id: int):
     except UserWarning as e:
         return ms.bad_request(request, "Error while converting the score! Review your input")
     
-    if not match: return ms.not_found(request)
     if match.played_on < datetime.utcnow() and match.finished == "not finished":
         ms.change_match_to_finished(match)
     if match.finished == "not finished":
