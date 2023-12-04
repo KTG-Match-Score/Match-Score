@@ -133,7 +133,7 @@
             {% else %}
                 <h2 style="text-align: center;">Statisitics for {{player.fullname}} <img src="{{ player.picture }}" alt="Image" style="height: 50px; width: 50px;"></h2>
                 <div class="outercontainer">
-                    <table style = "width: 100%;">
+                    <table style = "width: 60%;">
                         <tr>
                             <td><strong>Total Tournaments Played</strong></td>
                             <td>{{ statistics.tournaments_played }}</td>
@@ -174,18 +174,18 @@
                             <td><strong> Total Loss Ratio</strong></td>
                             <td>{{ '%.2f%%' | format(statistics.total_matches[2]*100) }}</td>
                         </tr>
-                        {% if best_opponent|length>0%}
+                        {% if statistics.best_opponent|length>0%}
                         <tr>
                             <td><strong> Best Opponent</strong></td>
-                            <td>{{ statistics.best_opponent[0] }}</td>
+                            <td>{{ statistics.best_opponent[0][0] }}</td>
                         </tr>
                         <tr>
                             <td><strong> Total Matches against Best Opponent</strong></td>
-                            <td>{{ statistics.best_opponent[1] }}</td>
+                            <td>{{ statistics.best_opponent[0][1] }}</td>
                         </tr>
                         <tr>
                             <td><strong> Win Ratio against Best Opponent</strong></td>
-                            <td>{{ '%.2f%%' | format(statistics.best_opponent[2]) }}</td>
+                            <td>{{ '%.2f%%' | format(statistics.best_opponent[0][2]*100) }}</td>
                         </tr>
                         {% else %}
                         <tr>
@@ -201,18 +201,18 @@
                             <td> n/a </td>
                         </tr>
                         {% endif %}
-                        {% if worst_opponent|length>0 %}
+                        {% if statistics.worst_opponent|length>0 %}
                         <tr>
                             <td><strong> Worst Opponent</strong></td>
-                            <td>{{ statistics.worst_opponent[0] }}</td>
+                            <td>{{ statistics.worst_opponent[0][0] }}</td>
                         </tr>
                         <tr>
                             <td><strong> Total Matches against Worst Opponent</strong></td>
-                            <td>{{ statistics.worst_opponent[1] }}</td>
+                            <td>{{ statistics.worst_opponent[0][1] }}</td>
                         </tr>
                         <tr>
                             <td><strong> Loss Ratio against Worst Opponent</strong></td>
-                            <td>{{ '%.2f%%' | format(statistics.worst_opponent[2]) }}</td>
+                            <td>{{ '%.2f%%' | format(statistics.worst_opponent[0][2]*100) }}</td>
                         </tr>
                         {%else%}
                         <tr>
