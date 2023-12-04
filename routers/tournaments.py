@@ -79,6 +79,8 @@ async def show_add_prizes_to_tournament_form(request: Request,
 
     tournament = await ms.get_tournament_by_id(tournament_id)
     max_players = tournaments_services.get_number_of_tournament_players(tournament)
+    max_players = (len(max_players) + 3) if isinstance(max_players, list) else max_players
+
     response = templates.TemplateResponse("add_prizes_to_tournament_form.html", 
                                           context={
                                               "request": request, 
@@ -217,8 +219,9 @@ async def add_prizes_to_tournament(request: Request):
     tournament_id = data.get("tournament_id")
     tournament = await ms.get_tournament_by_id(tournament_id)
     max_players = tournaments_services.get_number_of_tournament_players(tournament)
+    max_prizes = (len(max_players) + 3) if isinstance(max_players, list) else max_players
 
-    if max_players < num_of_places:
+    if max_prizes < num_of_places:
         url = f"/tournaments/add_prizes_to_tournament_form?tournament_id={tournament.id}"
         return RedirectResponse(url= url, status_code=303)
 
@@ -240,7 +243,10 @@ async def add_prizes_to_tournament(request: Request):
     name = user.fullname
     image_data_url = image_data_url
 
-    action = tournaments_services.add_prizes(prizes_for_insert, tournament_id, request, name, image_data_url, tokens)
+    if tournament.format != "knockout":
+        action = tournaments_services.add_prizes(prizes_for_insert, tournament_id, request, name, image_data_url, tokens)
+    else:
+        _ = tournaments_services.add_prizes_knockout(prizes_for_insert, tournament_id, request, name, image_data_url, tokens, max_players)
     url = f"../matches/?tournament_id={tournament_id}"
     response = RedirectResponse(url = url, status_code=303)
     response.set_cookie(key="access_token",
