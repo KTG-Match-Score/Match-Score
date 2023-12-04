@@ -9,8 +9,6 @@ from services import matches_services as ms
 from fastapi.templating import Jinja2Templates
 from datetime import date, datetime
 from fastapi.responses import RedirectResponse, JSONResponse
-import json
-import httpx
 import base64
 
 
