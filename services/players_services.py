@@ -362,60 +362,44 @@ async def find_single_place(tournament_id: int, player_id):
 async def find_matches(player_id: int):
     best_opponent= read_query('''
                       select p1.full_name, count(m.id) as total_matches, 
-                      if (count(m.id) = 0, 0, (select count(mp2.matches_id) from matches_has_players mp2 where mp2.players_id = p.id and mp2.place =1)/count(m.id)) as win_ratio
+                      count(if(mp.place=1,1, Null))/count(m.id) as win_ratio
                       from matches_has_players mp
                       join players p on p.id = mp.players_id
                       join matches m on mp.matches_id = m.id
                       join matches_has_players mp1 on mp1.matches_id = m.id and mp1.players_id != ?
                       join players p1 on p1.id = mp1.players_id
                       join tournaments t on m.tournament_id = t.id
-                      where p.id = ? and t.format != ?
-                      group by p1.full_name
-                      having win_ratio = (select max(sub.win_ratio) 
-                      from (SELECT 
-                        if(count(m.id) = 0, 0, (select count(mp2.matches_id) FROM matches_has_players mp2 WHERE mp2.players_id = p.id AND mp2.place = 1) / COUNT(m.id)) as win_ratio
-                        from matches_has_players mp
-                        join players p on p.id = mp.players_id
-                        join matches m on mp.matches_id = m.id
-                        join matches_has_players mp1 on mp1.matches_id = m.id and mp1.players_id != ?
-                        join players p1 on p1.id = mp1.players_id
-                        join tournaments t on m.tournament_id = t.id
-                        WHERE p.id = ? and t.format != ?
-                        GROUP BY p1.full_name
-                        ) sub)''',
-                      (player_id, player_id, "single", player_id, player_id, "single"))
+                      where p.id = ? and t.format != ? and mp.result is not null
+                      group by p1.full_name 
+                      order by
+                        win_ratio desc,
+                        total_matches desc
+                      limit 1''',
+                      (player_id, player_id, "single"))
     worst_opponent = read_query('''
-                      select p1.full_name, count(m.id) as total_matches,  
-                      if (count(m.id) = 0, 0,(select count(mp2.matches_id) from matches_has_players mp2 where mp2.players_id = p.id and mp2.place =2)/count(m.id)) as loss_ratio
+                      select p1.full_name, count(m.id) as total_matches, 
+                      count(if(mp.place=2,1, Null))/count(m.id) as loss_ratio
                       from matches_has_players mp
                       join players p on p.id = mp.players_id
                       join matches m on mp.matches_id = m.id
                       join matches_has_players mp1 on mp1.matches_id = m.id and mp1.players_id != ?
                       join players p1 on p1.id = mp1.players_id
                       join tournaments t on m.tournament_id = t.id
-                      where p.id = ? and t.format != ?
-                      group by p1.full_name
-                      having loss_ratio = (select max(sub.loss_ratio) 
-                      from (SELECT 
-                        if (count(m.id) = 0, 0, (select count(mp2.matches_id) FROM matches_has_players mp2 WHERE mp2.players_id = p.id AND mp2.place = 2) / COUNT(m.id)) as loss_ratio
-                        from matches_has_players mp
-                        join players p on p.id = mp.players_id
-                        join matches m on mp.matches_id = m.id
-                        join matches_has_players mp1 on mp1.matches_id = m.id and mp1.players_id != ?
-                        join players p1 on p1.id = mp1.players_id
-                        join tournaments t on m.tournament_id = t.id
-                        WHERE p.id = ? and t.format != ?
-                        GROUP BY p1.full_name
-                        ) sub)''',
-                      (player_id, player_id, "single", player_id, player_id, "single"))
+                      where p.id = ? and t.format != ? and mp.result is not null
+                      group by p1.full_name 
+                      order by
+                        loss_ratio desc,
+                        total_matches desc
+                      limit 1''''',
+                      (player_id, player_id, "single"))
     total_matches = read_query('''
                       select count(m.id) as total_matches, 
-                      if(count(m.id) = 0, 0,(select count(mp1.matches_id) from matches_has_players mp1 where mp1.players_id = p.id and mp1.place =1)/count(m.id)) as win_ratio, 
-                      if(count(m.id) = 0, 0,(select count(mp1.matches_id) from matches_has_players mp1 where mp1.players_id = p.id and mp1.place =2)/count(m.id)) as loss_ratio
+                      count(if(mp.place=1,1, Null))/count(m.id) as win_ratio, 
+                      count(if(mp.place=2,1, Null))/count(m.id) as loss_ratio
                       from matches_has_players mp
                       join players p on p.id = mp.players_id
                       join matches m on mp.matches_id = m.id
-                      where p.id = ?''',
+                      where p.id = ? and mp.result is not null''',
                       (player_id,))
     if total_matches == []:
         return
@@ -434,9 +418,9 @@ async def  find_prize_league(tournament_id: int, place: int):
 
 async def find_match_won (tournament_id: int, player_id: int):
     won = read_query ('''select mp.place 
-                      from matches_has players mp
+                      from matches_has_players mp
                       join matches m on m.id = mp.matches_id
-                      join tournamnets t on t.id = m.tournament_id
+                      join tournaments t on t.id = m.tournament_id
                       join players p on p.id = mp.players_id
                       where t.id = ?  and p.id = ?''',
                       (tournament_id, player_id))   
