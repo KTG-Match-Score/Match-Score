@@ -496,12 +496,14 @@ FAKE_TOURNAMENTS_BY_DATE = [
     (
         1,
         "Wimbledon First Round",
+        "knockout",
         7,
         "score limited",
         datetime(2023, 12, 21, 13, 0),
         "London",
         1,
         "not finished",
+        1,
         "Lorenzo Musetti",
         club_pic,
         None,
@@ -509,12 +511,14 @@ FAKE_TOURNAMENTS_BY_DATE = [
     (
         1,
         "Wimbledon First Round",
+        "knockout",
         7,
         "score limited",
         datetime(2023, 12, 21, 13, 0),
         "London",
         1,
         "not finished",
+        2,
         "Jiri Lehecka",
         club_pic,
         None,
@@ -522,12 +526,14 @@ FAKE_TOURNAMENTS_BY_DATE = [
     (
         2,
         "Champions League Group A",
+        "league",
         10,
         "time limited",
         datetime(2023, 12, 21, 17, 0),
         "Barcelona",
         0,
         "not finished",
+        3,
         "Manchester United",
         club_pic,
         None,
@@ -535,12 +541,14 @@ FAKE_TOURNAMENTS_BY_DATE = [
     (
         2,
         "Champions League Group A",
+        "league",
         10,
         "time limited",
         datetime(2023, 12, 21, 17, 0),
         "Barcelona",
         0,
         "not finished",
+        4,
         "Lazio",
         club_pic,
         None,
@@ -548,12 +556,14 @@ FAKE_TOURNAMENTS_BY_DATE = [
     (
         2,
         "Champions League Group A",
+        "league",
         11,
         "time limited",
         datetime(2023, 12, 21, 21, 45),
         "Paris",
         0,
         "not finished",
+        5,
         "Real Madrid",
         club_pic,
         None,
@@ -561,12 +571,14 @@ FAKE_TOURNAMENTS_BY_DATE = [
     (
         2,
         "Champions League Group A",
+        "league",
         11,
         "time limited",
         datetime(2023, 12, 21, 21, 45),
         "Paris",
         0,
         "not finished",
+        6,
         "Ajax",
         club_pic,
         None,
@@ -578,6 +590,7 @@ FAKE_GET_TOURNAMENTS_BY_DATE_RETURN = {
     1: {
         "tournament_id": 1,
         "tournament_title": "Wimbledon First Round",
+        "tournament_format": "knockout",
         "format": "score limited",
         "matches": {
             7: {
@@ -587,13 +600,15 @@ FAKE_GET_TOURNAMENTS_BY_DATE_RETURN = {
                 "finished": "not finished",
                 "participants": {
                     "Lorenzo Musetti": {
+                        "participant_id": 1,
                         "result": None,
-                        "picture": base64_encoded_data
+                        "picture": base64_encoded_data,
                     },
                     "Jiri Lehecka": {
+                        "participant_id": 2,
                         "result": None,
-                        "picture": base64_encoded_data
-                   },
+                        "picture": base64_encoded_data,
+                    },
                 },
             }
         },
@@ -601,6 +616,7 @@ FAKE_GET_TOURNAMENTS_BY_DATE_RETURN = {
     2: {
         "tournament_id": 2,
         "tournament_title": "Champions League Group A",
+        "tournament_format": "league",
         "format": "time limited",
         "matches": {
             10: {
@@ -610,12 +626,14 @@ FAKE_GET_TOURNAMENTS_BY_DATE_RETURN = {
                 "finished": "not finished",
                 "participants": {
                     "Manchester United": {
+                        "participant_id": 3,
                         "result": None,
-                        "picture": base64_encoded_data
+                        "picture": base64_encoded_data,
                     },
                     "Lazio": {
+                        "participant_id": 4,
                         "result": None,
-                        "picture": base64_encoded_data
+                        "picture": base64_encoded_data,
                     },
                 },
             },
@@ -626,12 +644,14 @@ FAKE_GET_TOURNAMENTS_BY_DATE_RETURN = {
                 "finished": "not finished",
                 "participants": {
                     "Real Madrid": {
+                        "participant_id": 5,
                         "result": None,
-                        "picture": base64_encoded_data
+                        "picture": base64_encoded_data,
                     },
                     "Ajax": {
+                        "participant_id": 6,
                         "result": None,
-                        "picture": base64_encoded_data
+                        "picture": base64_encoded_data,
                     },
                 },
             },
@@ -639,3 +659,48 @@ FAKE_GET_TOURNAMENTS_BY_DATE_RETURN = {
     },
 }
 
+FAKE_KNOCKOUT_TOURNAMENT_LADDER_LIST = [
+    {"id": 1, "title": "Wimbledon First Round", "parent_id": None},
+    {"id": 2, "title": "Wimbledon Semi-Final", "parent_id": 1},
+    {"id": 3, "title": "Wimbledon Final", "parent_id": 2},
+]
+
+
+FAKE_CREATE_TOURNAMENT_FORM_DATA = {
+    "title": "Test Tournament",
+    "format": "league",
+    "prize_type": None,
+    "start_date": datetime.fromisoformat("2023-12-06 12:00:00"),
+    "end_date": datetime.fromisoformat("2023-12-08 12:00:00"),
+    "parent_tournament_id": None,
+    "participants_per_match": 2,
+    "is_individuals": False,
+    "number_of_participants": 3,
+    "sport_name": "Football",
+}
+
+FAKE_CREATE_TOURNAMENT_FORM_DATA_WRONG_SINGLE = {
+    "title": "Test Tournament",
+    "format": "single",
+    "prize_type": None,
+    "start_date": None,
+    "end_date": None,
+    "parent_tournament_id": None,
+    "participants_per_match": 4,
+    "is_individuals": False,
+    "number_of_participants": 2,
+    "sport_name": "Football",
+}
+
+FAKE_CREATE_TOURNAMENT_FORM_DATA_WRONG_LEAAGUE = {
+    "title": "Test Tournament",
+    "format": "league",
+    "prize_type": None,
+    "start_date": None,
+    "end_date": None,
+    "parent_tournament_id": None,
+    "participants_per_match": 4,
+    "is_individuals": False,
+    "number_of_participants": 2,
+    "sport_name": "Football",
+}
