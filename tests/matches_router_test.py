@@ -307,6 +307,24 @@ class MatchesRouterShould(IsolatedAsyncioTestCase):
             self.assertIn(fake_director.fullname, response.text)
             self.assertNotIn("You are not authorised to view that content!", response.text)
 
+    def test_addResult_returnsBadRequest_ifNotEnoughPlayersInTheMatch(self):
+        # Arrange
+        match = Match(**fake_match)
+        match.participants = []
+        tournament = Tournament(**fake_tournament)
+        with (patch("routers.matches"),
+              patch("routers.matches.ms.view_single_match", return_value=match),
+              patch("routers.matches.ms.check_user_token", return_value=fake_director),
+              patch("routers.matches.ms.get_tournament_by_id", return_value=tournament)):
+
+            mock_request = Mock()
+            mock_request.json.return_value = [{'14': '1', '24': ''}]
+        # Act
+            response = self.client.post(f"/matches/result/{match.id}",
+                                        json=mock_request.json.return_value)
+        # Assert
+            self.assertEqual(400, response.status_code)
+
     def test_addResult_returnsBadRequest_ifResultIsNotConverted(self):
         # Arrange
         match = Match(**fake_match)
@@ -408,6 +426,7 @@ class MatchesRouterShould(IsolatedAsyncioTestCase):
         match = Match(**fake_match)
         match.finished = "finished"
         match.has_result = True
+        match.participants = ["Fake_Grigor Dimitrov", "Fake_Roger Federer"]
         tournament = Tournament(**fake_tournament)
         with (patch("routers.matches"),
               patch("routers.matches.ms.view_single_match", return_value=match),
@@ -437,7 +456,7 @@ class MatchesRouterShould(IsolatedAsyncioTestCase):
             self.assertEqual(303, response.history[0].status_code)
             self.assertIn("MatchScore Landing Page", response.text)
             self.assertNotIn(fake_user_player.fullname, response.text)
-# -----------------------------------------------------------------------------
+
     def test_editMatch_returnsNotFound_ifMatchNotFound(self):
         # Arrange
         match = Match(**fake_match)
