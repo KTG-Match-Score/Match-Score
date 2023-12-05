@@ -122,7 +122,7 @@ async def create_tournament(request: Request,
                             number_of_participants: int = Form(min=2),
                             sport_name: str = Form(min_length=3, max_length=60)):
 
-    print(start_date)
+    
     access_token = request.cookies.get("access_token")
     refresh_token = request.cookies.get("refresh_token")
     tokens = {"access_token": access_token, "refresh_token": refresh_token}
@@ -208,7 +208,7 @@ async def add_prizes_to_tournament(request: Request):
             tokens = auth.token_response(user)
         except:
             RedirectResponse(url= "/", status_code=303)
-
+ 
     if user.role != "director" and user.role != "admin":
         return RedirectResponse(url= "/users/dashboard", status_code=303)
     
@@ -217,13 +217,14 @@ async def add_prizes_to_tournament(request: Request):
     tournament_id = data.get("tournament_id")
     tournament = await ms.get_tournament_by_id(tournament_id)
     max_players = tournaments_services.get_number_of_tournament_players(tournament)
-
-    if max_players < num_of_places:
+    max_prizes = (len(max_players) + 3) if isinstance(max_players, list) else max_players
+ 
+    if max_prizes < num_of_places:
         url = f"/tournaments/add_prizes_to_tournament_form?tournament_id={tournament.id}"
         return RedirectResponse(url= url, status_code=303)
-
+ 
     prizes_for_insert = []
-
+ 
     for prize in range(1, num_of_places + 1):
         place = prize
         format = data.get(f"prize_for_place_{prize}")
@@ -233,14 +234,17 @@ async def add_prizes_to_tournament(request: Request):
         elif amount == '':
             amount = None
         prizes_for_insert.append((tournament_id, place, format, amount))
-
+ 
     mime_type = "image/jpg"
     base64_encoded_data = base64.b64encode(user.picture).decode('utf-8')
     image_data_url = f"data:{mime_type};base64,{base64_encoded_data}"
     name = user.fullname
     image_data_url = image_data_url
-
-    action = tournaments_services.add_prizes(prizes_for_insert, tournament_id, request, name, image_data_url, tokens)
+ 
+    if tournament.format != "knockout":
+        action = tournaments_services.add_prizes(prizes_for_insert, tournament_id, request, name, image_data_url, tokens)
+    else:
+        _ = tournaments_services.add_prizes_knockout(prizes_for_insert, tournament_id, request, name, image_data_url, tokens, max_players)
     url = f"../matches/?tournament_id={tournament_id}"
     response = RedirectResponse(url = url, status_code=303)
     response.set_cookie(key="access_token",
