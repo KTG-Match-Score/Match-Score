@@ -179,7 +179,10 @@ async def create_match(data: dict[Tournament, dict, str]):
         for subtournament, play in schema.items():
             if isinstance(play, list):
                 for pl in play:
-                    participants = create_players_from_ids(pl)
+                    if isinstance(pl, int):
+                        participants = create_players_from_ids(play)
+                    else:
+                        participants = create_players_from_ids(pl)
                     
                     create_new_match(
                         Match(
@@ -446,6 +449,7 @@ def create_subtournament(subtournament: str, parent: Tournament, user, sport):
     new_tournament = Tournament(title=subtournament,
                                 format=parent.format,
                                 start_date=parent.start_date,
+                                prize_type=parent.prize_type,
                                 end_date=parent.end_date,
                                 parent_tournament_id=parent.id,
                                 participants_per_match=parent.participants_per_match,

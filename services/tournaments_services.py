@@ -370,7 +370,10 @@ def get_number_of_tournament_players(tournament: Tournament):
             FROM tournaments t
             JOIN TournamentHierarchy h ON t.parent_tournament_id = h.id )
             SELECT id FROM TournamentHierarchy where title not like '%Semi-finals%'""")
-        
+        if len(data) == 2:
+            return [data[1][0]]
+        elif len(data) == 1:
+            return [data[0][0]]
         return [el[0] for el in reversed(data)]
     if tournament.format == "single":
         return tournament.participants_per_match
