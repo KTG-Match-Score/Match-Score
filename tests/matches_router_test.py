@@ -546,4 +546,4 @@ class MatchesRouterShould(IsolatedAsyncioTestCase):
         # Act 
             response = self.client.post(f"/matches/edit/{id}", data=new_params)
         # Assert
-            self.assertEqual(200, response.status_code) # should be 500, refactor the endpoint
+            self.assertEqual(500, response.status_code, "Status code should be 500, refactor the endpoint")
