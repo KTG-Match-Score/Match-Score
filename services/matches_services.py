@@ -2,7 +2,7 @@ import base64
 from datetime import datetime, timedelta
 from math import ceil
 from typing import Optional
-from data.database import read_query, insert_query, update_query
+from data.database import read_query, insert_query, update_query, _get_connection
 from models.match import Match
 from models.player import Player
 from models.tournament import Tournament
@@ -410,13 +410,22 @@ def count_matches_in_tournament(tournament: Tournament):
 
     return flatten_data
 
-def assign_player_to_next_match(next_match: int, player: dict):
+def assign_player_to_next_match(next_match: int, player: dict, tournament_id: int):
     player_id = list(player.keys())[0]
-    result = insert_query(f"""
-                          INSERT INTO matches_has_players (matches_id, players_id, result, place)
-                          VALUES({next_match}, {player_id}, NULL, 0)""")
-    
-    return result == 0
+    mp_query = f"""INSERT INTO matches_has_players (matches_id, players_id, result, place)
+                    VALUES ({next_match}, {player_id}, NULL, 0);
+                    """
+    tp_query = f'''INSERT INTO tournaments_has_players (tournaments_id, players_id)
+                          VALUES ({tournament_id}, {player_id});'''
+    try:    
+        with _get_connection() as connection:
+            cursor = connection.cursor()
+            cursor.execute(mp_query)
+            cursor.execute(tp_query)
+            connection.commit()
+        return True
+    except Exception as e:
+        return e
 
 async def assign_to_next_match(match: Match, players: dict):
     winner, loser = players[1], players[2]
@@ -435,13 +444,13 @@ async def assign_to_next_match(match: Match, players: dict):
                 next_match_id = child_matches[next_match_index - 1]
                 break
         
-        assign_player_to_next_match(next_match_id, winner)
+        assign_player_to_next_match(next_match_id, winner, child.id)
         # check if next tournament is the final round
     if child:
         if child.child_tournament_id is None:
             next_match_index = 1
             next_match_id = child_matches[next_match_index]
-            assign_player_to_next_match(next_match_id, loser)
+            assign_player_to_next_match(next_match_id, loser, child.id)
 
     return tournament
 
