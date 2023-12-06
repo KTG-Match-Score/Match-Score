@@ -451,9 +451,11 @@
                                     participantLink.style.cursor = "pointer";
                                     participantLink.textContent = participant;
                                     
-                                    participantLink.onclick = function () {
-                                        window.location = `/players/statistics?player_id=${participantInfo.participant_id}`;
-                                    };
+                                    (function (info) {
+                                        participantLink.onclick = function () {
+                                            window.location = `/players/statistics?player_id=${info.participant_id}`;
+                                        };
+                                    })(participantInfo);
 
                                     pParticipants.appendChild(participantLink);
                                     
