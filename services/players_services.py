@@ -238,7 +238,7 @@ async def generate_standings(tournament_id: int):
             table = []
             if matches:
                 success = None
-                columns = ['', '', '', 'Matches Played', 'Goals For', 'Goals Against', 'Goal Diffence', 'Points']
+                columns = ['', '', '', 'Matches Played', 'Goals For', 'Goals Against', 'Goal Difference', 'Points']
                 tournament_name = tournament[2]
                 player_added = []
                 for item in matches:
@@ -283,7 +283,7 @@ async def generate_standings(tournament_id: int):
                         player.extend([0,0,0,0,0])
                         table.append(player)
                     success = None
-                    columns = ['', '', '', 'Matches Played', 'Goals For', 'Goals Against', 'Goal Diffence', 'Points']
+                    columns = ['', '', '', 'Matches Played', 'Goals For', 'Goals Against', 'Goal Difference', 'Points']
                     tournament_name = tournament[2]
                     sorted_table = table
                     
