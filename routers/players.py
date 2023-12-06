@@ -1031,7 +1031,7 @@ async def show_stats(
                         second_place_all.append(title)
                     if place == 3:
                         third_place_all.append(title) 
-                    prizes_won += players_services.find_prize_league(id, place)             
+                    prizes_won += await players_services.find_prize_league(id, place)             
                                
         total_stats.extend([len(first_place_all), ', '.join(first_place_all), len(second_place_all), ', '.join(second_place_all), len(third_place_all), ', '.join(third_place_all)])
         data = await players_services.find_matches(player_id)
