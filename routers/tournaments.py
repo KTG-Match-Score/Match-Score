@@ -79,6 +79,7 @@ async def show_add_prizes_to_tournament_form(request: Request,
 
     tournament = await ms.get_tournament_by_id(tournament_id)
     max_players = tournaments_services.get_number_of_tournament_players(tournament)
+    max_players = (len(max_players) + 3) if isinstance(max_players, list) else max_players
     response = templates.TemplateResponse("add_prizes_to_tournament_form.html", 
                                           context={
                                               "request": request, 
