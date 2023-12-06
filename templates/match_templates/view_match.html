@@ -54,7 +54,15 @@
             cursor: pointer;
             transition: background-color 0.3s, color 0.3s;
         }
-
+        .player-button {
+            background-color: rgba(0, 0, 0, 0.4);
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s, color 0.3s
+        }
         button:hover {
             background-color: #45a049;
         }
@@ -63,9 +71,9 @@
             padding: 0;
         }
         li {
-            margin-bottom: 20px;
-            border-bottom: 1px solid #555555;
-            padding-bottom: 10px;
+            margin-bottom: 10px;
+            border-bottom: 0.1px solid black;
+            padding-bottom: 5px;
         }
         h2 {
             text-align: center;
@@ -91,7 +99,8 @@
         <div class="buttons-container">
             <button class="topbar-button" onclick="location.href='/users/dashboard'">Back to Dashboard</button>
             <button class="topbar-button" onclick="location.href='/'">Main Page</button>
-            <button class="topbar-button" onclick="window.location.href = '/matches?tournament_id={{match.tournament_id}}'">Back to tournament</button>
+            <button class="topbar-button" onclick="window.location.href = '/matches?tournament_id={{match.tournament_id}}'">
+                Back to tournament</button>
 
         </div>
         {% if user %}
@@ -112,14 +121,21 @@
                     {% else %}
                     {% for player in match.participants %}
                         {% if match.finished == "finished" %}
-                            <h4 style="text-align: center;"><img src="{{ player.picture }}" alt="{{ player.fullname }}" 
-                            style="height: 30px; width: 30px; border-radius: 50%;">
-                            {{ player.fullname }}, {{ player.country_code }}:
-                            <strong>{{ player.result }}</strong></h4>
+                        <h4 style="text-align: center; display: flex; align-items: flex-end; justify-content: center;">
+                            <img src="{{ player.picture }}" alt="{{ player.fullname }}" 
+                            style="height: 30px; width: 30px; border-radius: 50%; margin-right: 5px;">
+                            <button class="player-button" onclick="location.href='/players/statistics?player_id={{ player.id }}'">
+                                {{ player.fullname }}, {{ player.country_code }}
+                            </button>
+                            <strong style="margin-left: 10px;">{{ player.result }}</strong>
+                        </h4>
                         {% else %}
-                            <h4 style="text-align: center;"> <img src="{{ player.picture }}" alt="{{ player.fullname }}" 
-                            style="height: 30px; width: 30px; border-radius: 50%;">
-                            {{ player.fullname }}, {{ player.country_code }}</h4>
+                            <h4 style="text-align: center; display: flex; align-items: flex-end; justify-content: center;"> 
+                                <img src="{{ player.picture }}" alt="{{ player.fullname }}" 
+                                style="height: 30px; width: 30px; border-radius: 50%; margin-right: 5px;">
+                            <button class="player-button" onclick="location. href='/players/statistics?player_id={{ player.id }}'">
+                                {{ player.fullname }}, {{ player.country_code }}</button>
+                        </h4>
                         {% endif %}
                     {% endfor %}
                 {% endif %}
@@ -133,15 +149,21 @@
                 {% for player in match.participants|sort(attribute="place") %}
                 <li>
                     {% if match.finished == "finished" %}
-                        <p style="text-align: center;"><img src="{{ player.picture }}" alt="{{ player.fullname }}" 
-                        style="height: 30px; width: 30px; border-radius: 50%;">
-                        {{ player.fullname }}, {{ player.country_code }} <br>Place:
-                        <strong>{{ player.place}}</strong>, Score: <strong>{{ player.result }}</strong></p>
+                        <h4 style="text-align: center; display: flex; align-items: flex-end; justify-content: center;">
+                            <img src="{{ player.picture }}" alt="{{ player.fullname }}" 
+                                style="height: 30px; width: 30px; border-radius: 50%; margin-right: 5px;">
+                        <button class="player-button" onclick="location. href='/players/statistics?player_id={{ player.id }}'" >
+                            {{ player.fullname }}, {{ player.country_code }}</button>
+                        </h4><br><p style="text-align: center;">Place: 
+                        <strong>{{ player.place}}</strong>, Score:  <strong style="margin-left: 10px;">{{ player.result }}</strong></p>
                         {{ player.result['type'] }}
                     {% else %}
-                        <p style="text-align: center;"><img src="{{ player.picture }}" alt="{{ player.fullname }}" 
-                        style="height: 30px; width: 30px; border-radius: 50%;">
-                        {{ player.fullname }}, {{ player.country_code }}</p>
+                        <p style="text-align: center; display: flex; align-items: flex-end; justify-content: center;">
+                            <img src="{{ player.picture }}" alt="{{ player.fullname }}" 
+                        style="height: 30px; width: 30px; border-radius: 50%; margin-right: 5px;">
+                        <button class="player-button" onclick="location. href='/players/statistics?player_id={{ player.id }}'" >
+                            {{ player.fullname }}, {{ player.country_code }}</button>
+                        </p>
                     {% endif %}
                 </li>
                     {% endfor %}

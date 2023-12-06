@@ -1,18 +1,11 @@
 import base64
 from datetime import datetime
-from fastapi import APIRouter, Body, Depends, Form, HTTPException, Header, Path, Query, Request, status
+from fastapi import APIRouter, Form, Path, Query, Request, status
 from fastapi.responses import JSONResponse, RedirectResponse
-from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.templating import Jinja2Templates
-from models.match import Match
-from models.player import Player
-from models.tournament import Tournament
-from models.user import User
-import services.users_services as users_services
 from services import matches_services as ms
-from typing import Annotated, Optional
+from typing import Annotated
 import common.auth as auth
-import common.responses as responses
 
 matches_router = APIRouter(prefix="/matches")
 templates = Jinja2Templates(directory="templates/match_templates")
@@ -34,8 +27,8 @@ def view_matches(
 async def edit_match_redirect(id: int, request: Request):
     """ requires login after redirection """
     match = ms.view_single_match(id)
-
     if not match: return ms.not_found(request)
+    tournament = await ms.get_tournament_by_id(match.tournament_id)
     
     user = await ms.check_user_token(request.cookies.get("access_token"), 
                                      request.cookies.get("refresh_token"))
@@ -53,7 +46,8 @@ async def edit_match_redirect(id: int, request: Request):
                                         "id": id, 
                                         "match": match, 
                                         "user": user,
-                                        "image_data_url": image_data_url},
+                                        "image_data_url": image_data_url,
+                                        "tournament": tournament},
                                         status_code=status.HTTP_303_SEE_OTHER)
     return templates.TemplateResponse("return_not_authorised.html", 
                                         {"request": request, 
@@ -85,7 +79,6 @@ async def view_match_by_id(id: int, request: Request):
             is_owner = False
             return templates.TemplateResponse("view_match.html", {"request": request, 
                                                             "match": match, 
-                                                            "user": user,
                                                             "owner": is_owner})
     mime_type = "image/jpg"
     base64_encoded_data = base64.b64encode(user.picture).decode('utf-8')
@@ -144,6 +137,9 @@ async def add_result(request: Request, id: int):
     match = ms.view_single_match(id)
     if not match: return ms.not_found(request)
     tournament = await ms.get_tournament_by_id(match.tournament_id)
+
+    if len(match.participants) < tournament.participants_per_match:
+        return ms.bad_request(request, "Not enough players in this match!")
     
     try:
         result = ms.convert_result_from_string(await request.json())
@@ -227,4 +223,4 @@ async def edit_match(
                                                 {"request": request, "match": match, "user": user},
                                                 status_code=status.HTTP_202_ACCEPTED)
 
-    return responses.InternalServerError
+    return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content="Something went wrong :(")

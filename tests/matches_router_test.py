@@ -180,10 +180,12 @@ class MatchesRouterShould(IsolatedAsyncioTestCase):
     def test_editMatchRedirect_returnsNotAuthorised_ifUserIsNotTournamentOwner(self):
         # Arrange
         matches = [Match(**fake_match)]
+        tournament = Tournament(**fake_tournament)
         with (patch("routers.matches"),
               patch("routers.matches.ms.view_single_match", return_value=matches[0]),
               patch("routers.matches.ms.check_user_token", return_value=fake_director),
-              patch("routers.matches.ms.check_if_user_is_tournament_owner", return_value=False)):
+              patch("routers.matches.ms.check_if_user_is_tournament_owner", return_value=False),
+              patch("routers.matches.ms.get_tournament_by_id", return_value=tournament)):
             id = 1
         # Act
             response = self.client.get(f"/matches/edit/{id}", 
@@ -196,11 +198,12 @@ class MatchesRouterShould(IsolatedAsyncioTestCase):
     def test_editMatchRedirect_redirects_ifUserIsAdmin(self):
         # Arrange
         matches = [Match(**fake_match)]
-        
+        tournament = Tournament(**fake_tournament)
         with (patch("routers.matches"),
               patch("routers.matches.ms.view_single_match", return_value=matches[0]),
               patch("routers.matches.ms.check_user_token", return_value=fake_admin),
-              patch("routers.matches.ms.check_if_user_is_tournament_owner", return_value=True)):
+              patch("routers.matches.ms.check_if_user_is_tournament_owner", return_value=True),
+              patch("routers.matches.ms.get_tournament_by_id", return_value=tournament)):
             id = 1
         # Act
             response = self.client.get(f"/matches/edit/{id}", 
@@ -214,10 +217,12 @@ class MatchesRouterShould(IsolatedAsyncioTestCase):
     def test_editMatchRedirect_redirects_ifUserIsTournamentOwner(self):
         # Arrange
         matches = [Match(**fake_match)]
+        tournament = Tournament(**fake_tournament)
         with (patch("routers.matches"),
               patch("routers.matches.ms.view_single_match", return_value=matches[0]),
               patch("routers.matches.ms.check_user_token", return_value=fake_director),
-              patch("routers.matches.ms.check_if_user_is_tournament_owner", return_value=True)):
+              patch("routers.matches.ms.check_if_user_is_tournament_owner", return_value=True),
+              patch("routers.matches.ms.get_tournament_by_id", return_value=tournament)):
             id = 1
         # Act 
             response = self.client.get(f"/matches/edit/{id}", 
@@ -306,6 +311,24 @@ class MatchesRouterShould(IsolatedAsyncioTestCase):
             self.assertEqual(303, response.status_code)
             self.assertIn(fake_director.fullname, response.text)
             self.assertNotIn("You are not authorised to view that content!", response.text)
+
+    def test_addResult_returnsBadRequest_ifNotEnoughPlayersInTheMatch(self):
+        # Arrange
+        match = Match(**fake_match)
+        match.participants = []
+        tournament = Tournament(**fake_tournament)
+        with (patch("routers.matches"),
+              patch("routers.matches.ms.view_single_match", return_value=match),
+              patch("routers.matches.ms.check_user_token", return_value=fake_director),
+              patch("routers.matches.ms.get_tournament_by_id", return_value=tournament)):
+
+            mock_request = Mock()
+            mock_request.json.return_value = [{'14': '1', '24': ''}]
+        # Act
+            response = self.client.post(f"/matches/result/{match.id}",
+                                        json=mock_request.json.return_value)
+        # Assert
+            self.assertEqual(400, response.status_code)
 
     def test_addResult_returnsBadRequest_ifResultIsNotConverted(self):
         # Arrange
@@ -408,6 +431,7 @@ class MatchesRouterShould(IsolatedAsyncioTestCase):
         match = Match(**fake_match)
         match.finished = "finished"
         match.has_result = True
+        match.participants = ["Fake_Grigor Dimitrov", "Fake_Roger Federer"]
         tournament = Tournament(**fake_tournament)
         with (patch("routers.matches"),
               patch("routers.matches.ms.view_single_match", return_value=match),
@@ -437,7 +461,7 @@ class MatchesRouterShould(IsolatedAsyncioTestCase):
             self.assertEqual(303, response.history[0].status_code)
             self.assertIn("MatchScore Landing Page", response.text)
             self.assertNotIn(fake_user_player.fullname, response.text)
-# -----------------------------------------------------------------------------
+
     def test_editMatch_returnsNotFound_ifMatchNotFound(self):
         # Arrange
         match = Match(**fake_match)
@@ -546,4 +570,4 @@ class MatchesRouterShould(IsolatedAsyncioTestCase):
         # Act 
             response = self.client.post(f"/matches/edit/{id}", data=new_params)
         # Assert
-            self.assertEqual(200, response.status_code) # should be 500, refactor the endpoint
+            self.assertEqual(500, response.status_code, "Status code should be 500, refactor the endpoint")

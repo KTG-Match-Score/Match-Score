@@ -8,7 +8,7 @@ from models.player import Player
 from models.tournament import Tournament
 from services import tournaments_services as ts
 import common.auth as auth
-from fastapi import APIRouter, Body, Depends, Form, HTTPException, Header, Path, Query, Request, status
+from fastapi import Request, status
 from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 
@@ -179,7 +179,10 @@ async def create_match(data: dict[Tournament, dict, str]):
         for subtournament, play in schema.items():
             if isinstance(play, list):
                 for pl in play:
-                    participants = create_players_from_ids(pl)
+                    if isinstance(pl, int):
+                        participants = create_players_from_ids(play)
+                    else:
+                        participants = create_players_from_ids(pl)
                     
                     create_new_match(
                         Match(
@@ -446,6 +449,7 @@ def create_subtournament(subtournament: str, parent: Tournament, user, sport):
     new_tournament = Tournament(title=subtournament,
                                 format=parent.format,
                                 start_date=parent.start_date,
+                                prize_type=parent.prize_type,
                                 end_date=parent.end_date,
                                 parent_tournament_id=parent.id,
                                 participants_per_match=parent.participants_per_match,
@@ -514,6 +518,7 @@ def calculate_result_and_get_winner(match: Match, result: dict):
         score = sorted(result.items(), key=lambda x: x[1])
         final = {}
         for pl, sc in score:
+            sc = str(sc).rstrip('0').lstrip("0:")
             final[sc] = final.get(sc, []) + [pl]
         score = dict(enumerate(final.items(),1))
 

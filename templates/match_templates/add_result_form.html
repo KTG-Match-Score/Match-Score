@@ -154,12 +154,12 @@
             <ul>
                 {% for player in match.participants %}
                 <li>
-                    {{ player.fullname}}
+                    <h4>{{ player.fullname}}
                     <input type="text" name="name{{ loop.index }}" placeholder="{{ player.fullname }}" value="{{player.id}}" hidden>
-                    <input type="text" name="score{{ loop.index }}" placeholder="hrs,min,sec,microsec"><br>
+                    <input type="text" name="score{{ loop.index }}" value="0,0,0,0">hrs,min,sec,microsec</h4>
                 </li>
                 {% endfor %}                
-                {% endif%}
+            {% endif%}
                 <button class="button" onclick="submitData()">Submit</button>
             </ul>
         </form>

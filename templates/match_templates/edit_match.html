@@ -110,6 +110,8 @@
         <div class="buttons-container">
             <button class="topbar-button" onclick="location.href='/users/dashboard'">Back to Dashboard</button>
             <button class="topbar-button" onclick="location.href='/'">Main Page</button>
+            <button class="topbar-button" onclick="window.location.href = '/matches/match/{{match.id}}'">Back to match</button>
+
         </div>
 
         <div id="userDetails">
@@ -122,31 +124,23 @@
         <div class="container">                
             <label for="new_year">Edit year</label>  
             <input type="datetime" name="new_year" id="new_year" value="{{match.played_on.year}}">
+
             <label for="new_month">month</label>  
             <input type="datetime" name="new_month" id="new_month" value="{{match.played_on.month}}">
+            
             <label for="new_day">day</label>  
             <input type="datetime" name="new_day" id="new_day" value="{{match.played_on.day}}"><br>
+            
             <label for="new_hour">Edit hour</label>  
             <input type="datetime" name="new_hour" id="new_hour" value="{{match.played_on.hour}}">
+            
             <label for="new_minute">minutes</label>  
             <input type="datetime" name="new_minute" id="new_minute" value="{{match.played_on.minute}}"><br>
-            
-            <!-- <label for="new_format">Edit format</label>
-            <select name="new_format" id="new_format" value="{{ match.format }}">
-                <option value="time limited">Time limited</option>
-                <option value="score limited">Score limited</option>
-                <option value="first finisher">First finisher</option>
-            </select> -->
             
             <label for="new_location">Edit location</label>
             <input type="text" id="new_location" name="new_location" value="{{ match.location }}" required>
             
-            <!-- <label for="new_is_individuals">Individuals/Team:</label>
-            <select name="new_is_individuals" id="new_is_individuals" value="{{ match.is_individuals }}" >
-                <option value="false">Team</option>
-                <option value="true">Individuals</option>
-            </select> -->
-
+            {% if tournament.format == "single" %}
             <div id="participantsSection">
                 <h4>Add/remove players:</h4>
                 <div id="participantsList">
@@ -159,6 +153,18 @@
                 </div>
                 <button type="button" id="addParticipant">Add player</button>
             </div>
+            {% else %}
+            <div id="participantsSection">
+                <h4>Participants:</h4>
+                <div id="participantsList">
+                    {% for player in match.participants %}
+                        <div>
+                            <input type="text" name="new_participants" value="{{ player.fullname }}" readonly>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
         </div>
         <button type="submit">Edit Match</button>      
     </form>
