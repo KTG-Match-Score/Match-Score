@@ -160,6 +160,7 @@
                 {% else %}
                     <h4>{{ match.played_on.strftime("%Y-%m-%d  %H:%M") }}</h4>
                     <h4>{{ match.location }}</h4>
+                    <h4>Participants: {{ match.participants }}</h4>
                     <div style="display: flex; justify-content: space-around; text-align: center;">
                         {% if match.finished == "finished" %}
                         <form action="/matches/match/{{ match.id }}" method="get">
@@ -173,9 +174,6 @@
                         <h4 style="color: red;">{{ match.finished }}</h4>
                         {% endif %}
                     </div>
-                    <li>
-                        <p>Participants: {{ match.participants }}</p>
-                    </li>
                 {% endif %}
                 </li>
                 {% endfor %}

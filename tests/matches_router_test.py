@@ -180,10 +180,12 @@ class MatchesRouterShould(IsolatedAsyncioTestCase):
     def test_editMatchRedirect_returnsNotAuthorised_ifUserIsNotTournamentOwner(self):
         # Arrange
         matches = [Match(**fake_match)]
+        tournament = Tournament(**fake_tournament)
         with (patch("routers.matches"),
               patch("routers.matches.ms.view_single_match", return_value=matches[0]),
               patch("routers.matches.ms.check_user_token", return_value=fake_director),
-              patch("routers.matches.ms.check_if_user_is_tournament_owner", return_value=False)):
+              patch("routers.matches.ms.check_if_user_is_tournament_owner", return_value=False),
+              patch("routers.matches.ms.get_tournament_by_id", return_value=tournament)):
             id = 1
         # Act
             response = self.client.get(f"/matches/edit/{id}", 
@@ -196,11 +198,12 @@ class MatchesRouterShould(IsolatedAsyncioTestCase):
     def test_editMatchRedirect_redirects_ifUserIsAdmin(self):
         # Arrange
         matches = [Match(**fake_match)]
-        
+        tournament = Tournament(**fake_tournament)
         with (patch("routers.matches"),
               patch("routers.matches.ms.view_single_match", return_value=matches[0]),
               patch("routers.matches.ms.check_user_token", return_value=fake_admin),
-              patch("routers.matches.ms.check_if_user_is_tournament_owner", return_value=True)):
+              patch("routers.matches.ms.check_if_user_is_tournament_owner", return_value=True),
+              patch("routers.matches.ms.get_tournament_by_id", return_value=tournament)):
             id = 1
         # Act
             response = self.client.get(f"/matches/edit/{id}", 
@@ -214,10 +217,12 @@ class MatchesRouterShould(IsolatedAsyncioTestCase):
     def test_editMatchRedirect_redirects_ifUserIsTournamentOwner(self):
         # Arrange
         matches = [Match(**fake_match)]
+        tournament = Tournament(**fake_tournament)
         with (patch("routers.matches"),
               patch("routers.matches.ms.view_single_match", return_value=matches[0]),
               patch("routers.matches.ms.check_user_token", return_value=fake_director),
-              patch("routers.matches.ms.check_if_user_is_tournament_owner", return_value=True)):
+              patch("routers.matches.ms.check_if_user_is_tournament_owner", return_value=True),
+              patch("routers.matches.ms.get_tournament_by_id", return_value=tournament)):
             id = 1
         # Act 
             response = self.client.get(f"/matches/edit/{id}", 
