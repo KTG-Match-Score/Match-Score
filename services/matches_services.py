@@ -8,7 +8,7 @@ from models.player import Player
 from models.tournament import Tournament
 from services import tournaments_services as ts
 import common.auth as auth
-from fastapi import APIRouter, Body, Depends, Form, HTTPException, Header, Path, Query, Request, status
+from fastapi import Request, status
 from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 
@@ -518,6 +518,7 @@ def calculate_result_and_get_winner(match: Match, result: dict):
         score = sorted(result.items(), key=lambda x: x[1])
         final = {}
         for pl, sc in score:
+            sc = str(sc).rstrip('0').lstrip("0:")
             final[sc] = final.get(sc, []) + [pl]
         score = dict(enumerate(final.items(),1))
 
