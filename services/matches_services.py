@@ -522,12 +522,14 @@ def calculate_result_and_get_winner(match: Match, result: dict):
             score[2] = {team1: result[team1]}
             
     elif match.format == "first finisher":
+        maxsize = 604800000
         for p, s in result.items():
             result[p] = score_convertor(s)
-        score = sorted(result.items(), key=lambda x: x[1])
+        score = sorted(result.items(), key=lambda x: x[1] if x[1] != timedelta(0) else timedelta(maxsize))
         final = {}
         for pl, sc in score:
             sc = str(sc).rstrip('0').lstrip("0:")
+            if sc == '': sc = "no result"
             final[sc] = final.get(sc, []) + [pl]
         score = dict(enumerate(final.items(),1))
 
