@@ -110,10 +110,10 @@ request is approved by an admin, you will have the extended functionality which 
     - After all the above steps are done the system will create the whole tournament structure
     along with all the necessary mathes for every stage of the tournament. 
         - For example: if you create a tournament with 16 players, the first stage will contain 
-        8 matches between the players that you entered. The second stage will contain 4 matches with
-        no players in. The last (Final) stage will also contain 4 matches with no players. The first
-        match of the Final will be the final match for the tournament 1st and 2nd place and the 
-        second match will be the playoff for 3rd and 4th place (this match will be created 
+        8 matches between the players that you entered. The second stage will contain 4 matches 
+        with no players in. The last (Final) stage will also contain 4 matches with no players. 
+        The first match of the Final will be the final match for the tournament 1st and 2nd place 
+        and the second match will be the playoff for 3rd and 4th place (this match will be created 
         automatically, but it's your choice to add result to it or not).
         - Another example: if you create a league with 4 players, the system will create a single
         stage and will generate 6 matches where everybody should play againts everybody. 
@@ -175,5 +175,5 @@ request is approved by an admin, you will have the extended functionality which 
     assigned for the Final playoff match (3rd and 4th place).
 ```
 
-## If you read all the other contents of the file - Thank You for the time spent in studiyng our app! If you have interest in using the app and further development suggestions, please contact anyone from the dev team!
+## If you read all the other contents of the file - Thank You for the time spent in studying our app! If you have interest in using the app and further development suggestions, please contact anyone from the dev team!
 # Bye :)
