@@ -1,6 +1,5 @@
 from unittest import IsolatedAsyncioTestCase
 from fastapi.testclient import TestClient
-from fastapi import APIRouter, Body, Depends, Form, HTTPException, Header, Path, Query, Request, status
 from unittest.mock import patch, Mock, MagicMock
 from models.match import Match
 from models.player import Player
@@ -8,7 +7,6 @@ from models.tournament import Tournament
 from models.user import User
 from  services import matches_services as ms
 from main import app
-import tournaments_test_data as ttd
 from datetime import datetime, timedelta
 
 def fake_admin_user():
@@ -111,6 +109,12 @@ fake_match2["finished"] = "finished"
 fake_match2["played_on"] = datetime(2023, 12, 20, 14, 00, 00).strftime("%Y-%m-%dT%H:%M:%S")
 fake_player = fake_play()
 fake_player2 = fake_play()
+fake_player_no_result = fake_play()
+del fake_player_no_result["result"]
+del fake_player_no_result["place"]
+fake_player_no_result2 = fake_play()
+del fake_player_no_result2["result"]
+del fake_player_no_result2["place"]
 fake_player2["id"] = 2
 fake_player2["fullname"] = "Fake Player 2"
 fake_team = fake_play()
@@ -278,3 +282,75 @@ class MatchesServicesShould(IsolatedAsyncioTestCase):
         # Assert
             self.assertIsInstance(expected, type(result))
             self.assertListEqual(fake_participants_list, result.participants)
+
+    def test_addParticipants_extendsMatchParticipants(self):
+        # Arrange
+        match = Match(**fake_match)
+        # match.participants = fake_participants_list
+        with (patch('services.matches_services.insert_query', return_value=1)):
+            expected, match.participants = match, fake_participants_list
+        # Act                       
+            result = ms.add_participants(match, fake_participants_list)
+        # Assert
+            self.assertEqual(expected, result)
+            self.assertEqual(expected.participants, result.participants)
+
+    def test_addParticipants_returnsMatchWithParticipants_notModified(self):
+        # Arrange
+        match = Match(**fake_match)
+        match.participants = fake_participants_list
+        with (patch('services.matches_services.insert_query', return_value=1)):
+            expected = match
+        # Act                       
+            result = ms.add_participants(match, fake_participants_list)
+        # Assert
+            self.assertEqual(expected, result)
+            self.assertEqual(expected.participants, result.participants)
+
+    async def test_createPlayersFromNames_returnsListWithPlayers(self):
+        # Arrange
+        names = ["fake_player", "fake_player1"]
+        expected = fake_participants_list
+        result = []
+        count = 0
+        for player in (fake_player, fake_player2):
+            with (patch('services.matches_services.read_query',
+                return_value=[tuple(player.values())])):
+        # Act                       
+                result.extend(await ms.create_players_from_names([names[count]], "football"))
+                count +=1
+        # Assert
+        self.assertEqual(expected, result)
+        self.assertEqual(len(result), 2)
+    
+    async def test_createPlayersFromNames_returnsEmptyListWhenNoPlayersToAdd(self):
+        # Arrange
+        result = []
+        # Act                       
+        result = await ms.create_players_from_names([], "football")
+        # Assert
+        self.assertListEqual([], result)
+
+    def test_createPlayersFromIds_returnsListWithPlayers(self):
+        # Arrange
+        ids = [1, 2]
+        expected = [Player(**fake_player_no_result), Player(**fake_player_no_result2)]
+        with patch('services.matches_services.read_query',
+                return_value=[tuple(fake_player_no_result.values()), 
+                              tuple(fake_player_no_result2.values())]):
+        # Act                       
+            result = ms.create_players_from_ids(ids)
+                
+        # Assert
+        self.assertEqual(expected, result)
+        self.assertEqual(len(result), 2)
+
+    def test_createPlayersFromIds_returnsEmptyListWhenNoIdsProvided(self):
+        # Arrange
+        ids = []        
+        # Act                       
+        result = ms.create_players_from_ids(ids)
+                
+        # Assert
+        self.assertEqual([], result)
+        self.assertEqual(len(result), 0)

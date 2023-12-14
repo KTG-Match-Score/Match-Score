@@ -1,15 +1,12 @@
 from unittest import IsolatedAsyncioTestCase
 from fastapi.testclient import TestClient
-from fastapi import APIRouter, Body, Depends, Form, HTTPException, Header, Path, Query, Request, status
 from unittest.mock import patch, Mock, MagicMock
 from models.match import Match
 from models.player import Player
 from models.tournament import Tournament
 from models.user import User
-import services.matches_services as ms
 from main import app
-import tournaments_test_data as ttd
-from datetime import datetime, timedelta
+from datetime import datetime
 
 def fake_admin_user():
     admin = MagicMock(spec=User)
